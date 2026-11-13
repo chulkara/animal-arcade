@@ -91,3 +91,17 @@
 @media(prefers-reduced-motion:reduce){
   .combat-hp>span{transition:none;}
 }
+
+/* Phase 4's opt-in card effects and battle rewards. */
+.combat-card-loadout{display:flex;flex-direction:column;gap:3px;
+  margin-top:7px;padding:7px 5px;border-top:1px solid #bca37666;
+  font:700 10px/1.4 Arial,sans-serif;color:#e3cc9c;letter-spacing:.025em;}
+.combat-card-bonus{color:#ffdc95;font-weight:bold;}
+.combat-card-reward{max-width:470px;margin:10px auto;padding:12px 15px;
+  border:1px double #dec181;background:#203e4c;color:#f2d89f;
+  font:12px/1.5 Georgia,serif;letter-spacing:.04em;}
+.combat-card-reward strong{display:inline;color:#ffedbf;
+  font:700 17px Impact,'Arial Black',sans-serif;letter-spacing:.07em;}
+.combat-finish [data-combat-view-cards]{background:#183d50;color:#f1dfb4;
+  border-color:#bd9960;}
+@media(max-width:650px){.combat-card-loadout{font-size:9px;line-height:1.25;}}
