@@ -72,7 +72,7 @@
   }
   function setScreen(screen){
     model.screen=screen;game.dataset.screen=screen;
-    ui.innerHTML=screen==='TITLE'?titleScreen():screen==='MAIN_MENU'?mainMenu():screen==='MODE_MENU'?modeMenu():screen==='OPTIONS'?optionsScreen():previewScreen(screen);
+    ui.innerHTML=screen==='TITLE'?titleScreen():screen==='MAIN_MENU'?mainMenu():screen==='MODE_MENU'?modeMenu():['ANIMAL_SELECT','BATTLE_STAGE'].includes(screen)?window.NoahsPrototype.render(screen):screen==='OPTIONS'?optionsScreen():previewScreen(screen);
     const main=ui.querySelector('[data-initial-focus]');
     if(screen!=='TITLE'&&main)requestAnimationFrame(()=>main.focus({preventScroll:true}));
     document.title=screen==='TITLE'||screen==='MAIN_MENU'?"NOAH'S ARKADE — The World Is Wild":`${screen.replace('_PREVIEW','').replaceAll('_',' ')} · NOAH'S ARKADE`;
@@ -101,6 +101,8 @@
     }
     if(model.screen==='TITLE')return;
     audio.cue('back');
+    if(model.screen==='BATTLE_STAGE'){window.NoahsPrototype?.resetToSelect();return;}
+    if(model.screen==='ANIMAL_SELECT'){setScreen('MODE_MENU');return;}
     const returnTo=model.screen!=='MODE_MENU' && model.returnScreen==='MODE_MENU' ? 'MODE_MENU' : 'MAIN_MENU';
     model.returnScreen='MAIN_MENU';
     setScreen(returnTo);
@@ -138,8 +140,8 @@
     <div class="section-eyebrow">THE WILD AWAITS</div><h1 class="panel-title">CHOOSE YOUR PATH</h1>
     <div class="ornament-line"><span>✦</span></div>
     <nav class="mode-options" aria-label="Play modes">
-      <button type="button" data-mode="SOLO_PREVIEW" data-initial-focus>1 PLAYER <small>VERSUS THE WILD</small></button>
-      <button type="button" data-mode="MULTIPLAYER_PREVIEW">2 PLAYERS <small>LOCAL DUEL · PLANNED</small></button>
+      <button type="button" data-mode="SOLO_SELECT" data-initial-focus>1 PLAYER <small>VERSUS THE WILD</small></button>
+      <button type="button" data-mode="DUEL_SELECT">2 PLAYERS <small>LOCAL DUEL · PROTOTYPE</small></button>
       <button type="button" data-mode="HELP_PREVIEW">HOW TO PLAY <small>THE FIELD GUIDE</small></button>
     </nav>
     <button class="arcade-back" type="button" data-back>← RETURN TO MENU</button>
@@ -189,7 +191,13 @@
     const option=target.closest('[data-option]');
     if(option){activate(Number(option.dataset.option));return;}
     const mode=target.closest('[data-mode]');
-    if(mode){model.returnScreen='MODE_MENU';audio.unlock();audio.cue('confirm');setScreen(mode.dataset.mode);return;}
+    if(mode){
+      model.returnScreen='MODE_MENU';audio.unlock();audio.cue('confirm');
+      if(mode.dataset.mode==='SOLO_SELECT'||mode.dataset.mode==='DUEL_SELECT'){
+        window.NoahsPrototype?.start(mode.dataset.mode==='SOLO_SELECT'?'SOLO':'DUEL');
+      }else setScreen(mode.dataset.mode);
+      return;
+    }
     if(target.closest('[data-back]'))back();
   });
   ui.addEventListener('pointerover',(e)=>{
@@ -266,6 +274,7 @@
   // Lightweight inspection surface for automated local UI tests.
   window.__arkade={
     getScreen:()=>model.screen,getSettings:()=>({...model.settings}),getSelection:()=>model.selection,goBack:back,
+    openScreen:setScreen,
     showPaintedMenu:()=>{window.clearTimeout(introTimer);game.classList.add('intro-complete');setScreen('MAIN_MENU');},
     openPainted:(action)=>{
       const targets={PLAY:'MODE_MENU',MY_CARDS:'MY_CARDS_PREVIEW',BINDER:'BINDER_PREVIEW',SHOP:'SHOP_PREVIEW',SETTINGS:'OPTIONS'};
