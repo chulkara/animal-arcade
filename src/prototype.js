@@ -54,7 +54,7 @@
     return `<section class="panel battle-stage-panel screen-copy ${state.phase==='READY'?'battle-ready':''}" aria-label="Battle stage prototype">
       <div class="section-eyebrow">THE ARENA AWAITS</div>
       <h1 class="panel-title">BATTLE STAGE</h1>
-      <p class="prototype-status">${state.mode==='SOLO'?'SINGLE PLAYER · PRESENTATION':'LOCAL TWO-PLAYER · PRESENTATION'}</p>
+      <p class="prototype-status">${state.mode==='SOLO'?'SINGLE PLAYER · THREE-CHALLENGER RUN':'LOCAL TWO-PLAYER · FIRST TO TWO BOUTS'}</p>
       <div class="arena" aria-label="Animal matchup">
         <div class="arena-fighter">
           <div class="arena-health"><span>PLAYER 1</span><div aria-hidden="true"><i></i></div></div>
@@ -69,7 +69,7 @@
         </div>
       </div>
       <p class="prototype-announcer" role="status">${state.phase==='READY'?'THE STAGE IS SET!':'TWO LEGENDS ENTER THE WILD'}</p>
-      <p class="prototype-note">This is the illustrated staging preview. Select START BATTLE to enter the playable two-slot combat prototype. Card effects and historical damage formulas are not implemented.</p>
+      <p class="prototype-note">This is the illustrated staging preview. Select START BATTLE for green/yellow reel combat and your equipped cards. The solo challenge runs up to three battles with HP carried over; local two-player ends after two bout wins. Exact historical damage formulas are still being researched.</p>
       <div class="prototype-actions">
         ${state.phase!=='READY'?'<button type="button" data-prototype-intro data-initial-focus>BEGIN INTRO</button>':'<button type="button" data-prototype-fight data-initial-focus>START BATTLE · BETA</button>'}
         <button type="button" data-prototype-restart ${state.phase==='READY'?'data-initial-focus':''}>CHOOSE AGAIN</button>

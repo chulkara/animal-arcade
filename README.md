@@ -44,11 +44,12 @@ For a local network: use `python3 -m http.server 4173 --bind 0.0.0.0` only when 
 1. **Phase 1 (current):** original arcade title, illustrated globe, main menu, preferences, responsive layout.
 2. **Phase 2 (prototype):** two-animal selection, solo automatic rival, two-player sequential selections, responsive battle arena, and a reversible intro; real combat comes later.
 3. **Phase 3 (initial prototype):** verified two-slot input model, G/T/P, power comparison, tie rerolls, original damage balancing, actual HP and KO. Next: proper card-driven moves and battle cinematics.
-4. **Phase 4 (current):** collectible Animal/Strong/Miracle cards, one-card-per-type loadouts for both players, unlock rewards, working combat modifiers, local save and JSON backup.
-5. Phase 5: rarity and cosmetic material skins (Doodle, Porcelain, Chrome).
-6. Phase 6: local and networked multiplayer.
+4. **Phase 4 (released):** collectible Animal/Strong/Miracle cards, one-card-per-type loadouts for both players, unlock rewards, working combat modifiers, local save and JSON backup.
+5. **Phase 4.5 (in progress):** improve the game itself before expanding skins: cinematic original arenas and move feedback, performance-consistent reel timing, original combat sounds, three-victory solo run with HP carry, first-to-two local matches, researched historical rules and final art/motion polish. See [Phase 4.5 vertical slice](docs/phase45-vertical-slice.md).
+6. **Phase 5 (deferred until core gameplay is polished):** rarity and cosmetic material skins (Doodle, Porcelain, Chrome).
+7. **Phase 6:** local and networked multiplayer.
 
 See [Phase 3 mechanics](docs/phase3-combat.md) and [Phase 4 cards and binder](docs/phase4-cards.md). This is a playable prototype, **not** a complete game. Advanced graphics and gameplay will need later art/engineering passes.
 ## GitHub Pages
 
-The `.github/workflows/pages.yml` workflow publishes the static website from `main`. The separate verification workflow runs Node tests and Chromium smoke tests on desktop, tablet, and phones. The original menu painting is never modified by Phase 2, Phase 3 or Phase 4.
+The `.github/workflows/pages.yml` workflow publishes the static website from `main`. The separate verification workflow runs Node tests and Chromium smoke tests on desktop, tablet, and phones. The original menu painting is never modified by Phase 2, Phase 3, Phase 4 or Phase 4.5.

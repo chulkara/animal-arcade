@@ -145,8 +145,8 @@
     <div class="section-eyebrow">THE WILD AWAITS</div><h1 class="panel-title">CHOOSE YOUR PATH</h1>
     <div class="ornament-line"><span>✦</span></div>
     <nav class="mode-options" aria-label="Play modes">
-      <button type="button" data-mode="SOLO_SELECT" data-initial-focus>1 PLAYER <small>VERSUS THE WILD</small></button>
-      <button type="button" data-mode="DUEL_SELECT">2 PLAYERS <small>LOCAL DUEL · PROTOTYPE</small></button>
+      <button type="button" data-mode="SOLO_SELECT" data-initial-focus>1 PLAYER <small>THREE WILD CHALLENGERS</small></button>
+      <button type="button" data-mode="DUEL_SELECT">2 PLAYERS <small>FIRST TO TWO VICTORIES</small></button>
       <button type="button" data-mode="BINDER">EDIT BINDER <small>CHOOSE YOUR THREE-CARD LOADOUT</small></button>
       <button type="button" data-mode="HELP_PREVIEW">HOW TO PLAY <small>THE FIELD GUIDE</small></button>
     </nav>
@@ -157,7 +157,7 @@
       SOLO_PREVIEW:{no:'01 / 05',kicker:'BEYOND THE GATE',title:'SOLO EXPEDITION',quote:'Challenge the wild.',body:'A journey through the animal kingdom is taking shape. Battles and computer opponents arrive in a later development phase.',tag:'BATTLE MODE · COMING LATER',graphic:'paw'},
       MULTIPLAYER_PREVIEW:{no:'02 / 05',kicker:'THE TWO-PERSON PATH',title:'THE WILD DUEL',quote:'Every rival has a story.',body:'Two players, one machine. Local duels are planned first; private online matches may follow. Neither mode is playable in Phase 1.',tag:'LOCAL DUEL · PLANNED',graphic:'versus'},
       BINDER_PREVIEW:{no:'03 / 05',kicker:'THE COLLECTOR’S ROOM',title:'MY BINDER',quote:'A world worth collecting.',body:'Animal, Strong, and Miracle cards will live here someday, with beautifully illustrated alternate skins. This is a glimpse of the future archive, not a card inventory.',tag:'COLLECTION · COMING LATER',graphic:'cards'},
-      HELP_PREVIEW:{no:'04 / 05',kicker:'THE FIELD GUIDE',title:'HOW TO PLAY',quote:'The rules of the wild.',body:'The upcoming guide will cover Animal, Strong, and Miracle cards, the attack-selection reel, timing, and battle flow. Detailed rules will be verified before implementation.',tag:'FIELD GUIDE · IN PREPARATION',graphic:'book'},
+      HELP_PREVIEW:{no:'04 / 05',kicker:'THE FIELD GUIDE',title:'HOW TO PLAY',quote:'Two buttons. One wild battle.',body:'Choose an Animal and equip optional Strong and Miracle cards in your Binder. During battle, press green (G) to stop on Guts, Technique or Power. Press yellow (Y) to lock a power result: 10, 20, 30, 40, 50 or ✦. The higher power lands the attack; equal power rerolls with a growing charge. Reduce the enemy’s HP to zero. Solo mode requires up to three wins without restoring your HP. Local two-player is first to two bout victories. Exact historic damage values remain under research.',tag:'GAME GUIDE · PLAYABLE PROTOTYPE',graphic:'book'},
       MY_CARDS_PREVIEW:{no:'02 / 05',kicker:'THE CARD COLLECTION',title:'MY CARDS',quote:'Every wild legend starts somewhere.',body:'Your digital Animal, Strong, and Miracle cards will be organized here in a future phase. No cards or purchases are available yet.',tag:'CARD COLLECTION · COMING LATER',graphic:'cards'},
       SHOP_PREVIEW:{no:'04 / 05',kicker:'THE TRADING OUTPOST',title:'SHOP',quote:'Find the rare and remarkable.',body:'A future home for collectible cards and cosmetic skins. The shop is a preview only: no real purchases, currency, or inventory.',tag:'SHOP · COMING LATER',graphic:'cards'}
     }[screen];

@@ -10,8 +10,8 @@ const screenshots='test-results';
 await mkdir(screenshots,{recursive:true});
 const failures=[];
 
-async function run(name,dimensions,steps){
-  const context=await browser.newContext({viewport:dimensions,deviceScaleFactor:1,reducedMotion:'reduce'});
+async function run(name,dimensions,steps,options={}){
+  const context=await browser.newContext({viewport:dimensions,deviceScaleFactor:1,reducedMotion:options.reducedMotion||'reduce'});
   const page=await context.newPage();
   const errors=[];
   page.on('pageerror',error=>errors.push(String(error)));
@@ -112,7 +112,7 @@ await run('solo-prototype-1440x900',{width:1440,height:900},async page=>{
   assert.equal(await page.locator('#game').getAttribute('data-screen'),'BATTLE_STAGE');
   assert.match(await page.locator('.arena').innerText(),/BLUE TIGER/);
   assert.match(await page.locator('.arena').innerText(),/GOLDEN LION/);
-  assert.match(await page.locator('.prototype-note').innerText(),/not implemented/);
+  assert.match(await page.locator('.prototype-note').innerText(),/Exact historical damage formulas/);
   await page.locator('[data-prototype-intro]').click();
   assert.match(await page.locator('.prototype-announcer').innerText(),/STAGE IS SET/);
   await page.keyboard.press('Escape');
@@ -154,7 +154,7 @@ await run('combat-solo-1440x900',{width:1440,height:900},async page=>{
     if(!controls)break;
     await page.keyboard.press('y');
   }
-  assert.ok(await page.locator('[data-combat-next], [data-combat-rematch]').count()>0,'Solo slot should settle to a result');
+  assert.ok(await page.locator('[data-combat-next], [data-combat-next-bout], [data-combat-rematch]').count()>0,'Solo slot should settle to a result');
   const hp=await page.locator('.combat-hp').evaluateAll(nodes=>nodes.map(n=>Number(n.getAttribute('aria-valuenow'))));
   assert.ok(hp.some(n=>n<180),'An animal must take real damage');
   await page.keyboard.press('Escape');
@@ -182,7 +182,7 @@ await run('combat-duel-390x844',{width:390,height:844},async page=>{
     if(!await page.locator('[data-combat-stop]').count())break;
     await page.keyboard.press('y');
   }
-  assert.ok(await page.locator('[data-combat-next], [data-combat-rematch]').count()>0);
+  assert.ok(await page.locator('[data-combat-next], [data-combat-next-bout], [data-combat-rematch]').count()>0);
   await page.locator('[data-combat-quit]').click();
   assert.equal(await page.locator('#game').getAttribute('data-screen'),'BATTLE_STAGE');
 });
@@ -250,7 +250,11 @@ await run('card-reward-solo-1440x900',{width:1440,height:900},async page=>{
     let steps=0;
     while(steps++<250){
       const s=window.NoahsCombat.getState();
-      if(s.phase==='FINISHED')break;
+      if(s.phase==='FINISHED'){
+        if(s.session.complete)break;
+        window.NoahsCombat.nextBout();
+        continue;
+      }
       if(s.phase==='RESULT')window.NoahsCombat.next();
       else window.NoahsCombat.stopSlot();
     }
@@ -259,7 +263,7 @@ await run('card-reward-solo-1440x900',{width:1440,height:900},async page=>{
   });
   assert.equal(result.phase,'FINISHED');
   assert.equal(result.wins,1);
-  assert.match(await page.locator('.combat-card-reward').innerText(),/DUEL REWARD/);
+  assert.match(await page.locator('.combat-card-reward').innerText(),/MATCH REWARD/);
   assert.equal(await page.locator('.combat-card-reward').count(),1);
   await page.locator('[data-combat-view-cards]').click();
   assert.equal(await page.locator('#game').getAttribute('data-screen'),'CARDS');
@@ -269,6 +273,85 @@ await run('card-reward-solo-1440x900',{width:1440,height:900},async page=>{
   await page.locator('#painted-stage').waitFor({state:'visible',timeout:45000});
   await page.locator('.painted-hotspots [data-art-action="MY_CARDS"]').click();
   assert.equal(await page.locator('.ark-unlocked').count(),7);
+});
+
+
+await run('battle-feel-desktop-1440x900',{width:1440,height:900},async page=>{
+  await page.emulateMedia({reducedMotion:'no-preference'});
+  await page.locator('.painted-hotspots [data-art-action="PLAY"]').click();
+  await page.locator('[data-mode="SOLO_SELECT"]').click();
+  await page.locator('[data-animal="tiger"]').click();
+  await page.locator('[data-prototype-intro]').click();
+  await page.locator('[data-prototype-fight]').click();
+  assert.equal(await page.locator('#game').getAttribute('data-screen'),'BATTLE_PLAY');
+  assert.equal(await page.locator('.combat-battlefield').count(),1);
+  assert.equal(await page.locator('.battlefield-ridge').count(),2);
+  assert.equal(await page.locator('.combat-reel-neighbor').count(),2);
+  const first=await page.locator('[data-combat-current]').innerText();
+  await page.waitForTimeout(155);
+  const later=await page.locator('[data-combat-current]').innerText();
+  assert.notEqual(first,later,'Attack reel must advance with elapsed time');
+  await page.keyboard.press('g');
+  assert.equal(await page.locator('.combat-reel').getAttribute('data-reel-type'),'POWER');
+  for(let i=0;i<20;i++){
+    if(!await page.locator('[data-combat-stop]').count())break;
+    await page.keyboard.press('y');
+  }
+  assert.ok(await page.locator('[data-combat-next], [data-combat-next-bout], [data-combat-rematch]').count()>0);
+  assert.equal(await page.locator('.combat-battlefield.battlefield-impact').count(),1);
+  assert.equal(await page.locator('.battlefield-damage').count(),1);
+  const an=await page.locator('.combat-striker .combat-fighter-art')
+    .evaluate(el=>getComputedStyle(el).animationName);
+  assert.notEqual(an,'none','The original animal portrait should animate on attack');
+  assert.match(await page.locator('.combat-message').innerText(),/AMBER FANG|MOONSTEP|SHADOW RESOLVE|GOLDEN HEART|SUNWARD FEINT|SOVEREIGN ROAR/);
+}, {reducedMotion:'no-preference'});
+await run('battle-feel-reduced-motion-390x844',{width:390,height:844},async page=>{
+  await page.locator('.painted-mobile-nav [data-art-action="PLAY"]').click();
+  await page.locator('[data-mode="DUEL_SELECT"]').click();
+  await page.locator('[data-animal="lion"]').click();
+  await page.locator('[data-animal="tiger"]').click();
+  await page.locator('[data-prototype-intro]').click();
+  await page.locator('[data-prototype-fight]').click();
+  assert.equal(await page.locator('.combat-battlefield').count(),1);
+  assert.ok(await page.locator('[data-combat-stop]').isVisible());
+  await page.keyboard.press('g');
+  await page.keyboard.press('g');
+  await page.keyboard.press('y');
+  await page.keyboard.press('y');
+  for(let i=0;i<20;i++){
+    if(!await page.locator('[data-combat-stop]').count())break;
+    await page.keyboard.press('y');
+  }
+  assert.ok(await page.locator('[data-combat-next], [data-combat-next-bout], [data-combat-rematch]').count()>0);
+  const anim=await page.locator('.combat-striker .combat-fighter-art')
+    .evaluate(el=>getComputedStyle(el).animationName);
+  assert.equal(anim,'none','System reduced motion must turn off attack lunges');
+  const frame=await page.locator('.combat-panel').boundingBox();
+  assert.ok(frame.width<=390,'Combat panel must fit mobile viewport');
+});
+
+
+await run('arcade-run-mode-1440x900',{width:1440,height:900},async page=>{
+  await page.locator('.painted-hotspots [data-art-action="PLAY"]').click();
+  await page.locator('[data-mode="SOLO_SELECT"]').click();
+  await page.locator('[data-animal="tiger"]').click();
+  await page.locator('[data-prototype-intro]').click();
+  await page.locator('[data-prototype-fight]').click();
+  assert.match(await page.locator('.combat-series').innerText(),/EXPEDITION WINS/);
+  assert.match(await page.locator('.combat-heading').innerText(),/BOUT 1 \/ 3/);
+  assert.equal(await page.locator('.combat-card-reward').count(),0,'Rewards cannot be granted on entry');
+  assert.equal(await page.locator('#game').getAttribute('data-screen'),'BATTLE_PLAY');
+});
+await run('versus-set-mode-390x844',{width:390,height:844},async page=>{
+  await page.locator('.painted-mobile-nav [data-art-action="PLAY"]').click();
+  await page.locator('[data-mode="DUEL_SELECT"]').click();
+  await page.locator('[data-animal="tiger"]').click();
+  await page.locator('[data-animal="lion"]').click();
+  await page.locator('[data-prototype-intro]').click();
+  await page.locator('[data-prototype-fight]').click();
+  assert.match(await page.locator('.combat-heading').innerText(),/BOUT 1 · FIRST TO 2/);
+  assert.match(await page.locator('.combat-series').innerText(),/PLAYER 2 WINS/);
+  assert.equal(await page.locator('.combat-card-reward').count(),0);
 });
 
 await browser.close();
