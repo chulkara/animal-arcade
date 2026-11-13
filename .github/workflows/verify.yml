@@ -21,13 +21,19 @@ jobs:
           node --check src/prototype.js
       - name: Verify menu logic and original-art checksum
         run: npm test
+      - name: Prepare exact GitHub Pages output for browser testing
+        run: |
+          mkdir -p public
+          cp index.html public/
+          cp -R assets src public/
+          node scripts/build-approved-art.mjs
       - name: Install browser test runner
         run: |
           npm install --no-save --no-audit --no-fund playwright@1.56.1
           npx playwright install --with-deps chromium
       - name: Browser smoke tests (menu, animal selection and arena)
         run: |
-          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/arkade-server.log 2>&1 &
+          python3 -m http.server 4173 --bind 127.0.0.1 --directory public > /tmp/arkade-server.log 2>&1 &
           node tests/browser.smoke.mjs
       - name: Upload screenshots (even if tests fail)
         if: always()
