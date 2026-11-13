@@ -34,7 +34,7 @@ test('all five painted buttons navigate without replacing the image',()=>{
     assert.ok(app.includes(id+":'"),id);
   }
   assert.ok(app.includes("screen==='MODE_MENU'?modeMenu()"));
-  for(const mode of ['SOLO_PREVIEW','MULTIPLAYER_PREVIEW','HELP_PREVIEW'])
+  for(const mode of ['SOLO_SELECT','DUEL_SELECT','HELP_PREVIEW'])
     assert.ok(app.includes('data-mode="'+mode+'"'));
 });
 test('keyboard and portrait touch navigation are implemented',()=>{
