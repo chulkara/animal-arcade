@@ -7,7 +7,7 @@
   const OPTIONS=[
     {label:'1 PLAYER',screen:'SOLO_PREVIEW',eyebrow:'01 · THE SOLO TRAIL'},
     {label:'2 PLAYERS',screen:'MULTIPLAYER_PREVIEW',eyebrow:'02 · TWO ENTER THE WILD'},
-    {label:'MY BINDER',screen:'BINDER_PREVIEW',eyebrow:'03 · THE ARCHIVE'},
+    {label:'MY BINDER',screen:'BINDER',eyebrow:'03 · THE ARCHIVE'},
     {label:'HOW TO PLAY',screen:'HELP_PREVIEW',eyebrow:'04 · THE FIELD GUIDE'},
     {label:'OPTIONS',screen:'OPTIONS',eyebrow:'05 · THE WORKSHOP'}
   ];
@@ -72,7 +72,7 @@
   }
   function setScreen(screen){
     model.screen=screen;game.dataset.screen=screen;
-    ui.innerHTML=screen==='TITLE'?titleScreen():screen==='MAIN_MENU'?mainMenu():screen==='MODE_MENU'?modeMenu():['ANIMAL_SELECT','BATTLE_STAGE'].includes(screen)?window.NoahsPrototype.render(screen):screen==='BATTLE_PLAY'?window.NoahsCombat.render():screen==='OPTIONS'?optionsScreen():previewScreen(screen);
+    ui.innerHTML=screen==='TITLE'?titleScreen():screen==='MAIN_MENU'?mainMenu():screen==='MODE_MENU'?modeMenu():['ANIMAL_SELECT','BATTLE_STAGE'].includes(screen)?window.NoahsPrototype.render(screen):screen==='BATTLE_PLAY'?window.NoahsCombat.render():['CARDS','BINDER'].includes(screen)?window.NoahsCards.render(screen):screen==='OPTIONS'?optionsScreen():previewScreen(screen);
     const main=ui.querySelector('[data-initial-focus]');
     if(screen!=='TITLE'&&main)requestAnimationFrame(()=>main.focus({preventScroll:true}));
     document.title=screen==='TITLE'||screen==='MAIN_MENU'?"NOAH'S ARKADE — The World Is Wild":`${screen.replace('_PREVIEW','').replaceAll('_',' ')} · NOAH'S ARKADE`;
@@ -282,7 +282,7 @@
     openScreen:setScreen,
     showPaintedMenu:()=>{window.clearTimeout(introTimer);game.classList.add('intro-complete');setScreen('MAIN_MENU');},
     openPainted:(action)=>{
-      const targets={PLAY:'MODE_MENU',MY_CARDS:'MY_CARDS_PREVIEW',BINDER:'BINDER_PREVIEW',SHOP:'SHOP_PREVIEW',SETTINGS:'OPTIONS'};
+      const targets={PLAY:'MODE_MENU',MY_CARDS:'CARDS',BINDER:'BINDER',SHOP:'SHOP_PREVIEW',SETTINGS:'OPTIONS'};
       const target=targets[action];if(!target)return false;
       started=true;audio.unlock();audio.cue('confirm');model.returnScreen='MAIN_MENU';setScreen(target);return true;
     }
