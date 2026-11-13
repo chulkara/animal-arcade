@@ -1,6 +1,6 @@
 # NOAH'S ARKADE
 
-An original local-first browser arcade game in development. Phase 1 is the illustrated title screen, custom logo, WebGL globe, and menu. Battles, digital cards, and online play are **not implemented**.
+An original local-first browser arcade game in development. Phase 1 now uses the approved, untouched 1672×941 Noah's Arkade painting as its interactive main menu. A previous WebGL title/menu remains as a safe fallback. Battles, digital cards, and online play are **not implemented**.
 
 ## Run locally
 
@@ -20,7 +20,9 @@ For a local network: use `python3 -m http.server 4173 --bind 0.0.0.0` only when 
 
 ## Controls
 
-- Press **Enter**, **Space**, or click **PRESS START** to open the main menu (also skips intro).
+- When the original painting loads, the game opens directly on its illustrated menu; select **PLAY**, **MY CARDS**, **BINDER**, **SHOP**, or **SETTINGS**.
+- **PLAY** opens the single-player, two-player, and how-to-play choices; these still lead to honest preview states.
+- If the approved painting cannot load, **Enter**, **Space**, or **PRESS START** opens the previous fallback menu.
 - Use **Up/Down** or **W/S** to select, **Enter/Space** to confirm, and **Escape/Backspace** to go back.
 - Mouse and touch can navigate the menu. All options are reversible.
 - Under **OPTIONS**, adjust master/music/SFX volume, mute, reduced motion, grain, and rotating globe. Settings save in localStorage.
@@ -28,9 +30,11 @@ For a local network: use `python3 -m http.server 4173 --bind 0.0.0.0` only when 
 ## Technical design
 
 - Plain HTML/CSS/JavaScript and native **WebGL**, no cloud service or build step.
-- A custom sphere mesh rotates beneath an original, illustrated cartographic texture.
+- The approved menu artwork is stored losslessly as twenty text-safe PNG fragments under `assets/approved-menu-png/`. At runtime, `src/painted-menu.js` reconstructs the **exact original PNG bytes** into an image. No resizing, repainting, or recompression of the source artwork occurs. The normal browser layout shows the full painting at its original aspect ratio; on narrow phones a separate reachable menu appears below it.
+- The fallback experience uses a custom sphere mesh beneath an original, illustrated cartographic texture.
 - Synthesized menu tones use Web Audio *only after a user gesture*.
-- Title, menu, and preview panels share one persistent scene. The gameplay entries intentionally say **coming later**.
+- The approved main menu overlays accessible, keyboard-operable hit targets precisely over the five painted buttons. Preview panels reuse the scene, and gameplay entries intentionally say **coming later**.
+- The test suite verifies the reassembled PNG against its exact SHA-256 digest.
 - All assets are original for this prototype. The game's original Animal Kaiser inspiration is a *mechanics research reference*, not a source of copied assets.
 - WebGL failure uses a static globe fallback; reduced-motion preference and options pause animation.
 

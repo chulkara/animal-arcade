@@ -12,8 +12,21 @@
     {label:'OPTIONS',screen:'OPTIONS',eyebrow:'05 · THE WORKSHOP'}
   ];
   const defaults={master:65,music:28,sfx:75,mute:false,reducedMotion:window.matchMedia?.('(prefers-reduced-motion: reduce)').matches||false,grain:true,globe:true};
-  function loadSettings(){try{const value=JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}');return {...defaults,...value};}catch{return {...defaults};}}
-  const model={screen:'TITLE',selection:0,settings:loadSettings(),introSeen:false,webglError:null,fromMenu:true};
+  function loadSettings(){
+    let stored;
+    try { stored=JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}'); } catch { return {...defaults}; }
+    if(!stored || typeof stored!=='object' || Array.isArray(stored)) return {...defaults};
+    const settings={...defaults};
+    for(const key of ['master','music','sfx']){
+      if(typeof stored[key]==='number' && Number.isFinite(stored[key]))
+        settings[key]=Math.round(Math.max(0,Math.min(100,stored[key])));
+    }
+    for(const key of ['mute','reducedMotion','grain','globe']){
+      if(typeof stored[key]==='boolean') settings[key]=stored[key];
+    }
+    return settings;
+  }
+  const model={screen:'TITLE',selection:0,settings:loadSettings(),introSeen:false,webglError:null,fromMenu:true,returnScreen:'MAIN_MENU'};
   const game=document.getElementById('game');
   const ui=document.getElementById('ui');
   const globeCanvas=document.getElementById('globe-canvas');
@@ -59,11 +72,12 @@
   }
   function setScreen(screen){
     model.screen=screen;game.dataset.screen=screen;
-    ui.innerHTML=screen==='TITLE'?titleScreen():screen==='MAIN_MENU'?mainMenu():screen==='OPTIONS'?optionsScreen():previewScreen(screen);
+    ui.innerHTML=screen==='TITLE'?titleScreen():screen==='MAIN_MENU'?mainMenu():screen==='MODE_MENU'?modeMenu():screen==='OPTIONS'?optionsScreen():previewScreen(screen);
     const main=ui.querySelector('[data-initial-focus]');
     if(screen!=='TITLE'&&main)requestAnimationFrame(()=>main.focus({preventScroll:true}));
     document.title=screen==='TITLE'||screen==='MAIN_MENU'?"NOAH'S ARKADE — The World Is Wild":`${screen.replace('_PREVIEW','').replaceAll('_',' ')} · NOAH'S ARKADE`;
     if(started) audio.setMusic(screen!=='TITLE');
+    window.dispatchEvent(new CustomEvent('arkade:screenchange',{detail:{screen}}));
     const foot=document.getElementById('foot-hints');
     foot.innerHTML=screen==='TITLE'?'<kbd>ENTER</kbd> START':screen==='MAIN_MENU'?'<kbd>↑</kbd><kbd>↓</kbd> CHOOSE <span class="hint-gap"></span> <kbd>ENTER</kbd> SELECT':'<kbd>ESC</kbd> BACK';
   }
@@ -81,10 +95,15 @@
   }
   function back(){
     if(model.screen==='MAIN_MENU'){
-      audio.cue('back');audio.setMusic(false);setScreen('TITLE');return;
+      audio.cue('back');
+      if(game.classList.contains('painted-enabled'))return;
+      audio.setMusic(false);setScreen('TITLE');return;
     }
     if(model.screen==='TITLE')return;
-    audio.cue('back');setScreen('MAIN_MENU');
+    audio.cue('back');
+    const returnTo=model.screen!=='MODE_MENU' && model.returnScreen==='MODE_MENU' ? 'MODE_MENU' : 'MAIN_MENU';
+    model.returnScreen='MAIN_MENU';
+    setScreen(returnTo);
     refreshSelection();
   }
   function move(direction){
@@ -115,12 +134,24 @@
     <div class="menu-caption"><span class="caption-dot">✶</span><span id="option-caption">${OPTIONS[model.selection].eyebrow}</span></div>
     <p class="menu-footnote">EVERY LEGEND BEGINS SOMEWHERE</p>
   </div>`;}
+  function modeMenu(){return `<section class="panel painted-submenu screen-copy" aria-label="Choose game mode">
+    <div class="section-eyebrow">THE WILD AWAITS</div><h1 class="panel-title">CHOOSE YOUR PATH</h1>
+    <div class="ornament-line"><span>✦</span></div>
+    <nav class="mode-options" aria-label="Play modes">
+      <button type="button" data-mode="SOLO_PREVIEW" data-initial-focus>1 PLAYER <small>VERSUS THE WILD</small></button>
+      <button type="button" data-mode="MULTIPLAYER_PREVIEW">2 PLAYERS <small>LOCAL DUEL · PLANNED</small></button>
+      <button type="button" data-mode="HELP_PREVIEW">HOW TO PLAY <small>THE FIELD GUIDE</small></button>
+    </nav>
+    <button class="arcade-back" type="button" data-back>← RETURN TO MENU</button>
+  </section>`;}
   function previewScreen(screen){
     const data={
       SOLO_PREVIEW:{no:'01 / 05',kicker:'BEYOND THE GATE',title:'SOLO EXPEDITION',quote:'Challenge the wild.',body:'A journey through the animal kingdom is taking shape. Battles and computer opponents arrive in a later development phase.',tag:'BATTLE MODE · COMING LATER',graphic:'paw'},
       MULTIPLAYER_PREVIEW:{no:'02 / 05',kicker:'THE TWO-PERSON PATH',title:'THE WILD DUEL',quote:'Every rival has a story.',body:'Two players, one machine. Local duels are planned first; private online matches may follow. Neither mode is playable in Phase 1.',tag:'LOCAL DUEL · PLANNED',graphic:'versus'},
       BINDER_PREVIEW:{no:'03 / 05',kicker:'THE COLLECTOR’S ROOM',title:'MY BINDER',quote:'A world worth collecting.',body:'Animal, Strong, and Miracle cards will live here someday, with beautifully illustrated alternate skins. This is a glimpse of the future archive, not a card inventory.',tag:'COLLECTION · COMING LATER',graphic:'cards'},
-      HELP_PREVIEW:{no:'04 / 05',kicker:'THE FIELD GUIDE',title:'HOW TO PLAY',quote:'The rules of the wild.',body:'The upcoming guide will cover Animal, Strong, and Miracle cards, the attack-selection reel, timing, and battle flow. Detailed rules will be verified before implementation.',tag:'FIELD GUIDE · IN PREPARATION',graphic:'book'}
+      HELP_PREVIEW:{no:'04 / 05',kicker:'THE FIELD GUIDE',title:'HOW TO PLAY',quote:'The rules of the wild.',body:'The upcoming guide will cover Animal, Strong, and Miracle cards, the attack-selection reel, timing, and battle flow. Detailed rules will be verified before implementation.',tag:'FIELD GUIDE · IN PREPARATION',graphic:'book'},
+      MY_CARDS_PREVIEW:{no:'02 / 05',kicker:'THE CARD COLLECTION',title:'MY CARDS',quote:'Every wild legend starts somewhere.',body:'Your digital Animal, Strong, and Miracle cards will be organized here in a future phase. No cards or purchases are available yet.',tag:'CARD COLLECTION · COMING LATER',graphic:'cards'},
+      SHOP_PREVIEW:{no:'04 / 05',kicker:'THE TRADING OUTPOST',title:'SHOP',quote:'Find the rare and remarkable.',body:'A future home for collectible cards and cosmetic skins. The shop is a preview only: no real purchases, currency, or inventory.',tag:'SHOP · COMING LATER',graphic:'cards'}
     }[screen];
     const art=data.graphic==='cards'?`<div class="preview-cards" aria-hidden="true"><div class="preview-card left"><span>✦</span></div><div class="preview-card center"><span>✥</span></div><div class="preview-card right"><span>✦</span></div></div>`:
       data.graphic==='versus'?'<div class="preview-symbol" aria-hidden="true">Ⅰ <span>✦</span> Ⅱ</div>':
@@ -157,6 +188,8 @@
     if(startButton){start();return;}
     const option=target.closest('[data-option]');
     if(option){activate(Number(option.dataset.option));return;}
+    const mode=target.closest('[data-mode]');
+    if(mode){model.returnScreen='MODE_MENU';audio.unlock();audio.cue('confirm');setScreen(mode.dataset.mode);return;}
     if(target.closest('[data-back]'))back();
   });
   ui.addEventListener('pointerover',(e)=>{
@@ -189,10 +222,23 @@
     if(model.screen==='TITLE'){
       if(e.key==='Enter'||e.key===' '){e.preventDefault();start();}return;
     }
+    if(model.screen==='MODE_MENU' && !['INPUT','TEXTAREA'].includes(tag)){
+      const buttons=[...ui.querySelectorAll('[data-mode]')];
+      if(['ArrowUp','w','W','ArrowDown','s','S'].includes(e.key)){
+        e.preventDefault();
+        const current=buttons.indexOf(document.activeElement);
+        const direction=['ArrowUp','w','W'].includes(e.key)?-1:1;
+        const next=buttons[(Math.max(current,0)+direction+buttons.length)%buttons.length];
+        next?.focus({preventScroll:true});audio.cue('move');
+      }
+      return;
+    }
     if(model.screen==='MAIN_MENU'){
-      if(['ArrowUp','w','W'].includes(e.key)){e.preventDefault();move(-1);}
-      else if(['ArrowDown','s','S'].includes(e.key)){e.preventDefault();move(1);}
-      else if(e.key==='Enter'||e.key===' '){e.preventDefault();activate(model.selection);}
+      if(['ArrowUp','w','W'].includes(e.key)){e.preventDefault();move(-1);ui.querySelector('[data-option].selected')?.focus({preventScroll:true});}
+      else if(['ArrowDown','s','S'].includes(e.key)){e.preventDefault();move(1);ui.querySelector('[data-option].selected')?.focus({preventScroll:true});}
+      else if((e.key==='Enter'||e.key===' ') && (tag!=='BUTTON'||document.activeElement?.hasAttribute('data-option'))){
+        e.preventDefault();activate(document.activeElement?.hasAttribute('data-option')?Number(document.activeElement.dataset.option):model.selection);
+      }
     } else if(model.screen!=='OPTIONS'&&!range&&(e.key==='Enter'||e.key===' ')&&tag!=='BUTTON'){
       e.preventDefault();back();
     }
@@ -218,5 +264,13 @@
   }
   init();
   // Lightweight inspection surface for automated local UI tests.
-  window.__arkade={getScreen:()=>model.screen,getSettings:()=>({...model.settings}),getSelection:()=>model.selection,goBack:back};
+  window.__arkade={
+    getScreen:()=>model.screen,getSettings:()=>({...model.settings}),getSelection:()=>model.selection,goBack:back,
+    showPaintedMenu:()=>{window.clearTimeout(introTimer);game.classList.add('intro-complete');setScreen('MAIN_MENU');},
+    openPainted:(action)=>{
+      const targets={PLAY:'MODE_MENU',MY_CARDS:'MY_CARDS_PREVIEW',BINDER:'BINDER_PREVIEW',SHOP:'SHOP_PREVIEW',SETTINGS:'OPTIONS'};
+      const target=targets[action];if(!target)return false;
+      started=true;audio.unlock();audio.cue('confirm');model.returnScreen='MAIN_MENU';setScreen(target);return true;
+    }
+  };
 })();

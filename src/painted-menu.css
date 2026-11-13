@@ -1,0 +1,83 @@
+/* The entire original 1672×941 painting is shown unchanged and uncropped. */
+.game.painted-enabled { background:#071827; }
+.game.painted-enabled .ambience,
+.game.painted-enabled .landscape,
+.game.painted-enabled .animal,
+.game.painted-enabled .orbital-elements,
+.game.painted-enabled .ornate-border,
+.game.painted-enabled .subtle-grain,
+.game.painted-enabled .logo-shell,
+.game.painted-enabled .topbar,
+.game.painted-enabled .bottom-bar { display:none; }
+.game.painted-enabled .screen-main,
+.game.painted-enabled .screen-title { display:none; }
+.game.painted-enabled .interface { pointer-events:none; }
+.game.painted-enabled .interface .panel { pointer-events:auto; }
+.game.painted-enabled .panel { background:linear-gradient(165deg,rgba(6,20,35,.98),rgba(13,37,56,.98)); }
+.painted-stage {
+  position:absolute;z-index:12;left:50%;top:50%;
+  width:min(100vw,177.6833svh);aspect-ratio:1672 / 941;
+  transform:translate(-50%,-50%);pointer-events:none;
+}
+.painted-art { display:block;width:100%;height:100%;object-fit:contain;filter:none; }
+.painted-hotspots { position:absolute;inset:0;pointer-events:none; }
+.painted-hotspot {
+  position:absolute;display:block;appearance:none;border:0;border-radius:6px;
+  padding:0;background:transparent;color:transparent;pointer-events:auto;
+  transition:box-shadow .13s ease,background .13s ease;
+}
+.painted-hotspot:hover,
+.painted-hotspot.active:not([data-art-action="PLAY"]) {
+  box-shadow:0 0 0 2px rgba(255,224,141,.88) inset,0 0 13px rgba(255,210,100,.45);
+  background:rgba(255,207,113,.07);
+}
+.painted-hotspot:focus-visible {
+  outline:3px solid #fff4ba;outline-offset:3px;
+  background:rgba(255,205,100,.13);
+}
+.painted-mobile-nav { display:none; }
+.game.painted-enabled:not([data-screen="MAIN_MENU"]) .painted-hotspots,
+.game.painted-enabled:not([data-screen="MAIN_MENU"]) .painted-mobile-nav { display:none; }
+.mode-options {
+  display:flex;flex-direction:column;gap:12px;
+  max-width:400px;margin:20px auto 24px;
+}
+.mode-options button {
+  border:1px solid #d8b87f;background:#0a2136;color:#fff0cb;
+  padding:12px 22px;text-align:left;font-family:Impact,'Arial Black',sans-serif;
+  font-size:22px;letter-spacing:.09em;line-height:1.2;
+}
+.mode-options button:hover,.mode-options button:focus-visible { background:#37506a; }
+.mode-options button small {
+  display:block;margin-top:5px;font:11px Georgia,serif;
+  letter-spacing:.13em;color:#e2bc7e;
+}
+.painted-submenu { max-width:530px; }
+@media (max-aspect-ratio: 4/5) {
+  .game.painted-enabled { min-height:100svh;overflow:auto; }
+  .painted-stage { top:5svh;transform:translateX(-50%); }
+  .painted-hotspots { display:none; }
+  .painted-mobile-nav {
+    display:flex;flex-direction:column;gap:7px;
+    position:absolute;top:calc(100% + 14px);left:50%;
+    transform:translateX(-50%);width:min(88vw,400px);
+    padding-bottom:24px;pointer-events:auto;
+  }
+  .painted-mobile-button {
+    display:block;min-height:43px;border:1px solid #d5ac6c;
+    border-radius:3px;background:#102638;color:#f8e8c6;
+    font:700 16px Impact,'Arial Black',sans-serif;letter-spacing:.15em;
+    box-shadow:inset 0 0 0 1px rgba(248,221,170,.12);
+  }
+  .painted-mobile-button.active { background:#d6a453;color:#112337; }
+  .painted-mobile-button:focus-visible {
+    outline:3px solid #ffe6a6;outline-offset:2px;
+  }
+  .game.painted-enabled .panel {
+    top:50%;width:92vw;max-height:87svh;
+    transform:translate(-50%,-50%);overflow-y:auto;
+  }
+}
+@media (prefers-reduced-motion:reduce) {
+  .painted-hotspot { transition:none; }
+}
