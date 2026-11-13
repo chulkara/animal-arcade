@@ -47,9 +47,9 @@ await run('desktop-1440x900',{width:1440,height:900},async page=>{
   assert.equal(await buttons.count(),5);
   await menu.locator('[data-art-action="PLAY"]').click();
   assert.equal(await page.locator('#game').getAttribute('data-screen'),'MODE_MENU');
-  await page.locator('[data-mode="SOLO_PREVIEW"]').click();
-  assert.equal(await page.locator('#game').getAttribute('data-screen'),'SOLO_PREVIEW');
-  assert.match(await page.locator('body').innerText(),/COMING LATER/);
+  await page.locator('[data-mode="SOLO_SELECT"]').click();
+  assert.equal(await page.locator('#game').getAttribute('data-screen'),'ANIMAL_SELECT');
+  assert.match(await page.locator('.prototype-note').innerText(),/Prototype roster/);
   await page.locator('[data-back]').click();
   assert.equal(await page.locator('#game').getAttribute('data-screen'),'MODE_MENU');
   await page.locator('[data-back]').click();
@@ -98,7 +98,7 @@ await run('landscape-844x390',{width:844,height:390},async page=>{
   assert.ok(await play.isVisible());
   await play.click();
   assert.equal(await page.locator('#game').getAttribute('data-screen'),'MODE_MENU');
-  assert.ok(await page.locator('[data-mode="SOLO_PREVIEW"]').isVisible());
+  assert.ok(await page.locator('[data-mode="SOLO_SELECT"]').isVisible());
   await page.locator('[data-back]').click();
   assert.equal(await page.locator('#game').getAttribute('data-screen'),'MAIN_MENU');
 });
