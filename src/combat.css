@@ -105,3 +105,256 @@
 .combat-finish [data-combat-view-cards]{background:#183d50;color:#f1dfb4;
   border-color:#bd9960;}
 @media(max-width:650px){.combat-card-loadout{font-size:9px;line-height:1.25;}}
+
+
+/* Phase 4.5 vertical slice: all visuals are authored CSS + original animal
+   portraits. Nothing from the approved painted title menu is changed. */
+.game .combat-panel{
+  isolation:isolate;
+  background:linear-gradient(172deg,#071522ee 0%,#162f42ef 55%,#081622fa 100%);
+  border-color:#a99263;
+  box-shadow:0 25px 80px #0007,inset 0 0 0 1px #ecd5a31c;
+}
+.combat-heading{position:relative;z-index:2;padding-bottom:6px;}
+.combat-heading:after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,#d1ae72,transparent);}
+.combat-battlefield{
+  position:relative;isolation:isolate;overflow:hidden;
+  width:100%;max-width:930px;margin:10px auto 8px;
+  min-height:clamp(185px,30svh,320px);
+  border:2px solid #c5a673;
+  box-shadow:0 9px 24px #0006,inset 0 0 40px #071c2b;
+  background:
+    radial-gradient(ellipse at 72% 32%,#f1c37c66 0%,#8d785256 19%,transparent 45%),
+    linear-gradient(180deg,#25415c 0%,#60717a 37%,#495f63 58%,#182b37 100%);
+}
+.combat-battlefield:before{
+  content:'';position:absolute;inset:0;pointer-events:none;opacity:.42;
+  background:repeating-linear-gradient(110deg,transparent 0,transparent 24px,#fff4 25px,transparent 27px);
+  mask-image:linear-gradient(#000,transparent 65%);
+}
+.combat-battlefield:after{
+  content:'';position:absolute;inset:0;z-index:5;pointer-events:none;
+  background:
+    radial-gradient(ellipse at 50% 115%,transparent 35%,#07162288 96%),
+    repeating-linear-gradient(0deg,#111a1a08 0,#111a1a08 2px,transparent 3px,transparent 6px);
+  box-shadow:inset 0 0 0 2px #f8e2b622,inset 0 0 20px #0009;
+}
+.battlefield-sun{
+  position:absolute;width:clamp(90px,12vw,165px);aspect-ratio:1;
+  top:9%;left:61%;border-radius:50%;
+  background:radial-gradient(circle,#f7dfb1 0%,#f0c784 45%,#dfab5d44 68%,transparent 71%);
+  filter:blur(1px);opacity:.75;
+}
+.battlefield-ridge{position:absolute;left:-4%;width:108%;pointer-events:none;}
+.battlefield-ridge-far{
+  height:59%;bottom:14%;opacity:.7;
+  background:linear-gradient(145deg,#7a7d71,#354952);
+  clip-path:polygon(0 74%,7% 59%,14% 65%,23% 30%,31% 63%,40% 47%,51% 68%,61% 28%,71% 56%,80% 44%,90% 70%,100% 49%,100% 100%,0 100%);
+}
+.battlefield-ridge-near{
+  height:47%;bottom:6%;opacity:.9;
+  background:linear-gradient(120deg,#314b4b,#142d3f);
+  clip-path:polygon(0 65%,8% 53%,17% 71%,25% 40%,36% 62%,44% 40%,54% 75%,64% 55%,74% 68%,82% 49%,91% 66%,100% 48%,100% 100%,0 100%);
+}
+.battlefield-ground{
+  position:absolute;left:-5%;right:-5%;bottom:-2%;height:25%;
+  background:
+    repeating-radial-gradient(ellipse at 50% -50%,#d0b48422 0px,#d0b48422 1px,transparent 3px,transparent 23px),
+    linear-gradient(180deg,#84765c33 0%,#1b2a30 90%);
+  transform:perspective(220px) rotateX(28deg);transform-origin:bottom center;
+}
+.combat-battlefield .combat-match{
+  position:relative;z-index:3;margin:0 auto;
+  min-height:clamp(185px,30svh,320px);
+  padding:8px 13px 7px;gap:clamp(4px,1.2vw,13px);
+  align-items:end;
+}
+.combat-battlefield .combat-fighter{
+  border:0;border-radius:0;
+  background:linear-gradient(180deg,transparent 0%,#0b25321a 40%,#0b2532a5 95%);
+  box-shadow:none;padding:6px 10px 4px;
+  position:relative;z-index:3;align-self:stretch;
+  display:flex;flex-direction:column;justify-content:end;align-items:center;
+}
+.combat-battlefield .combat-fighter-head,
+.combat-battlefield .combat-hp{align-self:stretch;}
+.combat-battlefield .combat-fighter-head{
+  border-bottom:1px solid #ead6a755;
+  background:#071e2bb8;padding:4px 7px;margin-bottom:2px;border-radius:2px;
+}
+.combat-battlefield .combat-hp{margin-top:0;background:#132028e9;}
+.combat-battlefield .combat-fighter-art{
+  width:min(100%,300px);height:clamp(95px,18svh,205px);
+  object-fit:contain;transform-origin:50% 88%;
+  filter:drop-shadow(0 11px 3px #08152588) drop-shadow(0 0 15px #f4deb12b);
+}
+.combat-battlefield .combat-fighter:nth-child(3) .combat-fighter-art{
+  transform:scaleX(-1);
+}
+.combat-battlefield .combat-animal-name{
+  background:#091f31bb;border-top:1px solid #e3c17d55;
+  padding:3px 14px;white-space:nowrap;max-width:100%;
+}
+.combat-battlefield .combat-card-loadout{
+  display:none; /* Deck data remains in the core engine; detail strip below. */
+}
+.combat-battlefield .combat-selections{
+  background:#0d2636c4;padding:3px 5px;border-radius:2px;margin-top:2px;
+}
+.combat-battlefield .combat-versus{
+  z-index:4;align-self:center;
+  padding:10px 0;border-radius:50%;
+  background:radial-gradient(circle,#10293ccf,transparent 75%);
+  color:#f2d69b;
+  text-shadow:0 2px 3px #000,0 0 15px #f5c77a44;
+}
+.combat-reel{
+  position:relative;gap:clamp(12px,3vw,26px);
+  background:linear-gradient(165deg,#071521 0%,#263e45 49%,#071521 100%);
+  border-width:3px;border-radius:7px;
+  box-shadow:0 0 0 4px #132b3d,0 5px 15px #0006,inset 0 0 19px #0009;
+}
+.combat-reel:after{
+  content:'';position:absolute;pointer-events:none;inset:2px;
+  border-top:1px solid #fff6;
+  border-bottom:1px solid #fff3;
+}
+.combat-reel [data-combat-current]{
+  display:grid;place-items:center;
+  width:77px;height:65px;color:#fff2c9;
+  background:radial-gradient(ellipse,#e9cb7b33,transparent 71%);
+  text-shadow:0 0 9px #f1ce8a88,1px 2px #000;
+}
+.combat-reel-neighbor{
+  display:grid;place-items:center;min-width:36px;
+  color:#aeae9e;font:700 21px Impact,'Arial Black',sans-serif;
+  opacity:.59;filter:blur(.8px);
+}
+.combat-reel[data-reel-type='ATTACK'] [data-combat-current]{color:#d6f4b1;}
+.combat-reel[data-reel-type='POWER'] [data-combat-current]{color:#ffde8b;}
+.combat-stop{
+  box-shadow:0 5px #091822,0 8px 14px #0007,inset 0 2px #fff6;
+  transition:transform .08s ease,filter .08s ease,box-shadow .08s ease;
+}
+.combat-stop:active{
+  transform:translateY(4px);
+  box-shadow:0 1px #091822,0 3px 6px #0008,inset 0 2px #fff5;
+}
+.combat-message{animation:combat-announcement .5s cubic-bezier(.1,.8,.3,1) both;}
+.combat-message strong{font-size:19px;}
+.combat-message .combat-card-bonus{color:#f3d389;}
+.battlefield-impact-flash{
+  position:absolute;z-index:6;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse at center,#fff5d29a,#edd08b44 38%,transparent 76%);
+  animation:combat-flash .42s ease-out both;
+}
+.battlefield-damage{
+  position:absolute;z-index:7;top:30%;pointer-events:none;
+  color:#fff3c9;text-shadow:0 2px 2px #39210c,0 0 15px #f4cb88;
+  font:900 clamp(27px,5vw,48px) Impact,'Arial Black',sans-serif;
+  transform:translateY(0);
+  animation:combat-float-damage 1.2s cubic-bezier(.1,.7,.2,1) both;
+}
+.battlefield-damage-0{left:12%;}
+.battlefield-damage-1{right:12%;}
+.combat-battlefield.battlefield-impact{
+  animation:combat-camera-recoil .52s ease-out both;
+}
+.combat-battlefield.battlefield-special .battlefield-impact-flash{
+  background:radial-gradient(ellipse at center,#f7f9ffd9,#b3d4fd65 41%,transparent 75%);
+}
+.combat-battlefield .combat-striker:nth-child(1) .combat-fighter-art{
+  animation:combat-left-lunge .68s cubic-bezier(.22,.6,.23,1) both;
+}
+.combat-battlefield .combat-striker:nth-child(3) .combat-fighter-art{
+  animation:combat-right-lunge .68s cubic-bezier(.22,.6,.23,1) both;
+}
+.combat-battlefield .combat-struck:nth-child(1) .combat-fighter-art{
+  animation:combat-left-recoil .7s ease-out both;
+}
+.combat-battlefield .combat-struck:nth-child(3) .combat-fighter-art{
+  animation:combat-right-recoil .7s ease-out both;
+}
+@keyframes combat-left-lunge{
+  0%{transform:translateX(0) scale(1)}
+  30%{transform:translateX(15%) scale(1.12)}
+  55%{transform:translateX(32%) scale(1.08)}
+  100%{transform:translateX(0) scale(1)}
+}
+@keyframes combat-right-lunge{
+  0%{transform:scaleX(-1) translateX(0)}
+  30%{transform:scaleX(-1) translateX(15%) scale(1.12)}
+  55%{transform:scaleX(-1) translateX(32%) scale(1.08)}
+  100%{transform:scaleX(-1) translateX(0)}
+}
+@keyframes combat-left-recoil{
+  0%,29%{transform:translateX(0) rotate(0)}
+  44%{transform:translateX(-11%) rotate(-5deg)}
+  100%{transform:translateX(0) rotate(0)}
+}
+@keyframes combat-right-recoil{
+  0%,29%{transform:scaleX(-1) translateX(0) rotate(0)}
+  44%{transform:scaleX(-1) translateX(-11%) rotate(-5deg)}
+  100%{transform:scaleX(-1) translateX(0) rotate(0)}
+}
+@keyframes combat-float-damage{
+  0%{opacity:0;transform:translateY(15px) scale(.85)}
+  20%{opacity:1;transform:translateY(-4px) scale(1.14)}
+  60%{opacity:1;transform:translateY(-21px) scale(1)}
+  100%{opacity:0;transform:translateY(-45px) scale(.95)}
+}
+@keyframes combat-flash{
+  0%{opacity:0}34%{opacity:.6}100%{opacity:0}
+}
+@keyframes combat-camera-recoil{
+  0%,20%{transform:translateX(0)}
+  31%{transform:translateX(-4px)}
+  40%{transform:translateX(4px)}
+  51%{transform:translateX(-2px)}
+  100%{transform:translateX(0)}
+}
+@keyframes combat-announcement{
+  from{opacity:.4;transform:translateY(8px)}
+  to{opacity:1;transform:translateY(0)}
+}
+@media(max-width:650px){
+  .combat-battlefield .combat-match{padding:4px 3px 5px;gap:2px;}
+  .combat-battlefield .combat-fighter{padding:4px 2px 3px;}
+  .combat-battlefield .combat-fighter-head{font-size:9px;padding:3px;}
+  .combat-battlefield .combat-fighter-art{height:clamp(84px,15svh,130px);}
+  .combat-battlefield .combat-animal-name{font-size:13px;padding:4px 3px;}
+  .combat-battlefield .combat-selections{font-size:8px;}
+  .combat-battlefield .combat-versus{font-size:22px;}
+  .combat-battlefield{min-height:185px;}
+  .combat-battlefield .combat-match{min-height:185px;}
+  .combat-reel-neighbor{min-width:28px;font-size:16px;}
+  .combat-reel [data-combat-current]{height:50px;width:60px;}
+}
+@media(max-height:580px){
+  .combat-battlefield{min-height:130px;margin:4px auto;}
+  .combat-battlefield .combat-match{min-height:130px;}
+  .combat-battlefield .combat-fighter-art{height:76px;}
+  .combat-battlefield .combat-animal-name{font-size:13px;}
+  .combat-reel [data-combat-current]{height:44px;}
+}
+@media(prefers-reduced-motion:reduce){
+  .combat-message,.battlefield-impact-flash,.battlefield-damage,
+  .combat-battlefield.battlefield-impact,
+  .combat-battlefield .combat-striker .combat-fighter-art,
+  .combat-battlefield .combat-struck .combat-fighter-art{
+    animation:none!important;
+  }
+  .battlefield-impact-flash,.battlefield-damage{display:none!important;}
+  .combat-stop{transition:none;}
+}
+.game.reduce-motion .combat-message,
+.game.reduce-motion .battlefield-impact-flash,
+.game.reduce-motion .battlefield-damage,
+.game.reduce-motion .combat-battlefield.battlefield-impact,
+.game.reduce-motion .combat-battlefield .combat-striker .combat-fighter-art,
+.game.reduce-motion .combat-battlefield .combat-struck .combat-fighter-art{
+  animation:none!important;
+}
+.game.reduce-motion .battlefield-impact-flash,
+.game.reduce-motion .battlefield-damage{display:none!important;}
