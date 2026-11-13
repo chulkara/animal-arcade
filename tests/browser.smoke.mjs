@@ -271,6 +271,61 @@ await run('card-reward-solo-1440x900',{width:1440,height:900},async page=>{
   assert.equal(await page.locator('.ark-unlocked').count(),7);
 });
 
+
+await run('battle-feel-desktop-1440x900',{width:1440,height:900},async page=>{
+  await page.emulateMedia({reducedMotion:'no-preference'});
+  await page.locator('.painted-hotspots [data-art-action="PLAY"]').click();
+  await page.locator('[data-mode="SOLO_SELECT"]').click();
+  await page.locator('[data-animal="tiger"]').click();
+  await page.locator('[data-prototype-intro]').click();
+  await page.locator('[data-prototype-fight]').click();
+  assert.equal(await page.locator('#game').getAttribute('data-screen'),'BATTLE_PLAY');
+  assert.equal(await page.locator('.combat-battlefield').count(),1);
+  assert.equal(await page.locator('.battlefield-ridge').count(),2);
+  assert.equal(await page.locator('.combat-reel-neighbor').count(),2);
+  const first=await page.locator('[data-combat-current]').innerText();
+  await page.waitForTimeout(155);
+  const later=await page.locator('[data-combat-current]').innerText();
+  assert.notEqual(first,later,'Attack reel must advance with elapsed time');
+  await page.keyboard.press('g');
+  assert.equal(await page.locator('.combat-reel').getAttribute('data-reel-type'),'POWER');
+  for(let i=0;i<20;i++){
+    if(!await page.locator('[data-combat-stop]').count())break;
+    await page.keyboard.press('y');
+  }
+  assert.ok(await page.locator('[data-combat-next], [data-combat-rematch]').count()>0);
+  assert.equal(await page.locator('.combat-battlefield.battlefield-impact').count(),1);
+  assert.equal(await page.locator('.battlefield-damage').count(),1);
+  const an=await page.locator('.combat-striker .combat-fighter-art')
+    .evaluate(el=>getComputedStyle(el).animationName);
+  assert.notEqual(an,'none','The original animal portrait should animate on attack');
+  assert.match(await page.locator('.combat-message').innerText(),/AMBER FANG|MOONSTEP|SHADOW RESOLVE|GOLDEN HEART|SUNWARD FEINT|SOVEREIGN ROAR/);
+});
+await run('battle-feel-reduced-motion-390x844',{width:390,height:844},async page=>{
+  await page.locator('.painted-mobile-nav [data-art-action="PLAY"]').click();
+  await page.locator('[data-mode="DUEL_SELECT"]').click();
+  await page.locator('[data-animal="lion"]').click();
+  await page.locator('[data-animal="tiger"]').click();
+  await page.locator('[data-prototype-intro]').click();
+  await page.locator('[data-prototype-fight]').click();
+  assert.equal(await page.locator('.combat-battlefield').count(),1);
+  assert.ok(await page.locator('[data-combat-stop]').isVisible());
+  await page.keyboard.press('g');
+  await page.keyboard.press('g');
+  await page.keyboard.press('y');
+  await page.keyboard.press('y');
+  for(let i=0;i<20;i++){
+    if(!await page.locator('[data-combat-stop]').count())break;
+    await page.keyboard.press('y');
+  }
+  assert.ok(await page.locator('[data-combat-next], [data-combat-rematch]').count()>0);
+  const anim=await page.locator('.combat-striker .combat-fighter-art')
+    .evaluate(el=>getComputedStyle(el).animationName);
+  assert.equal(anim,'none','System reduced motion must turn off attack lunges');
+  const frame=await page.locator('.combat-panel').boundingBox();
+  assert.ok(frame.width<=390,'Combat panel must fit mobile viewport');
+});
+
 await browser.close();
 if(failures.length) {
   console.error(JSON.stringify(failures,null,2));
