@@ -187,7 +187,10 @@
     return `<section class="panel combat-panel screen-copy" aria-label="Interactive animal battle">
       <div class="section-eyebrow">NOAH'S ARKADE · COMBAT LAB</div>
       <div class="combat-heading"><h1 class="panel-title">WILD DUEL</h1>
-        <span>BOUT ${s.session.bout} / ${s.session.goal} · EXCHANGE ${s.round}</span></div>
+        <span>${s.mode==='SOLO'?
+          `BOUT ${s.session.bout} / ${s.session.goal}`:
+          `BOUT ${s.session.bout} · FIRST TO ${s.session.goal}`}
+          · EXCHANGE ${s.round}</span></div>
       <div class="combat-series" aria-label="Arcade match score">
         <span>${s.mode==='SOLO'?'EXPEDITION WINS':'PLAYER 1 WINS'}:
           <b>${s.session.wins[0]} / ${s.session.goal}</b></span>
