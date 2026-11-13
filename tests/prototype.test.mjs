@@ -38,13 +38,13 @@ test('two player mode makes two independent, local selections',()=>{
   assert.deepEqual(Array.from(prototype.getState().picks),['lion','tiger']);
   assert.equal(screens.at(-1),'BATTLE_STAGE');
 });
-test('battle staging explicitly does not pretend to implement combat',()=>{
+test('battle staging describes the playable combat while marking historical formulas as unverified',()=>{
   const {prototype,click}=harness();
   prototype.start('SOLO');
   click('[data-animal]',{animal:'tiger'});
   click('[data-prototype-intro]');
   assert.equal(prototype.getState().phase,'READY');
-  assert.match(prototype.render('BATTLE_STAGE'),/not implemented/);
+  assert.match(prototype.render('BATTLE_STAGE'),/Exact historical damage formulas are still being researched/);
   click('[data-prototype-restart]');
   assert.equal(prototype.getState().picks.length,0);
 });
