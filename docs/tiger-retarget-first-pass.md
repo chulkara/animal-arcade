@@ -38,3 +38,16 @@ The experimental GLB, companion side-by-side browser viewer, reproducible Python
 - “White Tiger (RIGGED ANIMATED)” by [CGJAY1111](https://sketchfab.com/3d-models/white-tiger-rigged-animated-9dd099d283e54f99b7cbd40b531b1a29).
 - “Tiger” by [Blender Artist](https://sketchfab.com/3d-models/tiger-67bbedd727a047869ef7c7b608445484).
 - Both models' GLBs contain [Creative Commons Attribution 4.0](https://creativecommons.org/licenses/by/4.0/) metadata. Attribution and adaptation notice must remain in any final release. Neither original creator endorses the project.
+
+
+## 2026-11-13 visual feedback — RETARGET FAILED
+
+The user reviewed the first GLB in the browser: **legs twist; all transferred motions except original Idle look unnatural.** These five `_retarget_WIP` clips are rejected. Do not rename as final, merge, distribute in the game, or claim they are fixed.
+
+**Root-cause analysis:** 47-joint donor → 121-joint hero with mismatched bone axes/hierarchies. The original experiment only animated **rotation for 24 mapped joints** and did not carry over the hero's **full 117-joint translation + scale baseline**, nor preserve foot contacts with inverse kinematics. The world-space rotation delta implementation can change limb orientations in invalid ways. The donor and hero share no direct compatible retarget skeleton.
+
+**Native-motion recovery:** Inspecting the original hero `Idle` (39.04s) revealed that the source itself contains roughly recurring **12-second full-body motion cycles**. A new local-only GLB `white_tiger_native_motion_candidates.glb` was constructed by slicing the **original hero clip** into five candidate excerpts, each preserving **all 351 original animation tracks** (117 rotation, 117 translation, 117 scale), 121 skin joints, original mesh and original textures. This is **not** cross-skeleton retargeting and should avoid the new twisting introduced by the failed transfer; the animation excerpts still need subjective visual approval and smooth transitions.
+
+**Live release policy:** No experimental animations have been committed to the repo or included in Pages; PR #8 remains draft. Next attempt on donor Run/Attack requires Blender rest-pose calibration, anatomical bone mapping, lower-limb constraints, paw IK/foot locking, and baked exported clips with user-approved visual QA. Until then, use only the already-natural white tiger Idle animation.
+
+**User action:** No extra tiger models are needed to troubleshoot this. The user may inspect the native-motion recovery package in ChatGPT; a lion model is still useful separately, but not a prerequisite for correcting the tiger.
