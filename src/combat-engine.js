@@ -30,16 +30,19 @@
       miracleName:label(m?.miracleName)
     };
   }
-  function createBattle({mode='SOLO',picks=['tiger','lion'],rng=Math.random,modifiers=[]}={}){
+  function createBattle({mode='SOLO',picks=['tiger','lion'],rng=Math.random,modifiers=[],initialHp=[BASE_HP,BASE_HP]}={}){
     assert(mode==='SOLO'||mode==='DUEL','Unsupported battle mode');
     assert(Array.isArray(picks)&&picks.length===2&&picks.every(id=>id==='tiger'||id==='lion'),'Choose two valid animals');
     assert(typeof rng==='function','RNG must be a function');
+    assert(Array.isArray(initialHp)&&initialHp.length===2&&
+      initialHp.every(hp=>Number.isInteger(hp)&&hp>=1&&hp<=BASE_HP),'Invalid initial HP');
     const original=[...picks];
+    const initialHealth=[...initialHp];
     const initialModifiers=[cleanModifier(modifiers?.[0]),cleanModifier(modifiers?.[1])];
     let state;
     function reset(){
       state={
-        mode,animals:original.map((id,i)=>({id,hp:BASE_HP,maxHp:BASE_HP,player:i+1})),
+        mode,animals:original.map((id,i)=>({id,hp:initialHealth[i],maxHp:BASE_HP,player:i+1})),
         round:1,phase:'ATTACK',actor:0,selected:[{technique:null,power:null},{technique:null,power:null}],
         tieCharge:0,lastEvent:null,winner:null,history:[],
         modifiers:initialModifiers.map(m=>({...m}))
