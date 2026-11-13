@@ -5,7 +5,7 @@
   const api=window.ArkadeCombatEngine;
   const ui=document.getElementById('ui');
   if(!api||!ui)return;
-  let battle=null,slotIndex=0,interval=null;
+  let battle=null,slotIndex=0,interval=null,matchReward=null,rewardClaimed=false;
   const animal={
     tiger:{label:'BLUE TIGER',art:'./assets/tiger-illustration.webp'},
     lion:{label:'GOLDEN LION',art:'./assets/lion-illustration.webp'}
@@ -15,7 +15,10 @@
   function open(){window.__arkade?.openScreen('BATTLE_PLAY');}
   function stopTimer(){if(interval!==null){clearInterval(interval);interval=null;}}
   function start({mode,picks}){
-    battle=api.createBattle({mode,picks});
+    const modifiers=picks.map((animalId,i)=>
+      mode==='SOLO'&&i===1?{}:(window.NoahsCards?.getModifiers(i,animalId)||{}));
+    battle=api.createBattle({mode,picks,modifiers});
+    matchReward=null;rewardClaimed=false;
     slotIndex=0;
     open();
   }
@@ -57,7 +60,7 @@
     window.NoahsAudio?.cue('move');
     open();
   }
-  function rematch(){if(!battle)return;battle.reset();open();}
+  function rematch(){if(!battle)return;matchReward=null;rewardClaimed=false;battle.reset();open();}
   function actorLabel(s){return s.mode==='SOLO'&&s.actor===1?'CPU':'PLAYER '+(s.actor+1);}
   function actorName(s,i){return s.mode==='SOLO'&&i===1?'CPU':'PLAYER '+(i+1);}
   function fighter(s,i){
@@ -72,6 +75,10 @@
       <img class="combat-fighter-art" src="${a.art}" alt="" loading="eager">
       <strong class="combat-animal-name">${a.label}</strong>
       <div class="combat-selections"><span>ATTACK <b>${selected.technique||'?'}</b></span><span>POWER <b>${token(selected.power)}</b></span></div>
+      <div class="combat-card-loadout">
+        <span>STRONG: ${s.modifiers?.[i]?.strongName||'NONE'}</span>
+        <span>MIRACLE: ${s.modifiers?.[i]?.miracleName||'NONE'}</span>
+      </div>
     </div>`;
   }
   function results(s){
@@ -82,12 +89,17 @@
     return `<div class="combat-message" role="status">
       <strong>${actorName(s,e.attacker)} — ${e.attackName}${e.special?' ✦ SPECIAL':''}</strong>
       <span>${e.damage} damage dealt to ${actorName(s,e.defender)} · ${e.remainingHp} HP remains
-      ${e.charge?' · TIE CHARGE '+e.charge:''}</span></div>`;
+      ${e.charge?' · TIE CHARGE '+e.charge:''}</span>
+      ${e.strongBonus||e.miracleBonus?`<span class="combat-card-bonus">CARD BOOST ${e.strongBonus?'+ '+e.strongBonus+' STRONG':''}
+        ${e.miracleBonus?'+ '+e.miracleBonus+' MIRACLE':''}</span>`:''}</div>`;
   }
   function controls(s){
     if(s.phase==='FINISHED')return `<div class="combat-finish" role="status">
       <strong>${actorName(s,s.winner)} WINS!</strong><span>${animal[s.animals[s.winner].id].label} stands victorious.</span>
-      <button type="button" data-combat-rematch data-initial-focus>REMATCH</button></div>`;
+      ${matchReward?`<p class="combat-card-reward">DUEL REWARD — ${matchReward.newCard?'NEW CARD':'DUPLICATE'}:
+        <strong>${matchReward.name}</strong> ${matchReward.newCard?'UNLOCKED':'×'+matchReward.count}</p>`:''}
+      <button type="button" data-combat-rematch data-initial-focus>REMATCH</button>
+      <button type="button" data-combat-view-cards>VIEW MY CARDS</button></div>`;
     if(s.phase==='RESULT')return `<div class="combat-ready">
       <button type="button" data-combat-next data-initial-focus>NEXT ROUND →</button></div>`;
     const isAttack=s.phase==='ATTACK',action=isAttack?'GREEN':'YELLOW';
@@ -110,6 +122,9 @@
     const s=current();
     if(!s)return `<section class="panel combat-panel"><h1>BATTLE UNAVAILABLE</h1>
       <button type="button" data-combat-quit>← RETURN TO ARENA</button></section>`;
+    if(s.phase==='FINISHED'&&!rewardClaimed){
+      rewardClaimed=true;matchReward=window.NoahsCards?.grantBattleReward()||null;
+    }
     return `<section class="panel combat-panel screen-copy" aria-label="Interactive animal battle">
       <div class="section-eyebrow">NOAH'S ARKADE · COMBAT LAB</div>
       <div class="combat-heading"><h1 class="panel-title">WILD DUEL</h1>
@@ -121,7 +136,7 @@
       </div>
       ${results(s)}
       ${controls(s)}
-      <p class="combat-disclaimer">Playable original-prototype rules. Card modifiers, Miracle Cards, and exact historical damage values are not implemented.</p>
+      <p class="combat-disclaimer">Playable original-prototype rules. Equipped Strong cards boost their named technique; Miracle cards boost a winning ✦ mark. Exact historical values remain unverified.</p>
       <div class="combat-footer">
         <span>KEYS: G = GREEN · Y = YELLOW · SPACE = STOP · ESC = BACK</span>
         <button type="button" data-combat-quit>← BACK TO ARENA</button>
@@ -133,6 +148,9 @@
     if(target.closest('[data-combat-stop]')){stopSlot();return;}
     if(target.closest('[data-combat-next]')){next();return;}
     if(target.closest('[data-combat-rematch]')){rematch();return;}
+    if(target.closest('[data-combat-view-cards]')){
+      stopTimer();window.NoahsCards?.open('CARDS');return;
+    }
     if(target.closest('[data-combat-quit]')){stopTimer();window.__arkade?.openScreen('BATTLE_STAGE');}
   });
   window.addEventListener('keydown',event=>{
