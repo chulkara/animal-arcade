@@ -45,6 +45,21 @@
       case 'back': tone(310,.12,'triangle',.14);tone(220,.16,'sine',.10,.04);break;
       case 'confirm': tone(420,.15,'triangle',.17);tone(640,.22,'sine',.13,.07);tone(820,.34,'sine',.1,.15);break;
       case 'reveal': tone(261.6,.6,'triangle',.07);tone(392,.52,'sine',.055,.08);tone(523.2,.55,'sine',.05,.18);break;
+      // Original, short synthesizer cues for the Phase 4.5 combat slice.
+      // Audio still respects master/SFX/mute and starts only after a gesture.
+      case 'slot':
+        tone(580,.065,'square',.085);tone(870,.095,'sine',.07,.045);break;
+      case 'impact':
+        tone(125,.24,'sawtooth',.21);tone(75,.33,'triangle',.12,.06);break;
+      case 'special':
+        tone(380,.26,'triangle',.12);tone(570,.29,'sine',.12,.04);
+        tone(860,.34,'sine',.10,.10);tone(125,.25,'sawtooth',.13,.11);break;
+      case 'tie':
+        tone(520,.11,'square',.10);tone(490,.14,'square',.07,.1);
+        tone(610,.17,'sine',.10,.21);break;
+      case 'ko':
+        tone(175,.35,'triangle',.19);tone(131,.42,'sawtooth',.12,.12);
+        tone(262,.5,'sine',.08,.21);break;
     }
   }
   function destroy(){
