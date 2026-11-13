@@ -56,7 +56,7 @@
     return `<nav class="ark-card-tabs" aria-label="Collection navigation">
       <button type="button" data-card-nav="CARDS" ${active==='CARDS'?'aria-current="page"':''}>MY CARDS</button>
       <button type="button" data-card-nav="BINDER" ${active==='BINDER'?'aria-current="page"':''}>BATTLE BINDER</button>
-      <button type="button" data-card-back>← MAIN MENU</button>
+      <button type="button" data-card-back>← BACK</button>
     </nav>`;
   }
   function inventoryScreen(s){
@@ -121,7 +121,7 @@
     if(!['CARDS','BINDER'].includes(screen()))return;
     const route=target.closest('[data-card-nav]');
     if(route){open(route.dataset.cardNav);return;}
-    if(target.closest('[data-card-back]')){window.__arkade?.openScreen('MAIN_MENU');return;}
+    if(target.closest('[data-card-back]')){window.__arkade?.goBack();return;}
     const f=target.closest('[data-card-filter]');
     if(f){filter=f.dataset.cardFilter;refresh();return;}
     const p=target.closest('[data-card-side]');
