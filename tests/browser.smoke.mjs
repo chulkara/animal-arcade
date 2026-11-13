@@ -47,10 +47,10 @@ await run('desktop-1440x900',{width:1440,height:900},async page=>{
   assert.equal(await buttons.count(),5);
   await menu.locator('[data-art-action="PLAY"]').click();
   assert.equal(await page.locator('#game').getAttribute('data-screen'),'MODE_MENU');
-  await page.locator('[data-mode="SOLO_PREVIEW"]').click();
-  assert.equal(await page.locator('#game').getAttribute('data-screen'),'SOLO_PREVIEW');
-  assert.match(await page.locator('body').innerText(),/COMING LATER/);
-  await page.locator('[data-back]').click();
+  await page.locator('[data-mode="SOLO_SELECT"]').click();
+  assert.equal(await page.locator('#game').getAttribute('data-screen'),'ANIMAL_SELECT');
+  assert.match(await page.locator('.prototype-note').innerText(),/Prototype roster/);
+  await page.locator('[data-prototype-mode]').click();
   assert.equal(await page.locator('#game').getAttribute('data-screen'),'MODE_MENU');
   await page.locator('[data-back]').click();
   assert.equal(await page.locator('#game').getAttribute('data-screen'),'MAIN_MENU');
@@ -98,10 +98,45 @@ await run('landscape-844x390',{width:844,height:390},async page=>{
   assert.ok(await play.isVisible());
   await play.click();
   assert.equal(await page.locator('#game').getAttribute('data-screen'),'MODE_MENU');
-  assert.ok(await page.locator('[data-mode="SOLO_PREVIEW"]').isVisible());
+  assert.ok(await page.locator('[data-mode="SOLO_SELECT"]').isVisible());
   await page.locator('[data-back]').click();
   assert.equal(await page.locator('#game').getAttribute('data-screen'),'MAIN_MENU');
 });
+
+await run('solo-prototype-1440x900',{width:1440,height:900},async page=>{
+  await page.locator('.painted-hotspots [data-art-action="PLAY"]').click();
+  await page.locator('[data-mode="SOLO_SELECT"]').click();
+  assert.equal(await page.locator('#game').getAttribute('data-screen'),'ANIMAL_SELECT');
+  assert.equal(await page.locator('[data-animal]').count(),2);
+  await page.locator('[data-animal="tiger"]').click();
+  assert.equal(await page.locator('#game').getAttribute('data-screen'),'BATTLE_STAGE');
+  assert.match(await page.locator('.arena').innerText(),/BLUE TIGER/);
+  assert.match(await page.locator('.arena').innerText(),/GOLDEN LION/);
+  assert.match(await page.locator('.prototype-note').innerText(),/not implemented/);
+  await page.locator('[data-prototype-intro]').click();
+  assert.match(await page.locator('.prototype-announcer').innerText(),/STAGE IS SET/);
+  await page.keyboard.press('Escape');
+  assert.equal(await page.locator('#game').getAttribute('data-screen'),'ANIMAL_SELECT');
+  await page.locator('[data-prototype-mode]').click();
+  assert.equal(await page.locator('#game').getAttribute('data-screen'),'MODE_MENU');
+  await page.locator('[data-back]').click();
+  assert.equal(await page.locator('#game').getAttribute('data-screen'),'MAIN_MENU');
+});
+await run('duel-prototype-390x844',{width:390,height:844},async page=>{
+  await page.locator('.painted-mobile-nav [data-art-action="PLAY"]').click();
+  await page.locator('[data-mode="DUEL_SELECT"]').click();
+  assert.equal(await page.locator('#game').getAttribute('data-screen'),'ANIMAL_SELECT');
+  assert.match(await page.locator('.prototype-status').innerText(),/PLAYER 1 SELECTS/);
+  await page.locator('[data-animal="lion"]').click();
+  assert.match(await page.locator('.prototype-status').innerText(),/PLAYER 2 SELECTS/);
+  await page.locator('[data-animal="tiger"]').click();
+  assert.equal(await page.locator('#game').getAttribute('data-screen'),'BATTLE_STAGE');
+  assert.match(await page.locator('.arena').innerText(),/PLAYER 2/);
+  await page.locator('[data-prototype-menu]').click();
+  assert.equal(await page.locator('#game').getAttribute('data-screen'),'MAIN_MENU');
+  assert.equal(await page.locator('.painted-art').evaluate(el=>el.naturalWidth),1672);
+});
+
 await browser.close();
 if(failures.length) {
   console.error(JSON.stringify(failures,null,2));

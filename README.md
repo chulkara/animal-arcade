@@ -1,6 +1,6 @@
 # NOAH'S ARKADE
 
-An original local-first browser arcade game in development. Phase 1 now uses the approved, untouched 1672×941 Noah's Arkade painting as its interactive main menu. A previous WebGL title/menu remains as a safe fallback. Battles, digital cards, and online play are **not implemented**.
+An original local-first browser arcade game in development. Phase 1 now uses the approved, untouched 1672×941 Noah's Arkade painting as its interactive main menu. A previous WebGL title/menu remains as a safe fallback. An animal-selection and **non-combat battle-stage preview** is implemented. Attack reels, real turns, damage, digital cards, and online play are **not implemented**.
 
 ## Run locally
 
@@ -21,7 +21,7 @@ For a local network: use `python3 -m http.server 4173 --bind 0.0.0.0` only when 
 ## Controls
 
 - When the original painting loads, the game opens directly on its illustrated menu; select **PLAY**, **MY CARDS**, **BINDER**, **SHOP**, or **SETTINGS**.
-- **PLAY** opens the single-player, two-player, and how-to-play choices; these still lead to honest preview states.
+- **PLAY** opens single-player, local two-player, and How to Play. Selecting a mode opens animal selection; choose an original Tiger or Lion portrait, then see the two-animal battle-stage preview. In two-player mode, each person chooses in turn on the same device. This is a presentation prototype, not a playable battle.
 - If the approved painting cannot load, **Enter**, **Space**, or **PRESS START** opens the previous fallback menu.
 - Use **Up/Down** or **W/S** to select, **Enter/Space** to confirm, and **Escape/Backspace** to go back.
 - Mouse and touch can navigate the menu. All options are reversible.
@@ -41,10 +41,13 @@ For a local network: use `python3 -m http.server 4173 --bind 0.0.0.0` only when 
 ## Roadmap
 
 1. **Phase 1 (current):** original arcade title, illustrated globe, main menu, preferences, responsive layout.
-2. Phase 2: animal presentation and battle scene architecture.
+2. **Phase 2 (prototype):** two-animal selection, solo automatic rival, two-player sequential selections, responsive battle arena, and a reversible intro; real combat comes later.
 3. Phase 3: verified reels, combat, health, special moves.
 4. Phase 4: digital Animal/Strong/Miracle cards and binder.
 5. Phase 5: rarity and cosmetic material skins (Doodle, Porcelain, Chrome).
 6. Phase 6: local and networked multiplayer.
 
 This is a design-review slice, **not** a complete game. Advanced graphics and gameplay will need later art/engineering passes.
+## GitHub Pages
+
+The `.github/workflows/pages.yml` workflow publishes the static website from `main`. The separate verification workflow runs Node tests and Chromium smoke tests on desktop, tablet, and phones. The original menu painting is never modified by the Phase 2 prototype.
