@@ -1,0 +1,22 @@
+name: Verify Noah's Arkade
+on:
+  push:
+  pull_request:
+jobs:
+  phase-one:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify JavaScript syntax
+        run: |
+          node --check src/app.js
+          node --check src/audio.js
+          node --check src/globe.js
+          node --check src/painted-menu.js
+      - name: Verify menu logic and original-art checksum
+        run: npm test
