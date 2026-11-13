@@ -4,7 +4,11 @@
   'use strict';
   const core=window.ArkadeCardsCore,ui=document.getElementById('ui');
   if(!core||!ui)return;
-  const store=core.createStore(window.localStorage);
+  // Some private browsing contexts throw when accessing localStorage itself.
+  // The collection must still work in memory rather than taking down the menu.
+  let localStore=null;
+  try{localStore=window.localStorage;}catch{}
+  const store=core.createStore(localStore);
   const screen=()=>window.__arkade?.getScreen();
   let filter='all',side='p1',message='',showBackup=false,importText='';
   const escape=s=>String(s??'').replace(/[&<>"']/g,c=>({
