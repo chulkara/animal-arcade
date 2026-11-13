@@ -32,3 +32,9 @@ test('keyboard selection moves visible focus with selection',()=>{
   assert.ok(app.includes("ui.querySelector('[data-option].selected')?.focus({preventScroll:true})"));
   assert.ok(app.includes("document.activeElement.dataset.option"));
 });
+
+test('short viewport navigation and settings remain scrollable',()=>{
+  assert.ok(css.includes('@media (max-height: 550px)'));
+  assert.ok(css.includes('.interface { overflow-y: auto;'));
+  assert.ok(css.includes('max-height: calc(100svh - 34px)'));
+});
