@@ -4,7 +4,7 @@ on:
   pull_request:
 jobs:
   phase-one:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
     steps:
@@ -20,3 +20,18 @@ jobs:
           node --check src/painted-menu.js
       - name: Verify menu logic and original-art checksum
         run: npm test
+      - name: Install browser test runner
+        run: |
+          npm install --no-save --no-audit --no-fund playwright@1.56.1
+          npx playwright install --with-deps chromium
+      - name: Browser smoke tests (desktop, tablet, phone, landscape)
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/arkade-server.log 2>&1 &
+          node tests/browser.smoke.mjs
+      - name: Upload screenshots (even if tests fail)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: phase1-browser-screenshots
+          path: test-results/*.png
+          if-no-files-found: ignore
