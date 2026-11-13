@@ -187,6 +187,82 @@ await run('combat-duel-390x844',{width:390,height:844},async page=>{
   assert.equal(await page.locator('#game').getAttribute('data-screen'),'BATTLE_STAGE');
 });
 
+
+await run('card-collection-desktop-1440x900',{width:1440,height:900},async page=>{
+  await page.locator('.painted-hotspots [data-art-action="MY_CARDS"]').click();
+  assert.equal(await page.locator('#game').getAttribute('data-screen'),'CARDS');
+  assert.equal(await page.locator('.ark-card-tile').count(),12);
+  assert.equal(await page.locator('.ark-unlocked').count(),6);
+  assert.match(await page.locator('.ark-card-local-note').innerText(),/not synced online/);
+  await page.locator('[data-card-filter="miracle"]').click();
+  assert.equal(await page.locator('.ark-card-tile').count(),5);
+  await page.locator('[data-card-nav="BINDER"]').click();
+  assert.equal(await page.locator('#game').getAttribute('data-screen'),'BINDER');
+  assert.equal(await page.locator('.ark-deck-slot').count(),3);
+  await page.locator('[data-card-equip="strong:guard"]').click();
+  assert.match(await page.locator('.ark-deck-slot').nth(1).innerText(),/OAKEN GUARD/);
+  await page.reload({waitUntil:'domcontentloaded'});
+  await page.locator('#painted-stage').waitFor({state:'visible',timeout:45000});
+  await page.locator('.painted-hotspots [data-art-action="BINDER"]').click();
+  assert.match(await page.locator('.ark-deck-slot').nth(1).innerText(),/OAKEN GUARD/);
+  await page.locator('[data-card-side="p2"]').click();
+  assert.match(await page.locator('.ark-deck-slot').nth(1).innerText(),/OAKEN GUARD/);
+  await page.locator('[data-card-equip="strong:fang"]').click();
+  assert.match(await page.locator('.ark-deck-slot').nth(1).innerText(),/FANG STANDARD/);
+  await page.locator('[data-card-side="p1"]').click();
+  assert.match(await page.locator('.ark-deck-slot').nth(1).innerText(),/OAKEN GUARD/);
+  await page.locator('[data-card-backup-toggle]').click();
+  assert.ok((await page.locator('[data-card-export-text]').inputValue()).includes('strong:guard'));
+  await page.locator('[data-card-import-text]').fill('invalid JSON');
+  await page.locator('[data-card-import]').click();
+  assert.match(await page.locator('.ark-card-notice').innerText(),/INVALID BACKUP/);
+});
+await run('binder-mobile-390x844',{width:390,height:844},async page=>{
+  await page.locator('.painted-mobile-nav [data-art-action="BINDER"]').click();
+  assert.equal(await page.locator('#game').getAttribute('data-screen'),'BINDER');
+  assert.equal(await page.locator('.ark-deck-slot').count(),3);
+  await page.locator('[data-card-side="p2"]').click();
+  await page.locator('[data-card-equip="miracle:meteor"]').click();
+  assert.match(await page.locator('.ark-deck-slot').nth(2).innerText(),/FALLING STAR/);
+  await page.locator('[data-card-back]').click();
+  assert.equal(await page.locator('#game').getAttribute('data-screen'),'MAIN_MENU');
+  await page.locator('.painted-mobile-nav [data-art-action="PLAY"]').click();
+  await page.locator('[data-mode="BINDER"]').click();
+  assert.equal(await page.locator('#game').getAttribute('data-screen'),'BINDER');
+  await page.locator('[data-card-back]').click();
+  assert.equal(await page.locator('#game').getAttribute('data-screen'),'MODE_MENU');
+});
+await run('card-reward-solo-1440x900',{width:1440,height:900},async page=>{
+  await page.locator('.painted-hotspots [data-art-action="PLAY"]').click();
+  await page.locator('[data-mode="SOLO_SELECT"]').click();
+  await page.locator('[data-animal="tiger"]').click();
+  await page.locator('[data-prototype-intro]').click();
+  await page.locator('[data-prototype-fight]').click();
+  const result=await page.evaluate(()=>{
+    let steps=0;
+    while(steps++<250){
+      const s=window.NoahsCombat.getState();
+      if(s.phase==='FINISHED')break;
+      if(s.phase==='RESULT')window.NoahsCombat.next();
+      else window.NoahsCombat.stopSlot();
+    }
+    return {phase:window.NoahsCombat.getState().phase,
+      wins:window.NoahsCards.store.getState().wins};
+  });
+  assert.equal(result.phase,'FINISHED');
+  assert.equal(result.wins,1);
+  assert.match(await page.locator('.combat-card-reward').innerText(),/DUEL REWARD/);
+  assert.equal(await page.locator('.combat-card-reward').count(),1);
+  await page.locator('[data-combat-view-cards]').click();
+  assert.equal(await page.locator('#game').getAttribute('data-screen'),'CARDS');
+  assert.equal(await page.locator('.ark-unlocked').count(),7);
+  assert.match(await page.locator('.ark-collection-summary').innerText(),/7/);
+  await page.reload({waitUntil:'domcontentloaded'});
+  await page.locator('#painted-stage').waitFor({state:'visible',timeout:45000});
+  await page.locator('.painted-hotspots [data-art-action="MY_CARDS"]').click();
+  assert.equal(await page.locator('.ark-unlocked').count(),7);
+});
+
 await browser.close();
 if(failures.length) {
   console.error(JSON.stringify(failures,null,2));
