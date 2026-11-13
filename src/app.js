@@ -147,6 +147,7 @@
     <nav class="mode-options" aria-label="Play modes">
       <button type="button" data-mode="SOLO_SELECT" data-initial-focus>1 PLAYER <small>VERSUS THE WILD</small></button>
       <button type="button" data-mode="DUEL_SELECT">2 PLAYERS <small>LOCAL DUEL · PROTOTYPE</small></button>
+      <button type="button" data-mode="BINDER">EDIT BINDER <small>CHOOSE YOUR THREE-CARD LOADOUT</small></button>
       <button type="button" data-mode="HELP_PREVIEW">HOW TO PLAY <small>THE FIELD GUIDE</small></button>
     </nav>
     <button class="arcade-back" type="button" data-back>← RETURN TO MENU</button>
