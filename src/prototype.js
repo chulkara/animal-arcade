@@ -67,9 +67,9 @@
         </div>
       </div>
       <p class="prototype-announcer" role="status">${state.phase==='READY'?'THE STAGE IS SET!':'TWO LEGENDS ENTER THE WILD'}</p>
-      <p class="prototype-note">Visual staging only. Health bars are illustrative; attack reels, real turns, damage and card effects are not implemented.</p>
+      <p class="prototype-note">This is the illustrated staging preview. Select START BATTLE to enter the playable two-slot combat prototype. Card effects and historical damage formulas are not implemented.</p>
       <div class="prototype-actions">
-        ${state.phase!=='READY'?'<button type="button" data-prototype-intro data-initial-focus>BEGIN INTRO</button>':''}
+        ${state.phase!=='READY'?'<button type="button" data-prototype-intro data-initial-focus>BEGIN INTRO</button>':'<button type="button" data-prototype-fight data-initial-focus>START BATTLE · BETA</button>'}
         <button type="button" data-prototype-restart ${state.phase==='READY'?'data-initial-focus':''}>CHOOSE AGAIN</button>
         <button type="button" data-prototype-menu>MAIN MENU</button>
       </div>
@@ -81,6 +81,10 @@
     const card=target.closest('[data-animal]');
     if(card){choose(card.dataset.animal);return;}
     if(target.closest('[data-prototype-intro]')){showIntro();return;}
+    if(target.closest('[data-prototype-fight]')&&state.phase==='READY'&&state.picks.length===2){
+      window.NoahsCombat?.start({mode:state.mode,picks:[...state.picks]});
+      return;
+    }
     if(target.closest('[data-prototype-restart]')){resetToSelect();return;}
     if(target.closest('[data-prototype-menu]')){state.picks=[];open('MAIN_MENU');return;}
     if(target.closest('[data-prototype-mode]')){state.picks=[];open('MODE_MENU');}

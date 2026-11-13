@@ -72,7 +72,7 @@
   }
   function setScreen(screen){
     model.screen=screen;game.dataset.screen=screen;
-    ui.innerHTML=screen==='TITLE'?titleScreen():screen==='MAIN_MENU'?mainMenu():screen==='MODE_MENU'?modeMenu():['ANIMAL_SELECT','BATTLE_STAGE'].includes(screen)?window.NoahsPrototype.render(screen):screen==='OPTIONS'?optionsScreen():previewScreen(screen);
+    ui.innerHTML=screen==='TITLE'?titleScreen():screen==='MAIN_MENU'?mainMenu():screen==='MODE_MENU'?modeMenu():['ANIMAL_SELECT','BATTLE_STAGE'].includes(screen)?window.NoahsPrototype.render(screen):screen==='BATTLE_PLAY'?window.NoahsCombat.render():screen==='OPTIONS'?optionsScreen():previewScreen(screen);
     const main=ui.querySelector('[data-initial-focus]');
     if(screen!=='TITLE'&&main)requestAnimationFrame(()=>main.focus({preventScroll:true}));
     document.title=screen==='TITLE'||screen==='MAIN_MENU'?"NOAH'S ARKADE — The World Is Wild":`${screen.replace('_PREVIEW','').replaceAll('_',' ')} · NOAH'S ARKADE`;
@@ -105,6 +105,7 @@
     }
     if(model.screen==='TITLE')return;
     audio.cue('back');
+    if(model.screen==='BATTLE_PLAY'){setScreen('BATTLE_STAGE');return;}
     if(model.screen==='BATTLE_STAGE'){window.NoahsPrototype?.resetToSelect();return;}
     if(model.screen==='ANIMAL_SELECT'){setScreen('MODE_MENU');return;}
     const returnTo=model.screen!=='MODE_MENU' && model.returnScreen==='MODE_MENU' ? 'MODE_MENU' : 'MAIN_MENU';
