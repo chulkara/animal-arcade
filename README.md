@@ -1,6 +1,6 @@
 # NOAH'S ARKADE
 
-An original local-first browser arcade game in development. Phase 1 now uses the approved, untouched 1672×941 Noah's Arkade painting as its interactive main menu. A previous WebGL title/menu remains as a safe fallback. Battles, digital cards, and online play are **not implemented**.
+An original local-first browser arcade game in development. Phase 1 now uses the approved, untouched 1672×941 Noah's Arkade painting as its interactive main menu. A previous WebGL title/menu remains as a safe fallback. A **non-combat** animal-selection and arena presentation prototype is now implemented. Real battle mechanics, digital cards, and online play are **not implemented**.
 
 ## Run locally
 
@@ -21,7 +21,7 @@ For a local network: use `python3 -m http.server 4173 --bind 0.0.0.0` only when 
 ## Controls
 
 - When the original painting loads, the game opens directly on its illustrated menu; select **PLAY**, **MY CARDS**, **BINDER**, **SHOP**, or **SETTINGS**.
-- **PLAY** opens the single-player, two-player, and how-to-play choices; these still lead to honest preview states.
+- **PLAY** opens single-player and local two-player animal selection, plus How to Play. Choose an illustrated tiger or lion, then enter the battle presentation stage. Health bars and the intro are visual demonstrations only—not combat.
 - If the approved painting cannot load, **Enter**, **Space**, or **PRESS START** opens the previous fallback menu.
 - Use **Up/Down** or **W/S** to select, **Enter/Space** to confirm, and **Escape/Backspace** to go back.
 - Mouse and touch can navigate the menu. All options are reversible.
@@ -41,7 +41,7 @@ For a local network: use `python3 -m http.server 4173 --bind 0.0.0.0` only when 
 ## Roadmap
 
 1. **Phase 1 (current):** original arcade title, illustrated globe, main menu, preferences, responsive layout.
-2. Phase 2: animal presentation and battle scene architecture.
+2. **Phase 2 (prototype):** tiger/lion selection for one or two players, plus non-combat arena presentation and a reversible intro.
 3. Phase 3: verified reels, combat, health, special moves.
 4. Phase 4: digital Animal/Strong/Miracle cards and binder.
 5. Phase 5: rarity and cosmetic material skins (Doodle, Porcelain, Chrome).
