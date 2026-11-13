@@ -55,14 +55,14 @@ await run('desktop-1440x900',{width:1440,height:900},async page=>{
   await page.locator('[data-back]').click();
   assert.equal(await page.locator('#game').getAttribute('data-screen'),'MAIN_MENU');
   await menu.locator('[data-art-action="BINDER"]').click();
-  assert.equal(await page.locator('#game').getAttribute('data-screen'),'BINDER_PREVIEW');
+  assert.equal(await page.locator('#game').getAttribute('data-screen'),'BINDER');
   await page.keyboard.press('Escape');
   assert.equal(await page.locator('#game').getAttribute('data-screen'),'MAIN_MENU');
   await menu.locator('[data-art-action="SHOP"]').click();
   assert.equal(await page.locator('#game').getAttribute('data-screen'),'SHOP_PREVIEW');
   await page.keyboard.press('Escape');
   await menu.locator('[data-art-action="MY_CARDS"]').click();
-  assert.equal(await page.locator('#game').getAttribute('data-screen'),'MY_CARDS_PREVIEW');
+  assert.equal(await page.locator('#game').getAttribute('data-screen'),'CARDS');
   await page.keyboard.press('Escape');
   await menu.locator('[data-art-action="SETTINGS"]').click();
   assert.equal(await page.locator('#game').getAttribute('data-screen'),'OPTIONS');
@@ -78,7 +78,7 @@ await run('tablet-1024x768',{width:1024,height:768},async page=>{
   await page.keyboard.press('ArrowDown');
   assert.equal(await page.locator('.painted-hotspot.active').getAttribute('data-art-action'),'MY_CARDS');
   await page.keyboard.press('Enter');
-  assert.equal(await page.locator('#game').getAttribute('data-screen'),'MY_CARDS_PREVIEW');
+  assert.equal(await page.locator('#game').getAttribute('data-screen'),'CARDS');
   await page.keyboard.press('Escape');
   assert.equal(await page.locator('#game').getAttribute('data-screen'),'MAIN_MENU');
 });
