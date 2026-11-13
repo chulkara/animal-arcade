@@ -112,7 +112,7 @@ await run('solo-prototype-1440x900',{width:1440,height:900},async page=>{
   assert.equal(await page.locator('#game').getAttribute('data-screen'),'BATTLE_STAGE');
   assert.match(await page.locator('.arena').innerText(),/BLUE TIGER/);
   assert.match(await page.locator('.arena').innerText(),/GOLDEN LION/);
-  assert.match(await page.locator('.prototype-note').innerText(),/not implemented/);
+  assert.match(await page.locator('.prototype-note').innerText(),/Exact historical damage formulas/);
   await page.locator('[data-prototype-intro]').click();
   assert.match(await page.locator('.prototype-announcer').innerText(),/STAGE IS SET/);
   await page.keyboard.press('Escape');
