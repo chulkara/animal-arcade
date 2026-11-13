@@ -23,3 +23,12 @@ test('animated globe has texture and fallback',()=>{
   assert.ok(existsSync('assets/globe-fallback.webp'));
   assert.ok(css.includes('prefers-reduced-motion'));
 });
+test('stored settings are type checked and bounded',()=>{
+  assert.ok(app.includes("Number.isFinite(stored[key])"));
+  assert.ok(app.includes("Math.max(0,Math.min(100,stored[key]))"));
+  assert.ok(app.includes("typeof stored[key]==='boolean'"));
+});
+test('keyboard selection moves visible focus with selection',()=>{
+  assert.ok(app.includes("ui.querySelector('[data-option].selected')?.focus({preventScroll:true})"));
+  assert.ok(app.includes("document.activeElement.dataset.option"));
+});
