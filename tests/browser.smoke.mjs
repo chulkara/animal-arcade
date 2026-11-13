@@ -137,6 +137,56 @@ await run('duel-prototype-390x844',{width:390,height:844},async page=>{
   assert.equal(await page.locator('.painted-art').evaluate(el=>el.naturalWidth),1672);
 });
 
+
+await run('combat-solo-1440x900',{width:1440,height:900},async page=>{
+  await page.locator('.painted-hotspots [data-art-action="PLAY"]').click();
+  await page.locator('[data-mode="SOLO_SELECT"]').click();
+  await page.locator('[data-animal="tiger"]').click();
+  await page.locator('[data-prototype-intro]').click();
+  await page.locator('[data-prototype-fight]').click();
+  assert.equal(await page.locator('#game').getAttribute('data-screen'),'BATTLE_PLAY');
+  assert.equal(await page.locator('.combat-hp').count(),2);
+  assert.match(await page.locator('.combat-reel-label').innerText(),/PLAYER 1/);
+  await page.keyboard.press('g');
+  assert.match(await page.locator('.combat-reel-label').innerText(),/DECIDE WHO STRIKES/);
+  for(let turn=0;turn<15;turn++){
+    const controls=await page.locator('[data-combat-stop]').count();
+    if(!controls)break;
+    await page.keyboard.press('y');
+  }
+  assert.ok(await page.locator('[data-combat-next], [data-combat-rematch]').count()>0,'Solo slot should settle to a result');
+  const hp=await page.locator('.combat-hp').evaluateAll(nodes=>nodes.map(n=>Number(n.getAttribute('aria-valuenow'))));
+  assert.ok(hp.some(n=>n<180),'An animal must take real damage');
+  await page.keyboard.press('Escape');
+  assert.equal(await page.locator('#game').getAttribute('data-screen'),'BATTLE_STAGE');
+  assert.ok(await page.locator('[data-prototype-fight]').count()>0);
+  assert.equal(await page.locator('.painted-art').evaluate(el=>el.naturalWidth),1672);
+});
+await run('combat-duel-390x844',{width:390,height:844},async page=>{
+  await page.locator('.painted-mobile-nav [data-art-action="PLAY"]').click();
+  await page.locator('[data-mode="DUEL_SELECT"]').click();
+  await page.locator('[data-animal="lion"]').click();
+  await page.locator('[data-animal="tiger"]').click();
+  await page.locator('[data-prototype-intro]').click();
+  await page.locator('[data-prototype-fight]').click();
+  assert.equal(await page.locator('#game').getAttribute('data-screen'),'BATTLE_PLAY');
+  await page.keyboard.press('g');
+  assert.match(await page.locator('.combat-reel-label').innerText(),/PLAYER 2/);
+  await page.keyboard.press('g');
+  assert.match(await page.locator('.combat-reel-label').innerText(),/PLAYER 1/);
+  assert.match(await page.locator('.combat-reel-label').innerText(),/DECIDE WHO STRIKES/);
+  await page.keyboard.press('y');
+  assert.match(await page.locator('.combat-reel-label').innerText(),/PLAYER 2/);
+  await page.keyboard.press('y');
+  for(let turn=0;turn<15;turn++){
+    if(!await page.locator('[data-combat-stop]').count())break;
+    await page.keyboard.press('y');
+  }
+  assert.ok(await page.locator('[data-combat-next], [data-combat-rematch]').count()>0);
+  await page.locator('[data-combat-quit]').click();
+  assert.equal(await page.locator('#game').getAttribute('data-screen'),'BATTLE_STAGE');
+});
+
 await browser.close();
 if(failures.length) {
   console.error(JSON.stringify(failures,null,2));
