@@ -1,0 +1,93 @@
+/* Noah's Arkade combat lab: existing indigo, parchment and aged-gold palette.
+   The user-approved static menu painting remains untouched. */
+.game .combat-panel {
+  width:min(1000px,96vw);max-height:94svh;
+  top:50%;transform:translate(-50%,-50%);
+  overflow-y:auto;padding:clamp(14px,2.3vw,26px);
+}
+.combat-heading{display:flex;align-items:center;justify-content:space-between;gap:14px;max-width:860px;margin:0 auto;}
+.combat-heading .panel-title{margin:0;font-size:clamp(25px,4vw,42px);}
+.combat-heading>span{font-size:11px;letter-spacing:.14em;color:#dec28e;}
+.combat-match{display:grid;grid-template-columns:minmax(0,1fr) 64px minmax(0,1fr);
+  gap:12px;align-items:center;margin:12px auto 8px;max-width:870px;}
+.combat-fighter{min-width:0;padding:10px;border:1px solid #9b845988;
+  background:linear-gradient(175deg,#183b54,#071e2f 78%);}
+.combat-fighter-head{display:flex;justify-content:space-between;align-items:center;
+  gap:8px;color:#f9e9c4;font:bold 11px 'Arial Narrow',Arial,sans-serif;letter-spacing:.11em;}
+.combat-fighter-head strong{font-variant-numeric:tabular-nums;}
+.combat-hp{margin-top:6px;width:100%;height:12px;padding:2px;border:1px solid #d6b77a;background:#1d2c34;}
+.combat-hp>span{display:block;height:100%;background:linear-gradient(90deg,#7a8d43,#e6c778);
+  transition:width .4s ease;}
+.combat-fighter-art{height:clamp(100px,21svh,210px);width:100%;object-fit:contain;
+  filter:drop-shadow(0 8px 11px #001321);}
+.combat-fighter:nth-of-type(3) .combat-fighter-art{transform:scaleX(-1);}
+.combat-animal-name{display:block;color:#ffebbd;font:700 clamp(15px,2.3vw,23px) Impact,'Arial Black',sans-serif;letter-spacing:.09em;}
+.combat-versus{font:italic 700 clamp(24px,4vw,46px) Impact,'Arial Black',sans-serif;
+  color:#e8ba74;letter-spacing:.04em;text-shadow:2px 3px #071521;}
+.combat-selections{display:flex;justify-content:center;gap:14px;margin-top:7px;
+  color:#dfcea9;font-size:10px;letter-spacing:.06em;}
+.combat-selections b{color:#fff1c8;font-size:13px;}
+.combat-message{max-width:740px;margin:12px auto 8px;padding:9px 12px;
+  display:flex;flex-direction:column;gap:4px;color:#fff0c8;
+  border-top:1px solid #c6a66c;border-bottom:1px solid #c6a66c;background:#132a39;}
+.combat-message strong{font:700 16px Impact,'Arial Black',sans-serif;letter-spacing:.09em;}
+.combat-message span{font:12px Georgia,serif;}
+.combat-controls{display:flex;align-items:center;flex-direction:column;gap:6px;margin:9px auto;}
+.combat-reel-label{color:#f5dbac;font:bold 12px Arial,sans-serif;letter-spacing:.17em;}
+.combat-reel{display:flex;align-items:center;justify-content:center;gap:26px;
+  min-height:73px;width:min(310px,90%);border:2px solid #c5a66d;border-radius:5px;
+  background:linear-gradient(155deg,#071624,#1f3e4e,#071624);
+  box-shadow:inset 0 0 22px #0008,0 0 0 3px #152e3e;
+}
+.combat-reel [data-combat-current]{min-width:75px;font:700 43px Impact,'Arial Black',sans-serif;
+  color:#fff2cf;text-align:center;font-variant-numeric:tabular-nums;
+  text-shadow:1px 2px 2px #0009;}
+.combat-reel-side{font-size:17px;color:#c9aa6b;}
+.combat-stop,.combat-ready button,.combat-finish button{font:bold 17px Impact,'Arial Black',sans-serif;
+  letter-spacing:.1em;padding:12px 22px;border-radius:4px;border:2px solid #ead6a9;
+  cursor:pointer;min-height:48px;touch-action:manipulation;}
+.combat-stop{display:flex;align-items:center;gap:12px;margin:5px auto;}
+.combat-green{background:linear-gradient(#719c54,#315f36);color:white;}
+.combat-yellow{background:linear-gradient(#f0d47a,#cd981f);color:#172331;}
+.combat-light{display:inline-block;width:14px;height:14px;border-radius:50%;
+  border:1px solid #fff8;background:#fff9;box-shadow:0 0 8px #fff7;}
+.combat-stop:hover,.combat-ready button:hover,.combat-finish button:hover{filter:brightness(1.13);}
+.combat-stop:focus-visible,.combat-ready button:focus-visible,.combat-finish button:focus-visible,
+.combat-footer button:focus-visible{outline:3px solid #fff2c9;outline-offset:3px;}
+.combat-instruction{margin:2px auto;color:#dccda8;font-size:12px;line-height:1.5;}
+.combat-ready,.combat-finish{display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;margin:12px auto;}
+.combat-ready button,.combat-finish button{background:#e0ae62;color:#132639;}
+.combat-finish strong{font:700 27px Impact,'Arial Black',sans-serif;color:#f5d391;letter-spacing:.1em;}
+.combat-finish span{font:italic 15px Georgia,serif;color:#ede2c9;}
+.combat-disclaimer{margin:9px auto 0;max-width:730px;font-size:11px;color:#b9ab92;line-height:1.5;}
+.combat-footer{display:flex;align-items:center;justify-content:space-between;gap:14px;
+  max-width:850px;margin:12px auto 0;padding-top:7px;border-top:1px solid #ddbf7a44;}
+.combat-footer span{font-size:10px;color:#d9c396;letter-spacing:.08em;text-align:left;}
+.combat-footer button{border:1px solid #bda271;color:#ffe7b8;background:#183449;
+  padding:9px 13px;min-height:42px;white-space:nowrap;}
+@media(max-width:650px){
+  .combat-heading{flex-direction:column;gap:2px;}
+  .combat-match{grid-template-columns:minmax(0,1fr) 29px minmax(0,1fr);gap:5px;}
+  .combat-fighter{padding:5px;}
+  .combat-fighter-head{font-size:9px;}
+  .combat-fighter-art{height:108px;}
+  .combat-selections{gap:5px;flex-wrap:wrap;font-size:9px;}
+  .combat-animal-name{font-size:15px;}
+  .combat-versus{font-size:24px;}
+  .combat-reel{min-height:64px;}
+  .combat-reel [data-combat-current]{font-size:34px;}
+  .combat-footer{flex-direction:column;text-align:center;}
+  .combat-footer span{text-align:center;}
+}
+@media(max-height:580px){
+  .game .combat-panel{max-height:96svh;padding:10px 13px;}
+  .combat-fighter-art{height:85px;}
+  .combat-match{margin:4px auto;}
+  .combat-reel{min-height:52px;}
+  .combat-reel [data-combat-current]{font-size:31px;}
+  .combat-stop{min-height:40px;padding:8px 13px;}
+  .combat-disclaimer{font-size:10px;}
+}
+@media(prefers-reduced-motion:reduce){
+  .combat-hp>span{transition:none;}
+}
