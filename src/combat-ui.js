@@ -104,6 +104,35 @@
   }
   function actorLabel(s){return s.mode==='SOLO'&&s.actor===1?'CPU':'PLAYER '+(s.actor+1);}
   function actorName(s,i){return s.mode==='SOLO'&&i===1?'CPU':'PLAYER '+(i+1);}
+  function hud(s,i){
+    const f=s.animals[i],a=animal[f.id];
+    const remaining=Math.round(f.hp/f.maxHp*100);
+    return `<div class="ark-arena-hud-player ark-arena-hud-player-${i}" aria-label="${actorName(s,i)} ${a.label}, ${f.hp} of ${f.maxHp} health">
+      <div class="ark-hud-nameplate">
+        <span class="ark-hud-side">${actorName(s,i)}</span>
+        <strong>${a.label}</strong>
+        <span class="ark-hud-health-value">${f.hp} / ${f.maxHp}</span>
+      </div>
+      <div class="ark-hud-meter" aria-hidden="true"><span style="width:${remaining}%"></span></div>
+      <div class="ark-hud-techniques" aria-hidden="true">
+        <span>G ${s.selected[i].technique==='G'?'◆':'·'}</span>
+        <span>T ${s.selected[i].technique==='T'?'◆':'·'}</span>
+        <span>P ${s.selected[i].technique==='P'?'◆':'·'}</span>
+        <span>${s.selected[i].power==='MARK'?'✦':token(s.selected[i].power)}</span>
+      </div>
+    </div>`;
+  }
+  function arenaHUD(s){
+    return `<header class="ark-arena-hud" aria-label="Battle status">
+      ${hud(s,0)}
+      <div class="ark-arena-hud-center" aria-label="Bout ${s.session.bout}, exchange ${s.round}">
+        <span>NOAH'S ARKADE</span>
+        <b>BOUT ${s.session.bout}</b>
+        <small>EXCHANGE ${s.round}</small>
+      </div>
+      ${hud(s,1)}
+    </header>`;
+  }
   function fighter(s,i){
     const f=s.animals[i];
     const a=animal[f.id];
@@ -175,7 +204,12 @@
       </div>
       <button type="button" data-combat-stop data-initial-focus class="combat-stop ${isAttack?'combat-green':'combat-yellow'}">
       <span aria-hidden="true" class="combat-light"></span>${action} — ${label}</button>
-      <p class="combat-instruction">${help}</p></div>`;
+      <div class="ark-reel-opponent" aria-label="Other animal's locked slots">
+        <span class="ark-reel-opponent-label">${s.mode==='SOLO'?'CPU':'OTHER PLAYER'}</span>
+        <span class="ark-reel-opponent-value">${token(isAttack?s.selected[1-s.actor].technique:s.selected[1-s.actor].power)}</span>
+        <span class="ark-reel-opponent-caption">${isAttack?'ATTACK REEL':'POWER REEL'}</span>
+      </div>
+      <p class="combat-instruction" role="status">${help}</p></div>`;
   }
   function render(){
     const s=current();
@@ -184,13 +218,14 @@
     if(s.phase==='FINISHED'&&s.session.complete&&!rewardClaimed){
       rewardClaimed=true;matchReward=window.NoahsCards?.grantBattleReward()||null;
     }
-    return `<section class="panel combat-panel screen-copy" aria-label="Interactive animal battle">
+    return `<section class="panel combat-panel ark-reference-layout screen-copy" aria-label="Interactive animal battle">
       <div class="section-eyebrow">NOAH'S ARKADE · COMBAT LAB</div>
       <div class="combat-heading"><h1 class="panel-title">WILD DUEL</h1>
         <span>${s.mode==='SOLO'?
           `BOUT ${s.session.bout} / ${s.session.goal}`:
           `BOUT ${s.session.bout} · FIRST TO ${s.session.goal}`}
           · EXCHANGE ${s.round}</span></div>
+      ${arenaHUD(s)}
       <div class="combat-series" aria-label="Arcade match score">
         <span>${s.mode==='SOLO'?'EXPEDITION WINS':'PLAYER 1 WINS'}:
           <b>${s.session.wins[0]} / ${s.session.goal}</b></span>
@@ -214,7 +249,7 @@
       </div>
       ${results(s)}
       ${controls(s)}
-      <p class="combat-disclaimer">Playable original-prototype rules. Equipped Strong cards boost their named technique; Miracle cards boost a winning ✦ mark. Exact historical values remain unverified.</p>
+      <p class="combat-disclaimer">Original prototype balance. Strong cards boost matching attacks; Miracle cards boost winning ✦ rolls. Exact historical damage values remain under research.</p>
       <div class="combat-footer">
         <span>KEYS: G = GREEN · Y = YELLOW · SPACE = STOP · ESC = BACK</span>
         <button type="button" data-combat-quit>← BACK TO ARENA</button>
