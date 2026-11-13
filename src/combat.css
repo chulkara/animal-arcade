@@ -358,3 +358,20 @@
 }
 .game.reduce-motion .battlefield-impact-flash,
 .game.reduce-motion .battlefield-damage{display:none!important;}
+
+/* Arcade run / versus set header and between-bout result. */
+.combat-series{display:flex;justify-content:space-between;gap:12px;
+  max-width:840px;margin:4px auto 0;padding:4px 11px;
+  background:linear-gradient(90deg,#102b3a,#1b3443,#102b3a);
+  border-bottom:1px solid #e1bd7a66;color:#d7cca7;
+  font:700 10px Arial,sans-serif;letter-spacing:.08em;}
+.combat-series b{color:#f7db9b;font-size:13px;}
+.combat-intermission{color:#f2dbac;max-width:480px;
+  font:italic 13px/1.5 Georgia,serif;margin:5px auto 7px;}
+.combat-finish [data-combat-next-bout]{
+  background:linear-gradient(#f3d88a,#c79a49);color:#172835;
+  border-color:#f4dcaa;min-height:47px;}
+@media(max-width:650px){
+  .combat-series{font-size:9px;flex-wrap:wrap;justify-content:center;gap:3px 17px;}
+  .combat-series b{font-size:11px;}
+}
