@@ -12,7 +12,20 @@
     {label:'OPTIONS',screen:'OPTIONS',eyebrow:'05 · THE WORKSHOP'}
   ];
   const defaults={master:65,music:28,sfx:75,mute:false,reducedMotion:window.matchMedia?.('(prefers-reduced-motion: reduce)').matches||false,grain:true,globe:true};
-  function loadSettings(){try{const value=JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}');return {...defaults,...value};}catch{return {...defaults};}}
+  function loadSettings(){
+    let stored;
+    try { stored=JSON.parse(localStorage.getItem(STORAGE_KEY)||'{}'); } catch { return {...defaults}; }
+    if(!stored || typeof stored!=='object' || Array.isArray(stored)) return {...defaults};
+    const settings={...defaults};
+    for(const key of ['master','music','sfx']){
+      if(typeof stored[key]==='number' && Number.isFinite(stored[key]))
+        settings[key]=Math.round(Math.max(0,Math.min(100,stored[key])));
+    }
+    for(const key of ['mute','reducedMotion','grain','globe']){
+      if(typeof stored[key]==='boolean') settings[key]=stored[key];
+    }
+    return settings;
+  }
   const model={screen:'TITLE',selection:0,settings:loadSettings(),introSeen:false,webglError:null,fromMenu:true};
   const game=document.getElementById('game');
   const ui=document.getElementById('ui');
@@ -190,9 +203,11 @@
       if(e.key==='Enter'||e.key===' '){e.preventDefault();start();}return;
     }
     if(model.screen==='MAIN_MENU'){
-      if(['ArrowUp','w','W'].includes(e.key)){e.preventDefault();move(-1);}
-      else if(['ArrowDown','s','S'].includes(e.key)){e.preventDefault();move(1);}
-      else if(e.key==='Enter'||e.key===' '){e.preventDefault();activate(model.selection);}
+      if(['ArrowUp','w','W'].includes(e.key)){e.preventDefault();move(-1);ui.querySelector('[data-option].selected')?.focus({preventScroll:true});}
+      else if(['ArrowDown','s','S'].includes(e.key)){e.preventDefault();move(1);ui.querySelector('[data-option].selected')?.focus({preventScroll:true});}
+      else if((e.key==='Enter'||e.key===' ') && (tag!=='BUTTON'||document.activeElement?.hasAttribute('data-option'))){
+        e.preventDefault();activate(document.activeElement?.hasAttribute('data-option')?Number(document.activeElement.dataset.option):model.selection);
+      }
     } else if(model.screen!=='OPTIONS'&&!range&&(e.key==='Enter'||e.key===' ')&&tag!=='BUTTON'){
       e.preventDefault();back();
     }
