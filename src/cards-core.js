@@ -43,7 +43,7 @@
     p1:Object.freeze({animal:'animal:tiger',strong:'strong:fang',miracle:'miracle:meteor'}),
     p2:Object.freeze({animal:'animal:lion',strong:'strong:guard',miracle:'miracle:dawn'})
   });
-  const safeCount=n=>Number.isSafeInteger(n)?Math.max(0,Math.min(99,n)):0;
+  const safeCount=n=>Number.isSafeInteger(n)&&n>=0&&n<=99?n:0;
   const clone=obj=>JSON.parse(JSON.stringify(obj));
   const init=()=>({schema:1,inventory:Object.fromEntries(CARDS.map(c=>[c.id,STARTER_IDS.includes(c.id)?1:0])),
     decks:clone(DEFAULT_DECKS),wins:0,lastReward:null});
