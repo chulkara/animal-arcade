@@ -66,7 +66,7 @@ await run('desktop-1440x900',{width:1440,height:900},async page=>{
   await page.keyboard.press('Escape');
   await menu.locator('[data-art-action="SETTINGS"]').click();
   assert.equal(await page.locator('#game').getAttribute('data-screen'),'OPTIONS');
-  await page.locator('#setting-master').fill('43');
+  await page.locator('#setting-master').evaluate(el=>{el.value='43';el.dispatchEvent(new Event('input',{bubbles:true}));});
   assert.equal(await page.locator('#setting-master').inputValue(),'43');
   await page.keyboard.press('Escape');
   await page.reload({waitUntil:'domcontentloaded'});
