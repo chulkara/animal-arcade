@@ -17,11 +17,13 @@
   function choose(id){
     if(!Object.prototype.hasOwnProperty.call(animals,id))return;
     if(state.mode==='SOLO'){
+      window.NoahsCards?.equipAnimal(0,id);
       state.picks=[id,id==='tiger'?'lion':'tiger'];
       state.phase='INTRO';
       open('BATTLE_STAGE');return;
     }
     if(state.picks.length>=2)return;
+    window.NoahsCards?.equipAnimal(state.picks.length,id);
     state.picks.push(id);
     if(state.picks.length===2){state.phase='INTRO';open('BATTLE_STAGE');}
     else open('ANIMAL_SELECT');
@@ -42,7 +44,7 @@
           <span class="animal-legend">${animal.legend}</span>
         </button>`).join('')}
       </div>
-      <p class="prototype-note">Prototype roster: two original animal portraits. Additional species and card loadouts will follow.</p>
+      <p class="prototype-note">Prototype roster: Blue Tiger and Golden Lion. Each selection uses that player's equipped Strong and Miracle cards from the Battle Binder.</p>
       <button type="button" class="arcade-back" data-prototype-mode>← BACK TO PLAY MENU</button>
     </section>`;
   }
