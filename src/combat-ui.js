@@ -35,7 +35,9 @@
     stopTimer();
     const s=current();
     if(screen()!=='BATTLE_PLAY'||!s||!['ATTACK','POWER'].includes(s.phase)||document.hidden)return;
-    slotIndex=0;
+    // Stagger player/round starting positions so immediate clicks do not
+    // accidentally lock two identical values every time.
+    slotIndex=(s.round+s.actor*2+(s.phase==='POWER'?1:0)+s.tieCharge)%activeValues().length;
     updateReel();
     interval=setInterval(()=>{slotIndex++;updateReel();},115);
   }
