@@ -18,17 +18,31 @@
     const n=Math.min(0.999999,Math.max(0,Number(rng())||0));
     return source[Math.floor(n*source.length)];
   }
-  function createBattle({mode='SOLO',picks=['tiger','lion'],rng=Math.random}={}){
+  function cleanModifier(m){
+    const tech=TECHNIQUES.includes(m?.strongTechnique)?m.strongTechnique:null;
+    const bounded=(value,max)=>Number.isSafeInteger(value)?Math.max(0,Math.min(max,value)):0;
+    const label=value=>typeof value==='string'&&/^[A-Z0-9 ]{1,40}$/.test(value)?value:null;
+    return {
+      strongTechnique:tech,
+      strongBonus:tech?bounded(m?.strongBonus,25):0,
+      miracleBonus:bounded(m?.miracleBonus,40),
+      strongName:tech?label(m?.strongName):null,
+      miracleName:label(m?.miracleName)
+    };
+  }
+  function createBattle({mode='SOLO',picks=['tiger','lion'],rng=Math.random,modifiers=[]}={}){
     assert(mode==='SOLO'||mode==='DUEL','Unsupported battle mode');
     assert(Array.isArray(picks)&&picks.length===2&&picks.every(id=>id==='tiger'||id==='lion'),'Choose two valid animals');
     assert(typeof rng==='function','RNG must be a function');
     const original=[...picks];
+    const initialModifiers=[cleanModifier(modifiers?.[0]),cleanModifier(modifiers?.[1])];
     let state;
     function reset(){
       state={
         mode,animals:original.map((id,i)=>({id,hp:BASE_HP,maxHp:BASE_HP,player:i+1})),
         round:1,phase:'ATTACK',actor:0,selected:[{technique:null,power:null},{technique:null,power:null}],
-        tieCharge:0,lastEvent:null,winner:null,history:[]
+        tieCharge:0,lastEvent:null,winner:null,history:[],
+        modifiers:initialModifiers.map(m=>({...m}))
       };
       return getState();
     }
@@ -79,8 +93,13 @@
       const attack=state.selected[attacker];
       const rankValue=rank(attack.power);
       // Purposefully original, lightweight tuning until card and move research is complete.
+      // Strong card only boosts its named attack technique. Miracle only triggers
+      // when the winning roll is the special ✦ fighting-feature mark.
+      const card=state.modifiers[attacker];
+      const strongBonus=card.strongTechnique===attack.technique?card.strongBonus:0;
+      const miracleBonus=attack.power==='MARK'?card.miracleBonus:0;
       const damage=Math.round(18+rankValue*0.5+BONUS[attack.technique]+
-        state.tieCharge*12+(attack.power==='MARK'?20:0));
+        state.tieCharge*12+(attack.power==='MARK'?20:0)+strongBonus+miracleBonus);
       const victim=state.animals[defender];
       victim.hp=Math.max(0,victim.hp-damage);
       state.winner=victim.hp===0?attacker:null;
@@ -89,7 +108,9 @@
         kind:'HIT',round:state.round,attacker,defender,technique:attack.technique,
         attackName:ATTACK_NAMES[attack.technique],power:attack.power,
         damage,remainingHp:victim.hp,charge:state.tieCharge,
-        special:attack.power==='MARK',winner:state.winner
+        special:attack.power==='MARK',winner:state.winner,
+        strongBonus,miracleBonus,strongName:strongBonus?card.strongName:null,
+        miracleName:miracleBonus?card.miracleName:null
       };
       state.history.push(state.lastEvent);
       if(state.history.length>60)state.history.shift();
