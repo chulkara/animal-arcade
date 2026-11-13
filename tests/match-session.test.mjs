@@ -39,7 +39,11 @@ test('manual-verified solo expedition needs three wins, with HP carried forward'
   assert.equal(first.session.bout,1);
   assert.equal(first.session.wins[0],1);
   assert.equal(first.session.complete,false);
-  assert.throws(()=>session.nextBout() && session.nextBout(),/non-final|Cannot advance/);
+  session.nextBout();
+  assert.equal(session.getState().session.bout,2);
+  assert.equal(session.getState().animals[0].hp,reducedHp,'solo HP must not refill after a win');
+  assert.equal(session.getState().animals[1].hp,BASE_HP,'next CPU rival starts at full HP');
+  assert.throws(()=>session.nextBout(),/Cannot advance/);
 });
 
 test('solo progression and reward eligibility happen only at end of three-bout run',()=>{
