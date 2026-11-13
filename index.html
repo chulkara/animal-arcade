@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#071727" />
+  <meta name="description" content="Noah's Arkade — a lost arcade world of animals, adventure and discovery." />
+  <link rel="icon" type="image/svg+xml" href="./assets/crest.svg" />
+  <link rel="stylesheet" href="./src/styles.css" />
+  <title>NOAH'S ARKADE — The World Is Wild</title>
+</head>
+<body>
+  <main class="game" id="game" data-screen="TITLE">
+    <div class="ambience" aria-hidden="true"><span class="red-sun"></span><span class="starfield"></span><span class="constellation"></span></div>
+    <div class="landscape" aria-hidden="true"><div class="range range-back"></div><div class="range range-front"></div></div>
+    <div class="ornate-border" aria-hidden="true"><span class="border-tl">✥</span><span class="border-tr">✥</span><span class="border-bl">✥</span><span class="border-br">✥</span></div>
+    <div class="subtle-grain" aria-hidden="true"></div>
+    <img class="animal tiger" src="./assets/tiger-illustration.webp" alt="" />
+    <img class="animal lion" src="./assets/lion-illustration.webp" alt="" />
+    <div class="orbital-elements" aria-hidden="true">
+      <div class="orbit orbit-out"></div><div class="orbit orbit-in"></div>
+      <canvas id="globe-canvas" class="globe-canvas" aria-hidden="true"></canvas>
+      <img id="globe-fallback" class="globe-fallback" src="./assets/globe-fallback.webp" alt="" hidden />
+      <div class="orbit-caption orbit-caption-l">WILDERNESS · 001</div><div class="orbit-caption orbit-caption-r">EXPLORATION · ∞</div>
+    </div>
+    <header class="topbar"><span class="year-mark">✦ EST. 2003 / REIMAGINED</span><span class="version-mark">V 0.1.0 · PHASE ONE</span></header>
+    <div class="logo-shell" id="logo-mount"></div>
+    <section class="interface" id="ui" aria-live="polite"></section>
+    <footer class="bottom-bar"><span>© NOAH'S ARKADE · A WORLD OF WILD THINGS</span><span id="foot-hints"></span><span>AN ORIGINAL INDIE ARCADE EXPERIENCE</span></footer>
+  </main>
+  <script defer src="./src/globe.js"></script>
+  <script defer src="./src/audio.js"></script>
+  <script defer src="./src/app.js"></script>
+</body>
+</html>
