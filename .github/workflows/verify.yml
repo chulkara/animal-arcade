@@ -19,6 +19,8 @@ jobs:
           node --check src/globe.js
           node --check src/painted-menu.js
           node --check src/prototype.js
+          node --check src/combat-engine.js
+          node --check src/combat-ui.js
       - name: Verify menu logic and original-art checksum
         run: npm test
       - name: Prepare exact GitHub Pages output for browser testing
@@ -31,7 +33,7 @@ jobs:
         run: |
           npm install --no-save --no-audit --no-fund playwright@1.56.1
           npx playwright install --with-deps chromium
-      - name: Browser smoke tests (menu, animal selection and arena)
+      - name: Browser smoke tests (menu, selection, arena and combat)
         run: |
           python3 -m http.server 4173 --bind 127.0.0.1 --directory public > /tmp/arkade-server.log 2>&1 &
           node tests/browser.smoke.mjs
@@ -39,6 +41,6 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: phase2-browser-screenshots
+          name: phase3-browser-screenshots
           path: test-results/*.png
           if-no-files-found: ignore
