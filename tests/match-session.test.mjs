@@ -1,7 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createMatch} from '../src/match-session.js';
-import {createBattle,BASE_HP} from '../src/combat-engine.js';
+import {createRequire} from 'node:module';
+const require=createRequire(import.meta.url);
+const {createMatch}=require('../src/match-session.js');
+const {createBattle,BASE_HP}=require('../src/combat-engine.js');
 
 function playDuelBout(session,winner=0){
   for(let steps=0;steps<30;steps++){
