@@ -224,6 +224,14 @@ await run('binder-mobile-390x844',{width:390,height:844},async page=>{
   await page.locator('[data-card-side="p2"]').click();
   await page.locator('[data-card-equip="miracle:meteor"]').click();
   assert.match(await page.locator('.ark-deck-slot').nth(2).innerText(),/FALLING STAR/);
+  await page.locator('.ark-collection-panel').evaluate(el=>{el.scrollTop=0;});
+  await page.screenshot({path:`${screenshots}/binder-phone-top-390x844.png`});
+  const scroll=await page.locator('.ark-collection-panel').evaluate(el=>{
+    const max=el.scrollHeight-el.clientHeight;el.scrollTop=max;
+    return {max,position:el.scrollTop};
+  });
+  assert.ok(scroll.max>0&&scroll.position>0,'The binder must scroll to its lower cards on mobile');
+  await page.screenshot({path:`${screenshots}/binder-phone-bottom-390x844.png`});
   await page.locator('[data-card-back]').click();
   assert.equal(await page.locator('#game').getAttribute('data-screen'),'MAIN_MENU');
   await page.locator('.painted-mobile-nav [data-art-action="PLAY"]').click();
