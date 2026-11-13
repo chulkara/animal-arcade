@@ -69,7 +69,7 @@
         </div>
       </div>
       <p class="prototype-announcer" role="status">${state.phase==='READY'?'THE STAGE IS SET!':'TWO LEGENDS ENTER THE WILD'}</p>
-      <p class="prototype-note">This is the illustrated staging preview. Select START BATTLE to enter the playable two-slot combat prototype. Card effects and historical damage formulas are not implemented.</p>
+      <p class="prototype-note">This is the illustrated staging preview. Select START BATTLE for green/yellow reel combat and your equipped cards. The solo challenge runs up to three battles with HP carried over; local two-player ends after two bout wins. Exact historical damage formulas are still being researched.</p>
       <div class="prototype-actions">
         ${state.phase!=='READY'?'<button type="button" data-prototype-intro data-initial-focus>BEGIN INTRO</button>':'<button type="button" data-prototype-fight data-initial-focus>START BATTLE · BETA</button>'}
         <button type="button" data-prototype-restart ${state.phase==='READY'?'data-initial-focus':''}>CHOOSE AGAIN</button>
