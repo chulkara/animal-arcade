@@ -18,5 +18,6 @@ jobs:
           node --check src/audio.js
           node --check src/globe.js
           node --check src/painted-menu.js
+          node --check src/prototype.js
       - name: Verify menu logic and original-art checksum
         run: npm test
