@@ -110,6 +110,33 @@
     arkade.showPaintedMenu();
     syncScreen();
   };
-  art.onerror=()=>{/* The original menu remains fully functional until art is uploaded. */};
+  let chunksAttempted=false;
+  art.onerror=()=>{
+    if(chunksAttempted)return;
+    chunksAttempted=true;
+    // GitHub's text API preserves this image as exact PNG bytes split into
+    // base64 fragments. Decode in the browser without re-encoding any pixels.
+    (async()=>{
+      try {
+        const parts=await Promise.all(Array.from({length:20},async(_,i)=>{
+          const name='part-'+String(i).padStart(2,'0')+'.txt';
+          const response=await fetch('./assets/approved-menu-png/'+name);
+          if(!response.ok)throw Error('Missing approved artwork fragment: '+name);
+          return response.text();
+        }));
+        const encoded=parts.join('');
+        if(encoded.length!==4226700)throw Error('Approved artwork is incomplete');
+        const binary=atob(encoded);
+        if(binary.length!==3170023)throw Error('Approved artwork byte size changed');
+        const bytes=new Uint8Array(binary.length);
+        for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
+        const imageUrl=URL.createObjectURL(new Blob([bytes],{type:'image/png'}));
+        art.addEventListener('load',()=>URL.revokeObjectURL(imageUrl),{once:true});
+        art.src=imageUrl;
+      }catch(error){
+        console.warn('Approved artwork could not load; retaining the original menu.',error);
+      }
+    })();
+  };
   art.src=ART;
 })();
