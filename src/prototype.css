@@ -1,0 +1,88 @@
+/* Phase 2 presentation shell. Does not modify the approved main-menu painting. */
+.game .animal-select-panel,.game .battle-stage-panel{
+  width:min(900px,94vw);max-height:87svh;top:50%;
+  transform:translate(-50%,-50%);overflow-y:auto;
+}
+.animal-grid {
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:clamp(12px,3vw,28px);max-width:660px;margin:16px auto;
+}
+.animal-choice{
+  padding:12px 14px 17px;border:1px solid #d3b37b;
+  background:linear-gradient(145deg,#17344b,#071827);
+  color:#ffedbf;text-align:center;
+  transition:transform .15s ease,border-color .15s ease,background .15s ease;
+}
+.animal-choice:hover,.animal-choice:focus-visible{
+  transform:translateY(-2px);border-color:#ffe4a5;background:#22435e;
+}
+.animal-art {
+  display:block;height:clamp(110px,18vh,200px);
+  background:radial-gradient(ellipse,#31506a,#0b2234 75%);
+  overflow:hidden;border-bottom:1px solid #b898634f;
+}
+.animal-art img{width:100%;height:100%;object-fit:contain;}
+.animal-choice strong{
+  display:block;margin-top:10px;font:700 clamp(19px,2.3vw,27px) Impact,'Arial Black',sans-serif;
+  letter-spacing:.1em;
+}
+.animal-choice small{
+  display:block;margin-top:4px;color:#d7b983;
+  letter-spacing:.16em;font-size:10px;
+}
+.animal-legend{display:block;margin-top:10px;color:#ded6bd;font:italic 13px Georgia,serif;}
+.prototype-status{
+  margin:10px auto;font-size:11px;letter-spacing:.15em;
+  font-weight:bold;color:#e2c180;
+}
+.prototype-note{max-width:580px;margin:10px auto 18px;font-size:12px;line-height:1.5;color:#c3b69a;}
+.arena{display:grid;grid-template-columns:minmax(0,1fr) 72px minmax(0,1fr);
+  gap:10px;align-items:center;margin:16px auto 8px;max-width:760px;
+  border-top:1px solid #c4a67566;border-bottom:1px solid #c4a67566;
+  background:radial-gradient(ellipse at center,#274961 0%,#071a2a 75%);
+  padding:12px;
+}
+.arena-fighter{min-width:0;display:flex;flex-direction:column;align-items:center;}
+.arena-health{width:100%;max-width:260px;display:flex;flex-direction:column;
+  gap:5px;align-items:flex-start;font-family:Impact,'Arial Black',sans-serif;
+  font-size:12px;letter-spacing:.14em;color:#f6dbaa;
+}
+.arena-health>div{width:100%;height:11px;border:1px solid #e7ba74;background:#24313c;padding:2px;}
+.arena-health i{display:block;width:100%;height:100%;background:linear-gradient(90deg,#9eaa5a,#e4c779);}
+.arena-animal{width:100%;height:clamp(120px,26vh,245px);object-fit:contain;
+  filter:drop-shadow(0 12px 15px #00111b99);}
+.arena-fighter:nth-of-type(3) .arena-animal{transform:scaleX(-1);}
+.arena-fighter strong{margin:4px 0;color:#ffe3ac;
+  font:700 clamp(16px,2.1vw,25px) Impact,'Arial Black',sans-serif;
+  letter-spacing:.08em;
+}
+.arena-versus{color:#f3bb70;font:italic 700 clamp(28px,4vw,48px) Impact,sans-serif;
+  text-shadow:2px 4px #04131c;}
+.prototype-announcer{font-family:Impact,'Arial Black',sans-serif;
+  font-size:clamp(20px,3vw,31px);letter-spacing:.12em;color:#ffe4aa;
+}
+.battle-ready .prototype-announcer{animation:announce-in .55s cubic-bezier(.2,.8,.2,1) both;}
+.prototype-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:14px;}
+.prototype-actions button{
+  padding:11px 18px;border:1px solid #e4b87c;
+  background:#16344b;color:#ffebc2;font:700 15px Impact,'Arial Black',sans-serif;
+  letter-spacing:.08em;
+}
+.prototype-actions button:first-child{background:#c99b55;color:#101e29;}
+.prototype-actions button:hover{filter:brightness(1.18);}
+@keyframes announce-in{from{opacity:0;transform:scale(.88)}to{opacity:1;transform:scale(1)}}
+@media (max-width:650px){
+  .game .animal-select-panel,.game .battle-stage-panel{
+    width:94vw;max-height:90svh;padding:19px 12px;
+  }
+  .animal-grid{gap:8px;}
+  .animal-choice{padding:8px;}
+  .animal-art{height:105px;}
+  .animal-legend{font-size:11px;}
+  .arena{grid-template-columns:minmax(0,1fr) 38px minmax(0,1fr);gap:4px;padding:6px;}
+  .arena-animal{height:130px;}
+  .arena-health{font-size:9px;}
+  .arena-versus{font-size:24px;}
+  .prototype-actions button{font-size:13px;padding:10px 12px;}
+}
+@media (prefers-reduced-motion:reduce){.battle-ready .prototype-announcer{animation:none;}}
