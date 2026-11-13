@@ -4,3 +4,27 @@
 @media(max-width:650px){.game{min-height:450px}.ornate-border{inset:10px}.topbar{top:3.3%;font-size:8px}.topbar .year-mark{display:none}.topbar .version-mark{margin-left:auto}.animal{opacity:.35}.tiger{left:-33%;width:85vw;bottom:4%}.lion{right:-40%;width:78vw;bottom:3%}.red-sun{left:4%;top:17%;width:47vw}.logo-shell{width:95vw;top:16%;max-width:590px}.orbital-elements{top:46%;width:114vw;max-width:700px}.orbit-caption{display:none}.screen-main{top:64%;width:70vw;min-width:250px;gap:7px}.menu-heading{font-size:8px}.menu-list{gap:5px}.menu-choice{min-height:39px;font-size:16px}.menu-caption,.menu-footnote{font-size:8px}.screen-title{top:77%;gap:6px}.title-subline{font-size:8px}.press-start{font-size:23px;padding:9px 16px}.start-meta{font-size:8px}.bottom-bar{bottom:4%;justify-content:center}.bottom-bar>span:first-child,.bottom-bar>span:last-child{display:none}.panel,.options-panel{top:55%;width:90vw;max-height:71vh;padding:22px 18px;transform:translate(-50%,-41%)}.panel-title{font-size:28px}.section-eyebrow{font-size:9px}.options-columns{grid-template-columns:1fr;gap:8px;margin:13px 0}.setting-column h2{margin-bottom:9px}.option-row{margin-bottom:9px}.option-row input{margin:7px 0}.option-switch-row{padding:7px 0}.settings-note{margin:4px 0}.preview-symbol{font-size:47px}.preview-description{line-height:1.4}.preview-quote{font-size:18px}.phase-tag{margin-bottom:10px}}
 @media(max-height:690px) and (min-width:651px){.logo-shell{top:2%;width:min(47vw,570px)}.orbital-elements{top:40%;width:min(47vw,570px)}.screen-main{top:53%;gap:6px}.menu-list{gap:5px}.menu-choice{min-height:40px;font-size:17px}.screen-title{top:76%}.panel{max-height:76vh;transform:translate(-50%,-43%)}.preview-symbol{font-size:47px}.preview-description{margin:7px auto}.bottom-bar{bottom:4%}.topbar{top:4%}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}.reduce-motion *, .reduce-motion *::before,.reduce-motion *::after{animation-duration:.01ms!important;transition-duration:.01ms!important}
+
+/* Compact landscape and short mobile viewports: keep controls reachable without
+   changing the illustrated scene or its normal desktop/mobile composition. */
+@media (max-height: 550px) {
+  .game { min-height: 0; }
+  .interface { overflow-y: auto; overscroll-behavior: contain; }
+  .screen-main { top: 43%; gap: 5px; padding-bottom: 18px; }
+  .menu-list { gap: 4px; }
+  .menu-choice { min-height: 34px; }
+  .screen-title { top: 66%; }
+  .panel, .options-panel {
+    top: 50%; max-height: calc(100svh - 34px);
+    transform: translate(-50%, -50%);
+  }
+  .topbar, .bottom-bar { pointer-events: none; }
+}
+@media (max-width: 650px) and (max-height: 550px) {
+  .logo-shell { top: 1%; width: min(60vw, 380px); }
+  .orbital-elements { top: 37%; width: min(76vw, 420px); }
+  .screen-main { top: 41%; width: min(58vw, 340px); min-width: 235px; }
+  .menu-choice { font-size: 14px; min-height: 32px; }
+  .menu-heading, .menu-caption, .menu-footnote { font-size: 8px; }
+  .panel, .options-panel { width: 92vw; }
+}
