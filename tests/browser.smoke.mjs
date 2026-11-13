@@ -349,7 +349,7 @@ await run('versus-set-mode-390x844',{width:390,height:844},async page=>{
   await page.locator('[data-animal="lion"]').click();
   await page.locator('[data-prototype-intro]').click();
   await page.locator('[data-prototype-fight]').click();
-  assert.match(await page.locator('.combat-heading').innerText(),/BOUT 1 \/ 2/);
+  assert.match(await page.locator('.combat-heading').innerText(),/BOUT 1 · FIRST TO 2/);
   assert.match(await page.locator('.combat-series').innerText(),/PLAYER 2 WINS/);
   assert.equal(await page.locator('.combat-card-reward').count(),0);
 });
