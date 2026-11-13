@@ -3,8 +3,9 @@
 (function(){
   'use strict';
   const api=window.ArkadeCombatEngine;
+  const matchApi=window.ArkadeMatch;
   const ui=document.getElementById('ui');
-  if(!api||!ui)return;
+  if(!api||!matchApi||!ui)return;
   let battle=null,slotIndex=0,interval=null,matchReward=null,rewardClaimed=false;
   let reelStart=0,reelOffset=0;
   const REEL_STEP_MS=115;
@@ -25,7 +26,7 @@
   function start({mode,picks}){
     const modifiers=picks.map((animalId,i)=>
       mode==='SOLO'&&i===1?{}:(window.NoahsCards?.getModifiers(i,animalId)||{}));
-    battle=api.createBattle({mode,picks,modifiers});
+    battle=matchApi.createMatch({mode,picks,modifiers});
     matchReward=null;rewardClaimed=false;
     slotIndex=0;
     open();
@@ -91,7 +92,16 @@
     window.NoahsAudio?.cue('move');
     open();
   }
-  function rematch(){if(!battle)return;matchReward=null;rewardClaimed=false;battle.reset();open();}
+  function nextBout(){
+    if(current()?.phase!=='FINISHED'||current()?.session.complete)return;
+    battle.nextBout();
+    window.NoahsAudio?.cue('reveal');
+    open();
+  }
+  function rematch(){
+    if(!battle)return;
+    matchReward=null;rewardClaimed=false;battle.reset();open();
+  }
   function actorLabel(s){return s.mode==='SOLO'&&s.actor===1?'CPU':'PLAYER '+(s.actor+1);}
   function actorName(s,i){return s.mode==='SOLO'&&i===1?'CPU':'PLAYER '+(i+1);}
   function fighter(s,i){
@@ -129,12 +139,26 @@
         ${e.miracleBonus?'+ '+e.miracleBonus+' MIRACLE':''}</span>`:''}</div>`;
   }
   function controls(s){
-    if(s.phase==='FINISHED')return `<div class="combat-finish" role="status">
-      <strong>${actorName(s,s.winner)} WINS!</strong><span>${animal[s.animals[s.winner].id].label} stands victorious.</span>
-      ${matchReward?`<p class="combat-card-reward">DUEL REWARD — ${matchReward.newCard?'NEW CARD':'DUPLICATE'}:
-        <strong>${matchReward.name}</strong> ${matchReward.newCard?'UNLOCKED':'×'+matchReward.count}</p>`:''}
-      <button type="button" data-combat-rematch data-initial-focus>REMATCH</button>
-      <button type="button" data-combat-view-cards>VIEW MY CARDS</button></div>`;
+    if(s.phase==='FINISHED'){
+      const complete=s.session.complete;
+      const winLabel=complete?
+        (s.session.result==='CLEARED'?'THREE-VICTORY RUN COMPLETE':
+          s.session.result==='DEFEATED'?'ARCADE RUN OVER':'MATCH WINNER'):
+        'BOUT COMPLETE';
+      return `<div class="combat-finish" role="status">
+        <strong>${winLabel}</strong>
+        <span>${actorName(s,s.winner)} — ${animal[s.animals[s.winner].id].label} is victorious.</span>
+        ${complete?
+          `${matchReward?`<p class="combat-card-reward">MATCH REWARD — ${matchReward.newCard?'NEW CARD':'DUPLICATE'}:
+          <strong>${matchReward.name}</strong> ${matchReward.newCard?'UNLOCKED':'×'+matchReward.count}</p>`:''}
+          <button type="button" data-combat-rematch data-initial-focus>NEW MATCH</button>
+          <button type="button" data-combat-view-cards>VIEW MY CARDS</button>`:
+          `<p class="combat-intermission">${s.mode==='SOLO'?
+             'Your remaining health carries into the next challenger.':
+             'Both fighters recover fully before the next bout.'}</p>
+           <button type="button" data-combat-next-bout data-initial-focus>NEXT BOUT →</button>`}
+      </div>`;
+    }
     if(s.phase==='RESULT')return `<div class="combat-ready">
       <button type="button" data-combat-next data-initial-focus>NEXT ROUND →</button></div>`;
     const isAttack=s.phase==='ATTACK',action=isAttack?'GREEN':'YELLOW';
@@ -157,13 +181,19 @@
     const s=current();
     if(!s)return `<section class="panel combat-panel"><h1>BATTLE UNAVAILABLE</h1>
       <button type="button" data-combat-quit>← RETURN TO ARENA</button></section>`;
-    if(s.phase==='FINISHED'&&!rewardClaimed){
+    if(s.phase==='FINISHED'&&s.session.complete&&!rewardClaimed){
       rewardClaimed=true;matchReward=window.NoahsCards?.grantBattleReward()||null;
     }
     return `<section class="panel combat-panel screen-copy" aria-label="Interactive animal battle">
       <div class="section-eyebrow">NOAH'S ARKADE · COMBAT LAB</div>
       <div class="combat-heading"><h1 class="panel-title">WILD DUEL</h1>
-        <span>ROUND ${s.round} · ${s.mode==='SOLO'?'SOLO VS CPU':'LOCAL 2 PLAYERS'}</span></div>
+        <span>BOUT ${s.session.bout} / ${s.session.goal} · EXCHANGE ${s.round}</span></div>
+      <div class="combat-series" aria-label="Arcade match score">
+        <span>${s.mode==='SOLO'?'EXPEDITION WINS':'PLAYER 1 WINS'}:
+          <b>${s.session.wins[0]} / ${s.session.goal}</b></span>
+        <span>${s.mode==='SOLO'?'CPU CHALLENGES':'PLAYER 2 WINS'}:
+          <b>${s.session.wins[1]}${s.mode==='DUEL'?' / '+s.session.goal:''}</b></span>
+      </div>
       <div class="combat-battlefield ${s.lastEvent?.kind==='HIT'?'battlefield-impact':''} ${s.lastEvent?.special?'battlefield-special':''}" aria-label="Illustrated wild arena">
         <div class="battlefield-sun" aria-hidden="true"></div>
         <div class="battlefield-ridge battlefield-ridge-far" aria-hidden="true"></div>
@@ -192,6 +222,7 @@
     const target=event.target;
     if(target.closest('[data-combat-stop]')){stopSlot();return;}
     if(target.closest('[data-combat-next]')){next();return;}
+    if(target.closest('[data-combat-next-bout]')){nextBout();return;}
     if(target.closest('[data-combat-rematch]')){rematch();return;}
     if(target.closest('[data-combat-view-cards]')){
       stopTimer();window.NoahsCards?.open('CARDS');return;
@@ -213,5 +244,5 @@
   },true);
   window.addEventListener('arkade:screenchange',syncTimer);
   document.addEventListener('visibilitychange',syncTimer);
-  window.NoahsCombat={start,render,getState:current,stopSlot,next,rematch};
+  window.NoahsCombat={start,render,getState:current,stopSlot,next,nextBout,rematch};
 })();
