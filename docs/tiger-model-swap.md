@@ -47,3 +47,26 @@ The external downloadable asset pack contains the recolored high-detail GLB, nat
 - **Offline skinning evidence:** checked high-detail Tiger geometry across Idle/G/T/P/Hit/KO, found original small foreleg poses indistinct, enlarged them within conservative bounds, then replaced an unnatural flying knockout with a side-fall. The final sampled knockout floor discrepancy is about a few hundredths of a scene unit in the offline model; this is not a real-time ground-contact guarantee.
 - **Not release-ready:** the two tiger meshes visibly differ, the native runner is substantially lower-detail, the artwork is not yet in the public GitHub branch, and professional locomotion/attack/impact polish still requires real-time user review. Do not merge PR #8 solely because CI passes.
 - The approved menu painting and its exact pixel fragments were not touched.
+
+
+
+## V3 — user visual review fixes (Nov 14)
+
+The user visually approved **Idle, Run, Hit Reaction and Knockout**, but rejected the G/T/P/Special choreography, the exaggerated Victory head tilt and the darker hero coat. Treat this as a binding quality gate for this development branch.
+
+### Accepted, intentionally preserved
+- Native Idle remains on the 121-joint high-detail hero. Native Run remains on the separate 47-joint runner. Native Howl remains available for its standalone preview and the Special introduction.
+- **HURT and KO frame values, duration and smoothstep sampling are unchanged from V2.** Never "fix" these while polishing attacks.
+
+### Fixes implemented
+- **Guts / Technique / Power:** instead of changing the *entire animal* Idle → low-poly Run → high-detail Idle in under a second, all attack beats remain on the high-detail hero; added dedicated anticipation, foreleg strike, short forward travel, contact, follow-through and recovery keyframes.
+- **Special:** starts with accepted Howl on the same high-detail hero, crossfades to its Idle clip, and attacks entirely on that same rig. No lower-poly Run mesh is used in Special.
+- New attack samples use bounded monotone cubic-Hermite interpolation, with continuous velocity across keyframe times, rather than independently smoothing every segment to zero velocity. HURT and KO deliberately use their original interpolation.
+- **Victory:** eliminated the native Howl, which throws the head too far backward. Victory is now an understated hero-Idle head/chest lift; score's head delta has magnitude <=0.045 before bone multiplier.
+- **Coat:** V3 user-downloadable GLB rebuild selectively recolors white fur, targeting `#DF8F3E`. Its orange diffuse midtone moved from approx. `#CA7941` (RGB 202,121,65) to approx. `#E1913F` (RGB 225,145,63), within ~2 RGB values/channel of the specified target. No stripes/skin/animations modified. SHA-256: `a6bbbef52d3bde5ed1afc166af97f2668f3ed85472d0d33004e3506c76015e6d`.
+- The runner GLB is unchanged; revised hero binary is shipped in **Tiger Motion Lab V3** local ZIP, not silently committed to public GitHub. To test the revised in-game color, load the V3 hero and runner in **3D TIGER LAB** locally.
+
+### Verification and next acceptance
+- Automated tests verify the four attacks never select the Run model, keyframe-velocity continuity, calmer Victory and exact accepted Hit / KO values; CI passed after core changes.
+- Full **real-time** visual acceptance remains required, especially foreleg movement and contact. Offline skinning contact sheets are only diagnostic.
+- Keep draft PR #8 unmerged until user approves these revised attacks and color. Approved main menu assets not touched.
