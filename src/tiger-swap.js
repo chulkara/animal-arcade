@@ -39,7 +39,7 @@
     lab.className='ark-tiger-lab';lab.setAttribute('role','dialog');
     lab.setAttribute('aria-modal','true');lab.setAttribute('aria-label','3D Tiger motion lab');
     lab.innerHTML='<div class="ark-tiger-lab-head"><h2>3D TIGER · MOTION LAB</h2><button type="button" data-tiger-close aria-label="Close 3D tiger lab">✕</button></div>'+
-      '<p>Use the orange high-detail model for <b>Idle / Howl</b> and the native running tiger for <b>Run</b>. File selections stay on this device.</p>'+
+      '<p>Use the <b>V3 brighter orange tiger</b> for Idle, Howl and ALL strikes. The native running tiger is only used for the standalone Run state. Hit and KO are preserved; Victory is more restrained. File selections stay on this device.</p>'+
       '<label>ORANGE TIGER · IDLE + HOWL <input data-tiger-hero type="file" accept=".glb,model/gltf-binary"></label>'+
       '<label>RUNNING TIGER · RUN <input data-tiger-run type="file" accept=".glb,model/gltf-binary"></label>'+
       '<div class="ark-tiger-lab-actions"><button type="button" data-tiger-load>LOAD BOTH MODELS</button>'+
@@ -55,7 +55,7 @@
       '<button type="button" data-tiger-action="victory">VICTORY</button></div>'+
       '<p class="ark-tiger-status" data-tiger-status role="status">'+
       (loaded?'Models ready. Try Idle, Howl and Run.':'Choose two .glb files or install them under assets/3d/ to load automatically.')+
-      '</p><p class="ark-tiger-warning">Procedural pose staging; not final hand-animated attacks. The other animal stays illustrated; Bear is planned after Tiger. Files stay local. Three.js requires a CDN connection.</p>';
+      '</p><p class="ark-tiger-warning">V3 tiger motion staging: Guts / Technique / Power / Special use one rig and continuous interpolation. Hit + KO are preserved. Bear follows Tiger. This is still a prototype; files stay local.</p>';
     game.append(lab);
     lab.querySelector('input')?.focus();
   }
@@ -86,7 +86,7 @@
       validate(runner,/Run/i,'Running tiger');
       loaded={hero,runner};
       disposeActors();
-      status('Models loaded. Idle / Howl use the recolored hero; Run uses the native runner.');
+      status('Models loaded. V3 attacks use one continuous hero rig (no Run swap); Run preview uses the native runner. For the brighter coat, select the V3 orange GLB.');
       sync();
     }catch(e){
       status('3D could not load: '+(e?.message||String(e))+'. Illustrated fighters are preserved.',true);
