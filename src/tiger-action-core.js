@@ -8,7 +8,7 @@
   if(root)root.NoahsTigerActionCore=api;
 })(typeof window==='object'?window:null,function(){
   'use strict';
-  const FIELDS=Object.freeze(['travel','lift','pitch','roll','neck','head','headYaw','jaw','foreleg','tail']);
+  const FIELDS=Object.freeze(['travel','lateral','lift','pitch','rear','yaw','roll','neck','head','headYaw','jaw','foreleg','forelegRight','sweep','shoulder','hindleg','tail']);
   const ZERO=Object.freeze(Object.fromEntries(FIELDS.map(k=>[k,0])));
   const k=(ms,mode,values={})=>Object.freeze({ms,mode,...ZERO,...values});
   // Stage-distance is in THREE scene units. Rotations are small radians:
@@ -16,43 +16,47 @@
   const SCORES=Object.freeze({
     // User-approved base poses remain on ONE high-detail Tiger skeleton.
     // Do not swap to the lower-poly Run model within an attack.
+    // G = shoulder-first charge; T = lateral single-paw cross-claw;
+    // P = upright two-paw hammer; SPECIAL = howl into airborne pounce.
+    // One high-detail hero skeleton throughout attacks, no Run mesh swap.
     G:Object.freeze([
       k(0,'idle'),
-      k(155,'idle',{travel:-.06,lift:-.045,pitch:.09,head:.055,foreleg:-.18}),
-      k(320,'idle',{travel:.09,lift:.015,pitch:-.035,foreleg:.54,neck:-.055}),
-      k(570,'idle',{travel:.35,lift:.10,pitch:-.14,head:-.10,foreleg:1.46,jaw:.16,roll:.035}),
-      k(710,'idle',{travel:.40,lift:.04,pitch:-.065,foreleg:.90,head:-.08}),
-      k(930,'idle',{travel:.15,lift:0,foreleg:.12,head:-.025}),
-      k(1170,'idle')
+      k(190,'idle',{travel:-.12,lift:-.09,pitch:.16,head:.24,neck:.14,shoulder:.12,foreleg:-.20,forelegRight:-.20}),
+      k(320,'idle',{travel:-.07,lift:-.07,pitch:.19,head:.25,neck:.16,shoulder:.16}),
+      k(650,'idle',{travel:.50,lift:.055,pitch:.22,head:.32,neck:.24,shoulder:.27,foreleg:-.28,forelegRight:-.28,tail:-.30}),
+      k(800,'idle',{travel:.54,lift:.015,pitch:.16,head:.22,shoulder:.14}),
+      k(1030,'idle',{travel:.22,lift:.015,pitch:.04,head:.06}),
+      k(1320,'idle')
     ]),
     T:Object.freeze([
       k(0,'idle'),
-      k(110,'idle',{travel:-.05,lift:-.08,pitch:.12,head:.05,foreleg:-.20}),
-      k(240,'idle',{travel:.12,lift:.13,pitch:-.065,foreleg:.46,head:-.04}),
-      k(490,'idle',{travel:.40,lift:.20,pitch:-.10,roll:.08,foreleg:1.75,head:-.14}),
-      k(615,'idle',{travel:.42,lift:.085,pitch:.04,roll:.04,foreleg:1.05}),
-      k(800,'idle',{travel:.19,lift:0,foreleg:.12}),
-      k(1030,'idle')
+      k(135,'idle',{lateral:-.09,lift:-.055,yaw:-.10,roll:-.09,foreleg:-.22}),
+      k(295,'idle',{lateral:-.30,travel:.10,lift:.06,yaw:-.30,roll:-.12,foreleg:.45,sweep:-.65}),
+      k(515,'idle',{lateral:-.10,travel:.31,lift:.12,yaw:.28,roll:.17,foreleg:1.95,forelegRight:-.16,sweep:1.22,headYaw:.28,tail:.24}),
+      k(680,'idle',{lateral:.15,travel:.35,lift:.055,yaw:.36,roll:.12,foreleg:1.12,sweep:.60}),
+      k(880,'idle',{lateral:.06,travel:.16,lift:0,yaw:.10,roll:.035,foreleg:.14,sweep:.08}),
+      k(1110,'idle')
     ]),
     P:Object.freeze([
       k(0,'idle'),
-      k(250,'idle',{travel:-.10,lift:-.065,pitch:.12,neck:.08,head:.09,foreleg:-.22,jaw:.07}),
-      k(470,'idle',{travel:.04,lift:.055,pitch:-.04,foreleg:.44,jaw:.14}),
-      k(765,'idle',{travel:.42,lift:.12,pitch:-.20,neck:-.16,head:-.12,foreleg:1.50,jaw:.37}),
-      k(930,'idle',{travel:.39,lift:.05,pitch:-.105,foreleg:.95,jaw:.16}),
-      k(1200,'idle',{travel:.16,lift:0,foreleg:.1}),
-      k(1510,'idle')
+      k(300,'idle',{travel:-.12,lift:-.055,pitch:-.10,rear:.40,head:-.06,foreleg:.65,forelegRight:.65}),
+      k(600,'idle',{travel:-.09,lift:.37,pitch:-.16,rear:1.03,head:-.12,foreleg:1.70,forelegRight:1.70,shoulder:-.08}),
+      k(790,'idle',{travel:.13,lift:.44,pitch:-.09,rear:.70,foreleg:1.90,forelegRight:1.90}),
+      k(990,'idle',{travel:.37,lift:.015,pitch:.23,rear:-.04,head:.22,foreleg:.25,forelegRight:.25,shoulder:.10,jaw:.22}),
+      k(1210,'idle',{travel:.23,lift:0,pitch:.08,foreleg:.08,forelegRight:.08}),
+      k(1580,'idle')
     ]),
     SPECIAL:Object.freeze([
       k(0,'howl'),
-      k(330,'howl',{lift:.055,pitch:.035,head:-.045,jaw:.20,neck:-.035}),
-      k(505,'howl',{lift:.045,head:-.045,jaw:.15,travel:-.06}),
-      k(675,'idle',{travel:-.085,lift:-.07,pitch:.10,head:.025,foreleg:-.15}),
-      k(935,'idle',{travel:.14,lift:.09,pitch:-.06,foreleg:.42,jaw:.12}),
-      k(1190,'idle',{travel:.44,lift:.15,pitch:-.16,foreleg:1.60,head:-.13,neck:-.10,jaw:.42}),
-      k(1390,'idle',{travel:.38,lift:.07,foreleg:.90,jaw:.19}),
-      k(1640,'idle',{travel:.15,foreleg:.13}),
-      k(1920,'idle')
+      k(330,'howl',{lift:.04,head:-.025,jaw:.08}),
+      k(540,'howl',{lift:.055,head:-.04,neck:-.025}),
+      k(730,'idle',{travel:-.11,lift:-.095,pitch:.14,foreleg:-.25,forelegRight:-.25}),
+      k(980,'idle',{travel:.10,lift:.28,pitch:-.14,rear:.37,foreleg:.95,forelegRight:.95,tail:.40}),
+      k(1190,'idle',{travel:.40,lift:.58,pitch:-.12,rear:.20,foreleg:1.55,forelegRight:1.55,jaw:.32,tail:.50}),
+      k(1390,'idle',{travel:.60,lift:.30,pitch:.14,rear:-.12,foreleg:1.44,forelegRight:1.44,jaw:.38}),
+      k(1580,'idle',{travel:.58,lift:.005,pitch:.20,foreleg:.32,forelegRight:.32,head:.17}),
+      k(1820,'idle',{travel:.28,lift:0,pitch:.04,foreleg:.06,forelegRight:.06}),
+      k(2130,'idle')
     ]),
     HURT:Object.freeze([
       k(0,'idle'),k(115,'idle',{travel:-.14,lift:.10,pitch:-.10,head:.33,neck:.22,roll:.12,jaw:.08}),
@@ -66,12 +70,11 @@
       k(1600,'idle',{travel:-.30,lift:.43,pitch:.20,roll:2.30,head:.40})
     ]),
     // Calm victory stance: do not play native Howl, whose head arcs too far back.
+    // The user likes native Howl. Victory is exactly that clip,
+    // without the extra head/neck rotation added in V2.
     VICTORY:Object.freeze([
-      k(0,'idle'),
-      k(350,'idle',{lift:.028,pitch:-.015,head:-.02,neck:-.015,jaw:.04}),
-      k(720,'idle',{lift:.043,pitch:-.026,head:-.045,neck:-.02,jaw:.07}),
-      k(1200,'idle',{lift:.025,head:-.025,jaw:.025}),
-      k(1680,'idle')
+      k(0,'howl'),k(550,'howl'),k(1400,'howl'),k(2150,'howl'),
+      k(2600,'idle')
     ])
   });
   function selectScore(kind,technique='G',special=false){
