@@ -39,7 +39,7 @@
     lab.className='ark-tiger-lab';lab.setAttribute('role','dialog');
     lab.setAttribute('aria-modal','true');lab.setAttribute('aria-label','3D Tiger motion lab');
     lab.innerHTML='<div class="ark-tiger-lab-head"><h2>3D TIGER · MOTION LAB</h2><button type="button" data-tiger-close aria-label="Close 3D tiger lab">✕</button></div>'+
-      '<p>Use the <b>V3 brighter orange tiger</b> for Idle, Howl and ALL strikes. The native running tiger is only used for the standalone Run state. Hit and KO are preserved; Victory is more restrained. File selections stay on this device.</p>'+
+      '<p>Use the <b>V4 lighter orange tiger</b> for Idle, Howl and ALL strikes. The native running tiger is only used for the standalone Run state. Hit and KO are preserved; Victory is more restrained. File selections stay on this device.</p>'+
       '<label>ORANGE TIGER · IDLE + HOWL <input data-tiger-hero type="file" accept=".glb,model/gltf-binary"></label>'+
       '<label>RUNNING TIGER · RUN <input data-tiger-run type="file" accept=".glb,model/gltf-binary"></label>'+
       '<div class="ark-tiger-lab-actions"><button type="button" data-tiger-load>LOAD BOTH MODELS</button>'+
@@ -55,7 +55,7 @@
       '<button type="button" data-tiger-action="victory">VICTORY</button></div>'+
       '<p class="ark-tiger-status" data-tiger-status role="status">'+
       (loaded?'Models ready. Try Idle, Howl and Run.':'Choose two .glb files or install them under assets/3d/ to load automatically.')+
-      '</p><p class="ark-tiger-warning">V3 tiger motion staging: Guts / Technique / Power / Special use one rig and continuous interpolation. Hit + KO are preserved. Bear follows Tiger. This is still a prototype; files stay local.</p>';
+      '</p><p class="ark-tiger-warning">V4: Guts shoulder charge / Technique cross-claw / Power double-paw slam / Special howl-pounce. Victory reuses original Howl. Hit + KO preserved. Bear follows Tiger. Files stay local.</p>';
     game.append(lab);
     lab.querySelector('input')?.focus();
   }
@@ -86,7 +86,7 @@
       validate(runner,/Run/i,'Running tiger');
       loaded={hero,runner};
       disposeActors();
-      status('Models loaded. V3 attacks use one continuous hero rig (no Run swap); Run preview uses the native runner. For the brighter coat, select the V3 orange GLB.');
+      status('Models loaded. V3 attacks use one continuous hero rig (four distinct strikes); Run preview uses native runner. Select the V4 brighter hero GLB.');
       sync();
     }catch(e){
       status('3D could not load: '+(e?.message||String(e))+'. Illustrated fighters are preserved.',true);
@@ -214,6 +214,8 @@
     function perform(kind,options={}){
       if(!['attack','hurt','ko','victory'].includes(kind))return;
       sequenceId++;previewMode='idle';
+      // Replay the user-approved native Howl in Victory. No extra head tilt.
+      if(kind==='victory')howlAction.reset().play();
       activeCue={kind,technique:options.technique||'G',
         special:Boolean(options.special),started:performance.now()};
       thenCue=options.after||null;
@@ -228,15 +230,19 @@
       // readability but is not a substitute for hand-keyed quadruped motion.
       // Both tigers travel forward along +Z. The right viewport is mirrored
       // by CSS, so both appear to charge toward the opponent.
-      motionRoot.position.set(0,pose.lift,pose.travel);
-      motionRoot.rotation.set(pose.pitch*.38,0,sign*pose.roll*.65);
+      motionRoot.position.set(pose.lateral||0,pose.lift,pose.travel);
+      motionRoot.rotation.set(pose.pitch*.38-(pose.rear||0)*.78,
+        sign*(pose.yaw||0)*.65,sign*pose.roll*.65);
       twistBone(bones.chest,axisZ,sign*pose.pitch*.28);
+      twistBone(bones.chest,axisY,sign*(pose.shoulder||0)*.6);
       twistBone(bones.neck,axisX,pose.neck*.50);
       twistBone(bones.head,axisX,pose.head*.46);
       twistBone(bones.head,axisY,sign*pose.headYaw*.38);
       twistBone(bones.jaw,axisX,-pose.jaw*.35);
-      twistBone(bones.left,axisX,pose.foreleg*.40);
-      twistBone(bones.right,axisX,-pose.foreleg*.35);
+      twistBone(bones.left,axisX,pose.foreleg*.48);
+      twistBone(bones.right,axisX,-(pose.forelegRight||0)*.48);
+      twistBone(bones.left,axisY,sign*(pose.sweep||0)*.5);
+      twistBone(bones.right,axisY,sign*(pose.sweep||0)*.1);
       twistBone(bones.tail,axisY,sign*pose.tail*.25);
     }
     function setOpacity(model,opacity){
@@ -270,7 +276,8 @@
 
     function tick(dt,time){
       heroMixer.update(dt);runnerMixer.update(dt);
-      let pose={travel:0,lift:0,pitch:0,roll:0,neck:0,head:0,headYaw:0,jaw:0,foreleg:0,tail:0};
+      let pose={travel:0,lateral:0,lift:0,pitch:0,rear:0,yaw:0,roll:0,neck:0,
+        head:0,headYaw:0,jaw:0,foreleg:0,forelegRight:0,sweep:0,shoulder:0,hindleg:0,tail:0};
       if(activeCue){
         const sampled=sampleAction(activeCue.kind,Math.max(0,time-activeCue.started),{
           technique:activeCue.technique,special:activeCue.special,
