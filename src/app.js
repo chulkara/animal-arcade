@@ -145,7 +145,7 @@
     <div class="section-eyebrow">THE WILD AWAITS</div><h1 class="panel-title">CHOOSE YOUR PATH</h1>
     <div class="ornament-line"><span>✦</span></div>
     <nav class="mode-options" aria-label="Play modes">
-      <button type="button" data-mode="SOLO_SELECT" data-initial-focus>1 PLAYER <small>THREE WILD CHALLENGERS</small></button>
+      <button type="button" data-mode="SOLO_SELECT" data-initial-focus>1 PLAYER <small>THREE-BOUT EXPEDITION</small></button>
       <button type="button" data-mode="DUEL_SELECT">2 PLAYERS <small>FIRST TO TWO VICTORIES</small></button>
       <button type="button" data-mode="BINDER">EDIT BINDER <small>CHOOSE YOUR THREE-CARD LOADOUT</small></button>
       <button type="button" data-mode="HELP_PREVIEW">HOW TO PLAY <small>THE FIELD GUIDE</small></button>

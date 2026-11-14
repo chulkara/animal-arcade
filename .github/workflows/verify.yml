@@ -31,6 +31,8 @@ jobs:
           node --check src/bear-material-core.js
           node --check src/moose-assets-core.js
           node --check src/moose-action-core.js
+          node --check src/roster-core.js
+          node --check src/animal-stage.js
           node --check scripts/verify-tiger-assets.mjs
       - name: Verify menu logic and original-art checksum
         run: npm test
@@ -40,6 +42,12 @@ jobs:
           cp index.html public/
           cp -R assets src public/
           node scripts/build-approved-art.mjs
+      - name: Upload local browser build (code and original artwork only)
+        uses: actions/upload-artifact@v4
+        with:
+          name: bear-moose-local-web
+          path: public/
+          if-no-files-found: error
       - name: Install browser test runner
         run: |
           npm install --no-save --no-audit --no-fund playwright@1.56.1

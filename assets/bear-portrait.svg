@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 520" role="img" aria-labelledby="title desc">
+<title id="title">Brown Bear</title><desc id="desc">Original stylized brown bear portrait, not a model or photo.</desc>
+<defs>
+<radialGradient id="sky"><stop stop-color="#607a76"/><stop offset=".7" stop-color="#31504f"/><stop offset="1" stop-color="#142e3c"/></radialGradient>
+<linearGradient id="coat" x2=".9" y2="1"><stop stop-color="#a67343"/><stop offset=".43" stop-color="#6d402b"/><stop offset=".8" stop-color="#412c27"/><stop offset="1" stop-color="#241f22"/></linearGradient>
+<linearGradient id="face" x1=".25" y1="0" x2=".7" y2="1"><stop stop-color="#a87747"/><stop offset=".55" stop-color="#825635"/><stop offset="1" stop-color="#523a2d"/></linearGradient>
+<linearGradient id="muzzle" x2="0" y2="1"><stop stop-color="#d4b18a"/><stop offset=".65" stop-color="#ae825e"/><stop offset="1" stop-color="#72533f"/></linearGradient>
+<filter id="shadow"><feGaussianBlur stdDeviation="12"/></filter>
+</defs>
+<ellipse cx="322" cy="497" rx="250" ry="16" fill="#08161a" opacity=".5" filter="url(#shadow)"/>
+<path d="M35 441 105 319l55 52 79-113 86 122 88-101 71 88 64-92 58 162" fill="#1b3d43" opacity=".65"/>
+<path d="M0 464c102-33 175-41 279-15 103-39 223-32 361 7v64H0" fill="#254239"/>
+<path d="M91 506q-14-129 50-171 42-33 114-23 37-45 112-30 89 0 133 62 54 64 41 162Z" fill="url(#coat)" stroke="#332821" stroke-width="8"/>
+<path d="M166 412q47-49 120-27M465 387q-41-39-98-20" fill="none" stroke="#bc8d5a" stroke-width="16" opacity=".35" stroke-linecap="round"/>
+<circle cx="215" cy="149" r="55" fill="#66412c" stroke="#342821" stroke-width="12"/>
+<circle cx="432" cy="143" r="56" fill="#66412c" stroke="#342821" stroke-width="12"/>
+<circle cx="215" cy="149" r="26" fill="#342b2a"/><circle cx="432" cy="143" r="26" fill="#342b2a"/>
+<path d="M214 123q73-61 161-25 88 35 96 136 11 128-44 185-44 52-115 51-73-2-117-62-47-73-32-172 7-71 51-113Z" fill="url(#face)" stroke="#302720" stroke-width="9"/>
+<path d="M199 203q46-49 112-37l-37 37-70 25M444 195q-45-48-114-34l37 40 71 21" fill="#3c2d28" opacity=".5"/>
+<path d="M217 247q37-28 83-7M342 240q42-25 86 3" fill="none" stroke="#3a2923" stroke-width="19" stroke-linecap="round"/>
+<ellipse cx="267" cy="250" rx="12" ry="15" fill="#171b1d"/><ellipse cx="379" cy="247" rx="12" ry="15" fill="#171b1d"/>
+<circle cx="272" cy="246" r="4" fill="#fff0c1"/><circle cx="383" cy="243" r="4" fill="#fff0c1"/>
+<path d="M256 313q66-45 137 1 47 35 30 82-25 41-105 41-90-3-110-45-12-43 48-79Z" fill="url(#muzzle)" stroke="#573c30" stroke-width="5"/>
+<path d="M270 339q51-30 103 2 13 8 8 25-14 22-62 21-57-4-65-23-7-14 16-25Z" fill="#2d2524"/>
+<path d="M319 387v27m-1 0q-16 17-40 3m40-3q20 18 44 2" fill="none" stroke="#3c2a25" stroke-width="7" stroke-linecap="round"/>
+<path d="M215 297q-18 10-33 31M433 297q21 13 35 33" fill="none" stroke="#d3a576" stroke-width="7" opacity=".4"/>
+<path d="M92 494q223-43 459 0" fill="none" stroke="#e2b979" stroke-width="3" opacity=".55"/>
+</svg>

@@ -1,10 +1,9 @@
 /* Noah's Arkade Phase 2: honest presentation prototype, not a combat engine. */
 (function(){
   'use strict';
-  const animals={
-    tiger:{name:'BLUE TIGER',type:'STRIPED HUNTER',art:'./assets/tiger-illustration.webp',legend:'A silent stalker of the wild.'},
-    lion:{name:'GOLDEN LION',type:'SAVANNA KING',art:'./assets/lion-illustration.webp',legend:'A fierce guardian of the plains.'}
-  };
+  const roster=window.NoahsRoster;
+  if(!roster)throw Error('Active Bear + Moose roster must load before selection');
+  const animals=roster.ANIMALS;
   const state={mode:'SOLO',picks:[],phase:'INTRO'};
   const ui=document.getElementById('ui');
   function open(screen){window.__arkade?.openScreen(screen);}
@@ -18,7 +17,7 @@
     if(!Object.prototype.hasOwnProperty.call(animals,id))return;
     if(state.mode==='SOLO'){
       window.NoahsCards?.equipAnimal(0,id);
-      state.picks=[id,id==='tiger'?'lion':'tiger'];
+      state.picks=[id,roster.opponent(id)];
       state.phase='INTRO';
       open('BATTLE_STAGE');return;
     }
@@ -44,7 +43,7 @@
           <span class="animal-legend">${animal.legend}</span>
         </button>`).join('')}
       </div>
-      <p class="prototype-note">Prototype roster: Blue Tiger and Golden Lion. Each selection uses that player's equipped Strong and Miracle cards from the Battle Binder.</p>
+      <p class="prototype-note">Active roster: Brown Bear and Moose. Each selection uses that player’s equipped Strong and Miracle cards from the Battle Binder. 3D models are available in the private local asset pack; the public prototype uses original portrait art.</p>
       <button type="button" class="arcade-back" data-prototype-mode>← BACK TO PLAY MENU</button>
     </section>`;
   }
@@ -54,7 +53,7 @@
     return `<section class="panel battle-stage-panel screen-copy ${state.phase==='READY'?'battle-ready':''}" aria-label="Battle stage prototype">
       <div class="section-eyebrow">THE ARENA AWAITS</div>
       <h1 class="panel-title">BATTLE STAGE</h1>
-      <p class="prototype-status">${state.mode==='SOLO'?'SINGLE PLAYER · THREE-CHALLENGER RUN':'LOCAL TWO-PLAYER · FIRST TO TWO BOUTS'}</p>
+      <p class="prototype-status">${state.mode==='SOLO'?'SINGLE PLAYER · THREE-BOUT EXPEDITION':'LOCAL TWO-PLAYER · FIRST TO TWO BOUTS'}</p>
       <div class="arena" aria-label="Animal matchup">
         <div class="arena-fighter">
           <div class="arena-health"><span>PLAYER 1</span><div aria-hidden="true"><i></i></div></div>

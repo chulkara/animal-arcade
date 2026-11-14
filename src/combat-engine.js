@@ -3,11 +3,14 @@
  * Damage values and creature balancing are ORIGINAL PROTOTYPE VALUES, not
  * claims about Animal Kaiser internals. No proprietary animations/assets. */
 (function(root,factory){
-  const api=factory();
+  const roster=typeof module==='object'&&module.exports?
+    require('./roster-core.js'):root?.NoahsRoster;
+  const api=factory(roster);
   if(typeof module==='object'&&module.exports)module.exports=api;
   if(root)root.ArkadeCombatEngine=api;
-})(typeof window!=='undefined'?window:null,function(){
+})(typeof window!=='undefined'?window:null,function(roster){
   'use strict';
+  if(!roster?.validPicks)throw Error('Bear + Moose roster must be loaded first');
   const TECHNIQUES=Object.freeze(['G','T','P']);
   const POWERS=Object.freeze([10,20,30,40,50,'MARK']);
   const BASE_HP=180;
@@ -30,9 +33,9 @@
       miracleName:label(m?.miracleName)
     };
   }
-  function createBattle({mode='SOLO',picks=['tiger','lion'],rng=Math.random,modifiers=[],initialHp=[BASE_HP,BASE_HP]}={}){
+  function createBattle({mode='SOLO',picks=['bear','moose'],rng=Math.random,modifiers=[],initialHp=[BASE_HP,BASE_HP]}={}){
     assert(mode==='SOLO'||mode==='DUEL','Unsupported battle mode');
-    assert(Array.isArray(picks)&&picks.length===2&&picks.every(id=>id==='tiger'||id==='lion'),'Choose two valid animals');
+    assert(roster.validPicks(picks),'Choose two valid active animals');
     assert(typeof rng==='function','RNG must be a function');
     assert(Array.isArray(initialHp)&&initialHp.length===2&&
       initialHp.every(hp=>Number.isInteger(hp)&&hp>=1&&hp<=BASE_HP),'Invalid initial HP');
