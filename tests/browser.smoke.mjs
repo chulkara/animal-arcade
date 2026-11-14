@@ -149,6 +149,10 @@ await run('combat-solo-1440x900',{width:1440,height:900},async page=>{
   await page.locator('[data-tiger-lab-toggle]').click();
   assert.equal(await page.locator('[data-tiger-hero]').count(),1);
   assert.equal(await page.locator('[data-tiger-run]').count(),1);
+  assert.equal(await page.locator('[data-tiger-action]').count(),7);
+  assert.ok(await page.evaluate(()=>typeof window.NoahsTigerActionCore?.sampleAction==='function'));
+  await page.locator('[data-tiger-action="ko"]').click();
+  assert.match(await page.locator('[data-tiger-status]').innerText(),/Load both GLBs first/);
   await page.keyboard.press('Escape');
   assert.equal(await page.locator('.ark-tiger-lab').count(),0);
   assert.equal(await page.locator('#game').getAttribute('data-screen'),'BATTLE_PLAY');
