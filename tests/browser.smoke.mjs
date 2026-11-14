@@ -393,6 +393,11 @@ await run('reference-arena-layout-desktop',{width:1440,height:900},async page=>{
       cssWidth:style.width,cssHeight:style.height,flexShrink:style.flexShrink};
   }));
   console.log('BEAR_MOOSE_ART_METRICS '+JSON.stringify(portraits));
+  assert.equal(portraits.length,2);
+  assert.deepEqual(portraits.map(p=>p.animal),['bear','moose']);
+  assert.ok(portraits.every(p=>p.w>=280),'Both animals must have full fighter-sized art, not the narrow VS slot');
+  assert.ok(portraits[0].x+portraits[0].w<portraits[1].x,
+    'Bear must occupy the left arena and Moose the right arena');
   const art=await page.locator('.combat-fighter-art').evaluateAll(nodes=>nodes.map(el=>el.naturalWidth));
   assert.ok(art.length===2&&art.every(n=>n>0),'Both original animal artworks must load');
 });
