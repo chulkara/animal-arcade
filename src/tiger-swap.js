@@ -148,6 +148,9 @@
       return {root:positionRoot,body:sceneRoot,materials,scale,dimensions};
     }
     const hero=addModel(loaded.hero),runner=addModel(loaded.runner);
+    // The native donor points the opposite way from the high-detail hero.
+    // Turn its root 180°, not the entire canvas, so both face the opponent.
+    runner.root.rotation.y=Math.PI;
     const heroMixer=new THREE.AnimationMixer(hero.body);
     const runnerMixer=new THREE.AnimationMixer(runner.body);
     const idleClip=loaded.hero.animations.find(a=>/^Idle$/i.test(a.name));
@@ -234,7 +237,7 @@
     if(!inBattle){layers&&(layers.hidden=true);closeLab();lastHit='';return;}
     if(!loaded){attemptAuto();return;}
     if(!actors.length){
-      try{actors=[createActor(0),createActor(1)];}
+      try{actors.push(createActor(0));actors.push(createActor(1));}
       catch(e){disposeActors();status('3D rendering unavailable: '+(e?.message||e),true);return;}
     }
     layers.hidden=false;
