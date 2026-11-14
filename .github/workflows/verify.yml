@@ -28,6 +28,7 @@ jobs:
           node --check src/tiger-action-core.js
           node --check src/tiger-swap.js
           node --check src/bear-motion-core.js
+          node --check src/bear-material-core.js
           node --check scripts/verify-tiger-assets.mjs
       - name: Verify menu logic and original-art checksum
         run: npm test
