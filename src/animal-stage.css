@@ -35,3 +35,13 @@
 .ark-3d-panel code{font-family:monospace;color:#f7dfab}
 @media(max-width:650px){.ark-3d-panel{gap:8px}.ark-3d-panel h2{font-size:18px}
  .ark-reference-layout .combat-footer [data-ark-3d-open]{font-size:9px}}
+
+
+/* The full-screen arena hides VS with display:none. Without explicit grid
+ * placement, the right fighter auto-flows into VS's tiny center column. */
+.ark-reference-layout .combat-battlefield .combat-fighter[data-fighter-slot="0"]{
+  grid-column:1;min-width:0;
+}
+.ark-reference-layout .combat-battlefield .combat-fighter[data-fighter-slot="1"]{
+  grid-column:3;min-width:0;
+}
