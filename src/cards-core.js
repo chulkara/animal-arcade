@@ -10,12 +10,12 @@
   const KEY='noahs-arkade.cards.v1';
   const TYPES=['animal','strong','miracle'];
   const CARDS=Object.freeze([
-    {id:'animal:tiger',type:'animal',name:'BLUE TIGER',tag:'STRIPED HUNTER',symbol:'虎',
-      animalId:'tiger',affinity:'forest',art:'./assets/tiger-illustration.webp',
-      description:'A shadow at the edge of the moonlit forest.'},
-    {id:'animal:lion',type:'animal',name:'GOLDEN LION',tag:'SAVANNA KING',symbol:'獅',
-      animalId:'lion',affinity:'sun',art:'./assets/lion-illustration.webp',
-      description:'The guardian of an endless golden horizon.'},
+    {id:'animal:bear',type:'animal',name:'BROWN BEAR',tag:'FOREST BRUISER',symbol:'熊',
+      animalId:'bear',affinity:'forest',art:'./assets/bear-portrait.svg',
+      description:'A mountain of strength beneath the pines.'},
+    {id:'animal:moose',type:'animal',name:'MOOSE',tag:'ANTLERED TITAN',symbol:'✦',
+      animalId:'moose',affinity:'forest',art:'./assets/moose-portrait.svg',
+      description:'An antler-crowned force of the northern wild.'},
     {id:'strong:fang',type:'strong',name:'FANG STANDARD',tag:'POWER · +8',symbol:'⚔',
       technique:'P',bonusDamage:8,description:'A sharpened strike for the relentless hunter.'},
     {id:'strong:guard',type:'strong',name:'OAKEN GUARD',tag:'GUTS · +7',symbol:'◆',
@@ -38,10 +38,10 @@
       affinity:'sun',bonusDamage:15,description:'A crown of night over the savanna.'}
   ].map(card=>Object.freeze(card)));
   const BY_ID=Object.freeze(Object.fromEntries(CARDS.map(card=>[card.id,card])));
-  const STARTER_IDS=Object.freeze(['animal:tiger','animal:lion','strong:fang','strong:guard','miracle:meteor','miracle:dawn']);
+  const STARTER_IDS=Object.freeze(['animal:bear','animal:moose','strong:fang','strong:guard','miracle:meteor','miracle:dawn']);
   const DEFAULT_DECKS=Object.freeze({
-    p1:Object.freeze({animal:'animal:tiger',strong:'strong:fang',miracle:'miracle:meteor'}),
-    p2:Object.freeze({animal:'animal:lion',strong:'strong:guard',miracle:'miracle:dawn'})
+    p1:Object.freeze({animal:'animal:bear',strong:'strong:fang',miracle:'miracle:meteor'}),
+    p2:Object.freeze({animal:'animal:moose',strong:'strong:guard',miracle:'miracle:dawn'})
   });
   const safeCount=n=>Number.isSafeInteger(n)&&n>=0&&n<=99?n:0;
   const clone=obj=>JSON.parse(JSON.stringify(obj));
