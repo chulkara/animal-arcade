@@ -52,3 +52,18 @@ To avoid the all-black FBX appearance previously encountered with Bear, the view
 ## Source license gate
 
 Neither the provided Moose subarchive nor the rest of the supplied pack contained a usable license or explicit commercial/public redistribution grant. "Free" or access to files does not confer those rights. Keep original FBX and PNG binaries private until the official source/license can be verified. This limitation also applies to Bear assets from the same pack. The local review ZIP returns the supplied content to its uploader for private evaluation; it is not a public redistribution approval.
+
+## Moose Motion Lab V2 — hind-leg-driven Power stomp (November 14, 2026)
+
+**User visual feedback:** the V1 Power / hoof stomp is too rigid: the back legs appear locked and do not move. User did not reject Guts, Technique, Special or any native source animations.
+
+V2 adjusts **Power only**, with the same original moose rig and native Breathing base clip:
+- Anticipation/compression: pelvis drops; both rear hip joints flex and both knee/hock chains bend.
+- Rising push: both rear hips extend, knees and hocks straighten in a timed push; forelegs lift as the upper body rears.
+- Downstroke/contact: both rear leg chains re-flex to absorb the landing while the front hooves descend; recovers to the original standing pose.
+- Viewer maps the actual source names `RigPelvis`, `RigLBLeg1/2/3`, `RigRBLeg1/2/3`, `RigLBLegAnkle`, `RigRBLegAnkle`. No retargeted skeleton or binary animation edits.
+- A bounded hind-ankle ground-height compensation attempts to keep the rear feet planted during the upward movement. This is *not* a full IK solver or proven live foot-lock.
+- Four beat phases and their opposite-signed joint rotations are regression tested; Guts/Technique/Special sequences are left unchanged. Native Idle/Run/Jump/Hit/KO remain as supplied.
+- Local downloadable **Moose Motion Lab V2** contains the unchanged 30 original model/animation/texture assets, updated procedural motion and browser viewer code. Package integrity verified (37 files, all CRC checked).
+
+**Remaining gate:** Karan must play Power in V2 (preferably side view at 0.5×) and confirm the rear legs actually bend, extend and settle naturally. Browser WebGL live verification is unavailable in the authoring runtime, so no claim that the movement is artist-approved. This is still a prototype; do not merge or distribute unlicensed asset bytes publicly.
