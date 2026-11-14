@@ -386,6 +386,13 @@ await run('reference-arena-layout-desktop',{width:1440,height:900},async page=>{
   assert.ok(metrics.dock.bottom<=901&&metrics.dock.bottom>=890,'Reels should dock to bottom');
   assert.ok(metrics.stop.w>=70,'Primary input must be arcade-sized');
   assert.equal(metrics.buttons,1);
+  const portraits=await page.locator('.combat-fighter-art').evaluateAll(nodes=>nodes.map(el=>{
+    const r=el.getBoundingClientRect(),style=getComputedStyle(el);
+    return {animal:el.closest('[data-fighter-id]')?.dataset.fighterId,
+      w:r.width,h:r.height,x:r.x,y:r.y,natural:[el.naturalWidth,el.naturalHeight],
+      cssWidth:style.width,cssHeight:style.height,flexShrink:style.flexShrink};
+  }));
+  console.log('BEAR_MOOSE_ART_METRICS '+JSON.stringify(portraits));
   const art=await page.locator('.combat-fighter-art').evaluateAll(nodes=>nodes.map(el=>el.naturalWidth));
   assert.ok(art.length===2&&art.every(n=>n>0),'Both original animal artworks must load');
 });
