@@ -4,7 +4,8 @@
  */
 import {readFileSync} from 'node:fs';
 import {createHash} from 'node:crypto';
-import {basename} from 'node:path';
+import {basename,resolve} from 'node:path';
+import {pathToFileURL} from 'node:url';
 
 function readGLB(path){
   const b=readFileSync(path);
@@ -43,7 +44,7 @@ export function verifyPair(hero,runner){
     console.warn('Rig counts differ from the verified 121-joint hero / 47-joint runner; inspect before using.');
   return [a,b];
 }
-if(process.argv[1] && import.meta.url===new URL('file://'+process.argv[1]).href){
+if(process.argv[1] && import.meta.url===pathToFileURL(resolve(process.argv[1])).href){
   const [, ,heroPath,runnerPath]=process.argv;
   if(!heroPath||!runnerPath){
     console.error('Usage: node scripts/verify-tiger-assets.mjs <orange-hero.glb> <native-runner.glb>');
