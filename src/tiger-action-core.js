@@ -17,46 +17,46 @@
     G:Object.freeze([
       k(0,'idle'),k(160,'idle',{travel:-.09,lift:-.04,pitch:.08,head:.06}),
       k(300,'run',{travel:.04,lift:.02,pitch:-.04}),
-      k(560,'run',{travel:.68,lift:.08,pitch:-.10}),
-      k(700,'idle',{travel:.81,lift:.03,pitch:-.12,neck:-.12,foreleg:1.25,jaw:.12}),
-      k(850,'idle',{travel:.72,lift:0,pitch:.04,foreleg:-.06}),
+      k(560,'run',{travel:.37,lift:.08,pitch:-.10}),
+      k(700,'idle',{travel:.43,lift:.07,pitch:-.12,neck:-.12,foreleg:1.25,jaw:.12}),
+      k(850,'idle',{travel:.35,lift:0,pitch:.04,foreleg:-.06}),
       k(1260,'idle')
     ]),
     T:Object.freeze([
       k(0,'idle'),k(100,'idle',{travel:-.05,pitch:.06,head:-.06}),
       k(190,'run',{travel:.10,lift:.09}),
-      k(440,'run',{travel:.76,lift:.17,pitch:-.08}),
-      k(530,'idle',{travel:.84,lift:.21,roll:.07,foreleg:1.60,head:-.12}),
-      k(690,'idle',{travel:.70,lift:.02,foreleg:-.03}),
+      k(440,'run',{travel:.42,lift:.17,pitch:-.08}),
+      k(530,'idle',{travel:.46,lift:.21,roll:.07,foreleg:1.60,head:-.12}),
+      k(690,'idle',{travel:.34,lift:.02,foreleg:-.03}),
       k(1110,'idle')
     ]),
     P:Object.freeze([
       k(0,'idle'),k(260,'idle',{travel:-.16,lift:-.08,pitch:.13,head:.12,jaw:.16}),
       k(390,'run',{travel:.02,lift:.04,pitch:-.06}),
-      k(680,'run',{travel:.74,lift:.08,pitch:-.16}),
-      k(825,'idle',{travel:.86,lift:.01,pitch:-.19,neck:-.18,head:.09,jaw:.38,foreleg:1.30}),
-      k(1060,'idle',{travel:.66,pitch:.05,head:-.08}),
+      k(680,'run',{travel:.39,lift:.08,pitch:-.16}),
+      k(825,'idle',{travel:.46,lift:.10,pitch:-.19,neck:-.18,head:.09,jaw:.38,foreleg:1.30}),
+      k(1060,'idle',{travel:.32,pitch:.05,head:-.08}),
       k(1450,'idle')
     ]),
     SPECIAL:Object.freeze([
       k(0,'howl'),k(350,'howl',{lift:.08,head:-.12,jaw:.30,neck:-.12}),
       k(600,'idle',{travel:-.09,lift:-.05,pitch:.12,jaw:.11}),
       k(770,'run',{travel:.02,pitch:-.03}),
-      k(1080,'run',{travel:.82,lift:.10,pitch:-.13}),
-      k(1210,'idle',{travel:.91,lift:.02,head:-.20,jaw:.42,foreleg:1.45}),
-      k(1440,'idle',{travel:.62,head:.03}),
+      k(1080,'run',{travel:.42,lift:.10,pitch:-.13}),
+      k(1210,'idle',{travel:.48,lift:.09,head:-.20,jaw:.42,foreleg:1.45}),
+      k(1440,'idle',{travel:.31,head:.03}),
       k(1820,'idle')
     ]),
     HURT:Object.freeze([
-      k(0,'idle'),k(115,'idle',{travel:-.14,lift:.07,pitch:-.10,head:.33,neck:.22,roll:.12,jaw:.08}),
-      k(260,'idle',{travel:-.27,lift:-.07,pitch:.10,head:.33,roll:-.14}),
-      k(520,'idle',{travel:-.13,head:-.05}),k(860,'idle')
+      k(0,'idle'),k(115,'idle',{travel:-.14,lift:.10,pitch:-.10,head:.33,neck:.22,roll:.12,jaw:.08}),
+      k(260,'idle',{travel:-.24,lift:.08,pitch:.10,head:.33,roll:-.14}),
+      k(520,'idle',{travel:-.11,head:-.05}),k(860,'idle')
     ]),
     KO:Object.freeze([
-      k(0,'idle'),k(180,'idle',{travel:-.17,lift:.07,head:.23,roll:.10}),
-      k(580,'idle',{travel:-.31,lift:-.28,pitch:.42,roll:.42,head:.35,jaw:.08}),
-      k(1100,'idle',{travel:-.38,lift:-.45,pitch:1.15,roll:.95,head:.52}),
-      k(1600,'idle',{travel:-.38,lift:-.45,pitch:1.15,roll:.95,head:.52})
+      k(0,'idle'),k(180,'idle',{travel:-.14,lift:.10,head:.23,roll:.10}),
+      k(580,'idle',{travel:-.23,lift:.30,pitch:.25,roll:1.20,head:.35,jaw:.08}),
+      k(1100,'idle',{travel:-.30,lift:.43,pitch:.20,roll:2.30,head:.40}),
+      k(1600,'idle',{travel:-.30,lift:.43,pitch:.20,roll:2.30,head:.40})
     ]),
     VICTORY:Object.freeze([
       k(0,'howl'),k(300,'howl',{lift:.04,head:-.12,neck:-.05}),
