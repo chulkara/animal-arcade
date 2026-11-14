@@ -49,7 +49,7 @@ await run('desktop-1440x900',{width:1440,height:900},async page=>{
   assert.equal(await page.locator('#game').getAttribute('data-screen'),'MODE_MENU');
   await page.locator('[data-mode="SOLO_SELECT"]').click();
   assert.equal(await page.locator('#game').getAttribute('data-screen'),'ANIMAL_SELECT');
-  assert.match(await page.locator('.prototype-note').innerText(),/Prototype roster/);
+  assert.match(await page.locator('.prototype-note').innerText(),/Active roster/);
   await page.locator('[data-prototype-mode]').click();
   assert.equal(await page.locator('#game').getAttribute('data-screen'),'MODE_MENU');
   await page.locator('[data-back]').click();
@@ -108,10 +108,11 @@ await run('solo-prototype-1440x900',{width:1440,height:900},async page=>{
   await page.locator('[data-mode="SOLO_SELECT"]').click();
   assert.equal(await page.locator('#game').getAttribute('data-screen'),'ANIMAL_SELECT');
   assert.equal(await page.locator('[data-animal]').count(),2);
-  await page.locator('[data-animal="tiger"]').click();
+  assert.equal(await page.locator('[data-animal="tiger"], [data-animal="lion"]').count(),0);
+  await page.locator('[data-animal="bear"]').click();
   assert.equal(await page.locator('#game').getAttribute('data-screen'),'BATTLE_STAGE');
-  assert.match(await page.locator('.arena').innerText(),/BLUE TIGER/);
-  assert.match(await page.locator('.arena').innerText(),/GOLDEN LION/);
+  assert.match(await page.locator('.arena').innerText(),/BROWN BEAR/);
+  assert.match(await page.locator('.arena').innerText(),/MOOSE/);
   assert.match(await page.locator('.prototype-note').innerText(),/Exact historical damage formulas/);
   await page.locator('[data-prototype-intro]').click();
   assert.match(await page.locator('.prototype-announcer').innerText(),/STAGE IS SET/);
@@ -127,9 +128,9 @@ await run('duel-prototype-390x844',{width:390,height:844},async page=>{
   await page.locator('[data-mode="DUEL_SELECT"]').click();
   assert.equal(await page.locator('#game').getAttribute('data-screen'),'ANIMAL_SELECT');
   assert.match(await page.locator('.prototype-status').innerText(),/PLAYER 1 SELECTS/);
-  await page.locator('[data-animal="lion"]').click();
+  await page.locator('[data-animal="moose"]').click();
   assert.match(await page.locator('.prototype-status').innerText(),/PLAYER 2 SELECTS/);
-  await page.locator('[data-animal="tiger"]').click();
+  await page.locator('[data-animal="bear"]').click();
   assert.equal(await page.locator('#game').getAttribute('data-screen'),'BATTLE_STAGE');
   assert.match(await page.locator('.arena').innerText(),/PLAYER 2/);
   await page.locator('[data-prototype-menu]').click();
@@ -141,20 +142,17 @@ await run('duel-prototype-390x844',{width:390,height:844},async page=>{
 await run('combat-solo-1440x900',{width:1440,height:900},async page=>{
   await page.locator('.painted-hotspots [data-art-action="PLAY"]').click();
   await page.locator('[data-mode="SOLO_SELECT"]').click();
-  await page.locator('[data-animal="tiger"]').click();
+  await page.locator('[data-animal="bear"]').click();
   await page.locator('[data-prototype-intro]').click();
   await page.locator('[data-prototype-fight]').click();
   assert.equal(await page.locator('#game').getAttribute('data-screen'),'BATTLE_PLAY');
-  assert.equal(await page.locator('[data-tiger-lab-toggle]').count(),1);
-  await page.locator('[data-tiger-lab-toggle]').click();
-  assert.equal(await page.locator('[data-tiger-hero]').count(),1);
-  assert.equal(await page.locator('[data-tiger-run]').count(),1);
-  assert.equal(await page.locator('[data-tiger-action]').count(),7);
-  assert.ok(await page.evaluate(()=>typeof window.NoahsTigerActionCore?.sampleAction==='function'));
-  await page.locator('[data-tiger-action="ko"]').click();
-  assert.match(await page.locator('[data-tiger-status]').innerText(),/Load both GLBs first/);
+  assert.equal(await page.locator('[data-ark-3d-open]').count(),1);
+  await page.locator('[data-ark-3d-open]').click();
+  assert.equal(await page.locator('[data-ark-3d-folder="bear"]').count(),1);
+  assert.equal(await page.locator('[data-ark-3d-folder="moose"]').count(),1);
+  assert.ok(await page.evaluate(()=>typeof window.NoahsAnimalStage?.openPanel==='function'));
   await page.keyboard.press('Escape');
-  assert.equal(await page.locator('.ark-tiger-lab').count(),0);
+  assert.equal(await page.locator('.ark-3d-panel').count(),0);
   assert.equal(await page.locator('#game').getAttribute('data-screen'),'BATTLE_PLAY');
   assert.equal(await page.locator('.combat-hp').count(),2);
   assert.match(await page.locator('.combat-reel-label').innerText(),/PLAYER 1/);
@@ -176,8 +174,8 @@ await run('combat-solo-1440x900',{width:1440,height:900},async page=>{
 await run('combat-duel-390x844',{width:390,height:844},async page=>{
   await page.locator('.painted-mobile-nav [data-art-action="PLAY"]').click();
   await page.locator('[data-mode="DUEL_SELECT"]').click();
-  await page.locator('[data-animal="lion"]').click();
-  await page.locator('[data-animal="tiger"]').click();
+  await page.locator('[data-animal="moose"]').click();
+  await page.locator('[data-animal="bear"]').click();
   await page.locator('[data-prototype-intro]').click();
   await page.locator('[data-prototype-fight]').click();
   assert.equal(await page.locator('#game').getAttribute('data-screen'),'BATTLE_PLAY');
@@ -254,7 +252,7 @@ await run('binder-mobile-390x844',{width:390,height:844},async page=>{
 await run('card-reward-solo-1440x900',{width:1440,height:900},async page=>{
   await page.locator('.painted-hotspots [data-art-action="PLAY"]').click();
   await page.locator('[data-mode="SOLO_SELECT"]').click();
-  await page.locator('[data-animal="tiger"]').click();
+  await page.locator('[data-animal="bear"]').click();
   await page.locator('[data-prototype-intro]').click();
   await page.locator('[data-prototype-fight]').click();
   const result=await page.evaluate(()=>{
@@ -291,7 +289,7 @@ await run('battle-feel-desktop-1440x900',{width:1440,height:900},async page=>{
   await page.emulateMedia({reducedMotion:'no-preference'});
   await page.locator('.painted-hotspots [data-art-action="PLAY"]').click();
   await page.locator('[data-mode="SOLO_SELECT"]').click();
-  await page.locator('[data-animal="tiger"]').click();
+  await page.locator('[data-animal="bear"]').click();
   await page.locator('[data-prototype-intro]').click();
   await page.locator('[data-prototype-fight]').click();
   assert.equal(await page.locator('#game').getAttribute('data-screen'),'BATTLE_PLAY');
@@ -319,8 +317,8 @@ await run('battle-feel-desktop-1440x900',{width:1440,height:900},async page=>{
 await run('battle-feel-reduced-motion-390x844',{width:390,height:844},async page=>{
   await page.locator('.painted-mobile-nav [data-art-action="PLAY"]').click();
   await page.locator('[data-mode="DUEL_SELECT"]').click();
-  await page.locator('[data-animal="lion"]').click();
-  await page.locator('[data-animal="tiger"]').click();
+  await page.locator('[data-animal="moose"]').click();
+  await page.locator('[data-animal="bear"]').click();
   await page.locator('[data-prototype-intro]').click();
   await page.locator('[data-prototype-fight]').click();
   assert.equal(await page.locator('.combat-battlefield').count(),1);
@@ -345,7 +343,7 @@ await run('battle-feel-reduced-motion-390x844',{width:390,height:844},async page
 await run('arcade-run-mode-1440x900',{width:1440,height:900},async page=>{
   await page.locator('.painted-hotspots [data-art-action="PLAY"]').click();
   await page.locator('[data-mode="SOLO_SELECT"]').click();
-  await page.locator('[data-animal="tiger"]').click();
+  await page.locator('[data-animal="bear"]').click();
   await page.locator('[data-prototype-intro]').click();
   await page.locator('[data-prototype-fight]').click();
   assert.match(await page.locator('.combat-series').innerText(),/EXPEDITION WINS/);
@@ -356,8 +354,8 @@ await run('arcade-run-mode-1440x900',{width:1440,height:900},async page=>{
 await run('versus-set-mode-390x844',{width:390,height:844},async page=>{
   await page.locator('.painted-mobile-nav [data-art-action="PLAY"]').click();
   await page.locator('[data-mode="DUEL_SELECT"]').click();
-  await page.locator('[data-animal="tiger"]').click();
-  await page.locator('[data-animal="lion"]').click();
+  await page.locator('[data-animal="bear"]').click();
+  await page.locator('[data-animal="moose"]').click();
   await page.locator('[data-prototype-intro]').click();
   await page.locator('[data-prototype-fight]').click();
   assert.match(await page.locator('.combat-heading').innerText(),/BOUT 1 · FIRST TO 2/);
@@ -369,7 +367,7 @@ await run('versus-set-mode-390x844',{width:390,height:844},async page=>{
 await run('reference-arena-layout-desktop',{width:1440,height:900},async page=>{
   await page.locator('.painted-hotspots [data-art-action="PLAY"]').click();
   await page.locator('[data-mode="SOLO_SELECT"]').click();
-  await page.locator('[data-animal="tiger"]').click();
+  await page.locator('[data-animal="bear"]').click();
   await page.locator('[data-prototype-intro]').click();
   await page.locator('[data-prototype-fight]').click();
   assert.equal(await page.locator('#game').getAttribute('data-screen'),'BATTLE_PLAY');
@@ -394,8 +392,8 @@ await run('reference-arena-layout-desktop',{width:1440,height:900},async page=>{
 await run('reference-arena-layout-landscape',{width:844,height:390},async page=>{
   await page.locator('.painted-hotspots [data-art-action="PLAY"]').click();
   await page.locator('[data-mode="DUEL_SELECT"]').click();
-  await page.locator('[data-animal="lion"]').click();
-  await page.locator('[data-animal="tiger"]').click();
+  await page.locator('[data-animal="moose"]').click();
+  await page.locator('[data-animal="bear"]').click();
   await page.locator('[data-prototype-intro]').click();
   await page.locator('[data-prototype-fight]').click();
   const frame=await page.evaluate(()=>{
