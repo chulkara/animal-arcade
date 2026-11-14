@@ -145,6 +145,13 @@ await run('combat-solo-1440x900',{width:1440,height:900},async page=>{
   await page.locator('[data-prototype-intro]').click();
   await page.locator('[data-prototype-fight]').click();
   assert.equal(await page.locator('#game').getAttribute('data-screen'),'BATTLE_PLAY');
+  assert.equal(await page.locator('[data-tiger-lab-toggle]').count(),1);
+  await page.locator('[data-tiger-lab-toggle]').click();
+  assert.equal(await page.locator('[data-tiger-hero]').count(),1);
+  assert.equal(await page.locator('[data-tiger-run]').count(),1);
+  await page.keyboard.press('Escape');
+  assert.equal(await page.locator('.ark-tiger-lab').count(),0);
+  assert.equal(await page.locator('#game').getAttribute('data-screen'),'BATTLE_PLAY');
   assert.equal(await page.locator('.combat-hp').count(),2);
   assert.match(await page.locator('.combat-reel-label').innerText(),/PLAYER 1/);
   await page.keyboard.press('g');
