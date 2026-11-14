@@ -70,3 +70,23 @@ The user visually approved **Idle, Run, Hit Reaction and Knockout**, but rejecte
 - Automated tests verify the four attacks never select the Run model, keyframe-velocity continuity, calmer Victory and exact accepted Hit / KO values; CI passed after core changes.
 - Full **real-time** visual acceptance remains required, especially foreleg movement and contact. Offline skinning contact sheets are only diagnostic.
 - Keep draft PR #8 unmerged until user approves these revised attacks and color. Approved main menu assets not touched.
+
+
+## V4 — second user review: attacks must not all look the same
+
+User reported that **V3 GUTS STRIKE, TECHNIQUE STRIKE, POWER STRIKE and SPECIAL all still looked the same**. User also explicitly instructed: **Victory should use Howl**, and **Idle/Howl should be even lighter to match the native Runner**.
+
+Changes implemented:
+- **Guts = low shoulder-first charge:** head/neck/chest drive forward, low body, forepaws tucked (not a generic swiping paw).
+- **Technique = lateral cross-claw slash:** lateral sidestep, torso yaw/roll and a single forepaw sweeping across the body, the other paw asymmetrical.
+- **Power = upright double-paw hammer:** much taller rear-up, both paws raised, decisive downward slam.
+- **Special = Howl → airborne pounce:** native accepted Howl intro, crouch, clear upward/forward leap with both forepaws, landing and recovery. Uses one high-detail mesh throughout.
+- All four have different time signatures, attack silhouettes and body trajectories; they use the existing monotone pose interpolation without V2's cross-mesh attack popping.
+- **Victory now reuses native Howl**, with no additional head or neck offset.
+- **Hit Reaction and KO preserved:** their original score keyframes, duration and special-case smoothstep sampling remain unchanged; regression tests explicitly cover them.
+- **Color:** high-detail hero retextured again *from original pale asset*, with lighter orange fur and nonmetallic matte PBR in the Three.js preview and game renderer. Stripes, facial detail, original Idle and Howl untouched. Runner asset stays byte-for-byte unchanged.
+- V4 hero SHA-256: `963c0e6c7e61f6a769fa35a341dc2ce7a15d65692585da12ba5937795a09fea9`. Native runner SHA-256: `6e152d1d98c6149d4241c292bf21cbc9e8ab16f81a456ea1515d174f7f7d1e40`.
+- V4 GLB package is supplied **separately for local review**, not checked into the public repository. A simplified offline rig-render contact sheet confirms distinct strike silhouette keyframes; it is not a real-time WebGL visual signoff.
+- No main menu art edited. Continue **Tiger → Bear → UX/UI/features** only after user approves.
+
+**Next gate:** user must replay Guts, Technique, Power, Special, Victory, then compare Idle/Howl vs Run fur side by side in **Tiger Motion Lab V4**. Do not mark tiger finished or merge draft PR #8 until those actions and the color are approved.
