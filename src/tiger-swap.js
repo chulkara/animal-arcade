@@ -299,8 +299,12 @@
   }
   function sync(){
     const inBattle=nowScreen()==='BATTLE_PLAY';
+    const wasInBattle=runningScreen;
     runningScreen=inBattle;
-    if(!inBattle){layers&&(layers.hidden=true);closeLab();lastHit='';return;}
+    if(!inBattle){
+      if(wasInBattle)for(const actor of actors)actor.play('idle',false);
+      layers&&(layers.hidden=true);closeLab();lastHit='';return;
+    }
     if(!loaded){attemptAuto();return;}
     const fighters=[...document.querySelectorAll('.combat-fighter[data-tiger-slot]')];
     const tigerSlots=fighters.filter(node=>node.dataset.tigerId==='tiger')
@@ -338,7 +342,11 @@
           actors.find(actor=>actor.slot===ev.defender)?.perform(state.animals[ev.defender].hp<=0?'ko':'hurt');
         }
       }
-    }else if(!state?.lastEvent)lastHit='';
+    }else if(!state?.lastEvent && lastHit){
+      // The next exchange/bout must never inherit a previous KO/attack pose.
+      lastHit='';
+      for(const actor of actors)actor.play('idle',false);
+    }
     if(!raf){lastTime=performance.now();raf=requestAnimationFrame(draw);}
   }
   function draw(time){
