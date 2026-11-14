@@ -7,7 +7,7 @@
   if(root)root.NoahsMooseActionCore=api;
 })(typeof window==='object'?window:null,function(){
 'use strict';
-const FIELDS=Object.freeze(['travel','lateral','lift','pitch','yaw','roll','headPitch','headYaw','neck','chest','leftHoof','rightHoof','tail']);
+const FIELDS=Object.freeze(['travel','lateral','lift','pitch','yaw','roll','headPitch','headYaw','neck','chest','leftHoof','rightHoof','tail','pelvis','leftHindHip','rightHindHip','leftHindKnee','rightHindKnee','leftHindHock','rightHindHock','leftHindAnkle','rightHindAnkle','hindPlant']);
 const ZERO=Object.freeze(Object.fromEntries(FIELDS.map(k=>[k,0])));
 const key=(ms,pose={})=>Object.freeze({ms,...ZERO,...pose});
 const MOVES=Object.freeze({
@@ -24,12 +24,38 @@ const MOVES=Object.freeze({
   key(970,{lateral:.16,travel:.29,yaw:.12,headYaw:.22,roll:.03}),
   key(1300)
  ])}),
- Power:Object.freeze({label:'Two-hoof stomp',base:'Breathing',frames:Object.freeze([
-  key(0),key(290,{travel:-.14,lift:-.08,pitch:-.08,leftHoof:.23,rightHoof:.23}),
-  key(650,{lift:.30,pitch:-.25,leftHoof:.98,rightHoof:.98,neck:-.07}),
-  key(850,{lift:.34,pitch:-.18,leftHoof:1.18,rightHoof:1.18}),
-  key(1090,{travel:.34,lift:0,pitch:.19,leftHoof:-.13,rightHoof:-.13,headPitch:.14}),
-  key(1390,{travel:.15,pitch:.05}),key(1740)
+ Power:Object.freeze({label:'Weight-shift + hind-leg-driven two-hoof stomp',base:'Breathing',frames:Object.freeze([
+  // Compression: all four legs participate; stifles/hocks fold, pelvis sinks.
+  key(0),
+  key(170,{travel:-.05,lift:-.075,pitch:.06,pelvis:.08,
+    leftHindHip:-.18,rightHindHip:-.16,leftHindKnee:.27,rightHindKnee:.25,
+    leftHindHock:-.12,rightHindHock:-.11,leftHoof:.08,rightHoof:.06,hindPlant:.85}),
+  key(390,{travel:-.12,lift:-.16,pitch:.12,pelvis:.18,
+    leftHindHip:-.34,rightHindHip:-.31,leftHindKnee:.63,rightHindKnee:.60,
+    leftHindHock:-.33,rightHindHock:-.30,leftHindAnkle:.09,rightHindAnkle:.08,
+    leftHoof:.37,rightHoof:.34,hindPlant:1}),
+  // Hind-leg-driven push into rear-up.
+  key(640,{travel:-.07,lift:.085,pitch:-.24,pelvis:-.11,
+    leftHindHip:.30,rightHindHip:.34,leftHindKnee:-.17,rightHindKnee:-.19,
+    leftHindHock:.11,rightHindHock:.10,leftHindAnkle:-.07,rightHindAnkle:-.06,
+    leftHoof:.91,rightHoof:.86,hindPlant:1}),
+  key(850,{travel:-.03,lift:.22,pitch:-.35,pelvis:-.18,
+    leftHindHip:.43,rightHindHip:.40,leftHindKnee:-.31,rightHindKnee:-.30,
+    leftHindHock:.19,rightHindHock:.17,leftHindAnkle:-.11,rightHindAnkle:-.10,
+    leftHoof:1.13,rightHoof:1.07,hindPlant:1}),
+  // Lower and absorb the landing with bent rear knees, not locked legs.
+  key(1040,{travel:.17,lift:.09,pitch:-.09,pelvis:.04,
+    leftHindHip:-.11,rightHindHip:-.10,leftHindKnee:.25,rightHindKnee:.22,
+    leftHindHock:-.10,rightHindHock:-.09,
+    leftHoof:.64,rightHoof:.57,hindPlant:.80}),
+  key(1220,{travel:.31,lift:-.055,pitch:.19,pelvis:.16,
+    leftHindHip:-.30,rightHindHip:-.28,leftHindKnee:.55,rightHindKnee:.51,
+    leftHindHock:-.28,rightHindHock:-.26,leftHindAnkle:.09,rightHindAnkle:.08,
+    leftHoof:-.10,rightHoof:-.09,headPitch:.13,hindPlant:.70}),
+  key(1440,{travel:.16,lift:-.07,pitch:.055,pelvis:.10,
+    leftHindHip:-.14,rightHindHip:-.13,leftHindKnee:.25,rightHindKnee:.23,
+    leftHindHock:-.10,rightHindHock:-.09,hindPlant:.50}),
+  key(1840)
  ])}),
  Special:Object.freeze({label:'Leaping antler drive',base:'Jump',frames:Object.freeze([
   key(0),key(270,{travel:-.14,lift:-.12,pitch:.15,headPitch:.14}),
