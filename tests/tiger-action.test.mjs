@@ -18,14 +18,17 @@ test('all action tracks are sorted, finite and return exactly to neutral for att
  }
 });
 test('different G/T/P moves have distinct timing and contact silhouettes',()=>{
- const guts=sampleAction('attack',570,{technique:'G'});
- const technique=sampleAction('attack',490,{technique:'T'});
- const power=sampleAction('attack',765,{technique:'P'});
+ const guts=sampleAction('attack',650,{technique:'G'});
+ const technique=sampleAction('attack',515,{technique:'T'});
+ const power=sampleAction('attack',790,{technique:'P'});
  assert.notEqual(guts.duration,technique.duration);
  assert.notEqual(technique.duration,power.duration);
- assert.ok(guts.pose.foreleg>.1);
- assert.ok(technique.pose.lift>.1);
- assert.ok(power.pose.jaw>.2);
+ assert.ok(guts.pose.head>.30);
+ assert.ok(guts.pose.shoulder>.25);
+ assert.ok(technique.pose.sweep>1);
+ assert.ok(technique.pose.yaw>.2);
+ assert.ok(power.pose.rear>.65);
+ assert.ok(power.pose.forelegRight>1.8);
 });
 test('the entire strike stays on one high-detail hero mesh, separate Run preview unchanged',()=>{
  for(const technique of ['G','T','P']){
@@ -79,13 +82,34 @@ test('new attacks keep pose continuity across every timeline beat',()=>{
    }
  }
 });
-test('victory does not use the extreme head-back howl and stays understated',()=>{
- assert.ok(SCORES.VICTORY.every(f=>f.mode==='idle'));
+test('victory reuses the original Howl with NO extra head/back transform',()=>{
+ assert.ok(SCORES.VICTORY.slice(0,-1).every(f=>f.mode==='howl'));
  let maximumHeadTilt=0;
  for(let i=0;i<=SCORES.VICTORY.at(-1).ms;i+=15){
    const snap=sampleAction('victory',i);
    maximumHeadTilt=Math.max(maximumHeadTilt,Math.abs(snap.pose.head));
-   assert.equal(snap.mode,'idle');
+   assert.equal(snap.mode,i>=SCORES.VICTORY.at(-1).ms?'idle':'howl');
  }
  assert.ok(maximumHeadTilt<=.05);
+});
+
+test('V4 Guts, Technique, Power and Special have genuinely distinct contact poses',()=>{
+ const G=sampleAction('attack',650,{technique:'G'}).pose;
+ const T=sampleAction('attack',515,{technique:'T'}).pose;
+ const P=sampleAction('attack',790,{technique:'P'}).pose;
+ const S=sampleAction('attack',1190,{special:true}).pose;
+ assert.ok(G.head>.30&&G.shoulder>.25&&G.lift<.10,'Guts is shoulder-led low charge');
+ assert.ok(T.sweep>1.1&&Math.abs(T.yaw)>.2&&T.forelegRight<0,'Technique is asymmetric lateral claw slash');
+ assert.ok(P.rear>.65&&P.forelegRight>1.8&&P.lift>.4,'Power rears with both paws');
+ assert.ok(S.lift>.55&&S.travel>.35&&S.jaw>.3,'Special is airborne pounce');
+ for(const [label,pose] of Object.entries({G,T,P,S}))
+   assert.ok(Object.values(pose).every(x=>Number.isFinite(x)),label);
+});
+test('approved HURT and KO original frames and sampling remain unchanged with new pose channels',()=>{
+ const h=sampleAction('hurt',115).pose,ko=sampleAction('ko',1100).pose;
+ assert.equal(h.head,.33);assert.equal(h.neck,.22);
+ assert.equal(ko.roll,2.30);assert.equal(ko.lift,.43);
+ for(const pose of [h,ko])
+   for(const field of ['rear','yaw','lateral','sweep','shoulder','forelegRight'])
+     assert.equal(pose[field],0,field);
 });
