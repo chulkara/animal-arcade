@@ -44,6 +44,7 @@ test('knockout is distinct from hurt and does not recover prematurely',()=>{
  const hurt=sampleAction('hurt',860),ko=sampleAction('ko',1600);
  assert.equal(hurt.complete,true);
  assert.equal(ko.complete,true);
- assert.ok(ko.pose.lift<-.3);
- assert.ok(ko.pose.roll>.2);
+ assert.ok(ko.pose.lift>.4);
+ assert.ok(ko.pose.roll>2);
+ assert.ok(Math.abs(ko.pose.pitch)<.4);
 });
