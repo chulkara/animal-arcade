@@ -1,0 +1,287 @@
+/* Phase 4.5B1 reference-driven FULL-SCREEN stage.
+   NOT the final 3D animation system. This stylesheet replaces the dashboard
+   composition while preserving the approved title painting and engine. */
+.game .ark-reference-layout{
+  width:100vw!important;max-width:none!important;
+  height:100svh!important;max-height:100svh!important;
+  top:50%!important;left:50%!important;
+  transform:translate(-50%,-50%)!important;
+  overflow:hidden!important;padding:0!important;
+  border:0!important;border-radius:0!important;
+  box-shadow:none!important;
+  background:#152f39!important;isolation:isolate;
+  font-family:Georgia,serif;
+}
+.game .ark-reference-layout:before,
+.game .ark-reference-layout:after{display:none!important}
+.ark-reference-layout .combat-battlefield{
+  position:absolute!important;inset:0!important;
+  width:100%!important;max-width:none!important;
+  min-height:100%!important;height:100%!important;
+  margin:0!important;border:0!important;
+  box-shadow:inset 0 0 120px #091e2d77!important;
+  background:
+    radial-gradient(ellipse at 72% 21%,#f7d5a08f 0%,#f3c88744 14%,transparent 35%),
+    linear-gradient(180deg,#476c78 0%,#8aa3a0 36%,#72897d 55%,#354c49 72%,#102c35 100%)!important;
+}
+.ark-reference-layout .combat-battlefield:before{
+  opacity:.13;pointer-events:none;
+  background:repeating-linear-gradient(115deg,#e6e0c73b 0px,transparent 3px,transparent 29px);
+}
+.ark-reference-layout .combat-battlefield:after{
+  background:radial-gradient(ellipse at center,transparent 43%,#081a278a 100%);
+}
+.ark-reference-layout .battlefield-ridge-far{height:44%;bottom:24%;background:#5d7167;opacity:.70}
+.ark-reference-layout .battlefield-ridge-near{height:35%;bottom:18%;background:#264a48;opacity:.85}
+.ark-reference-layout .battlefield-ground{height:34%;bottom:0;background:
+  repeating-radial-gradient(ellipse at 50% 0,#a2a58b44 0 1px,transparent 2px 24px),
+  linear-gradient(180deg,#52756b,#182e33)}
+/* Top HUD: same physical screen area as a real arcade battle, with our own
+   natural-history label typography rather than copied original UI art. */
+.ark-reference-layout .ark-arena-hud{
+  position:absolute;z-index:25;top:0;left:0;right:0;
+  height:clamp(86px,13svh,120px);
+  padding:clamp(7px,1vw,15px) clamp(9px,2vw,32px);
+  display:grid;grid-template-columns:minmax(0,1fr) minmax(82px,15%) minmax(0,1fr);
+  align-items:start;gap:clamp(6px,2vw,26px);
+  background:linear-gradient(180deg,#061d2bf2,#0b293bdc 74%,transparent);
+  border-top:4px solid #ae8c55;pointer-events:none;
+}
+.ark-reference-layout .ark-arena-hud-player{min-width:0;display:flex;flex-direction:column;gap:4px;}
+.ark-reference-layout .ark-arena-hud-player-1{direction:rtl;}
+.ark-reference-layout .ark-arena-hud-player-1>*{direction:ltr}
+.ark-reference-layout .ark-hud-nameplate{display:flex;align-items:baseline;gap:8px;
+  white-space:nowrap;overflow:hidden;justify-content:space-between;
+  font:700 12px Arial,sans-serif;color:#f8e9c5;text-shadow:0 1px 2px #000;}
+.ark-reference-layout .ark-hud-nameplate strong{font:700 clamp(14px,1.8vw,24px) Impact,'Arial Black',sans-serif;
+  letter-spacing:.065em;text-overflow:ellipsis;overflow:hidden}
+.ark-reference-layout .ark-hud-side{color:#ebbf77;font-size:10px;}
+.ark-reference-layout .ark-hud-health-value{font-variant-numeric:tabular-nums;
+  font-size:11px;flex-shrink:0;}
+.ark-reference-layout .ark-hud-meter{height:clamp(13px,2.4svh,21px);
+  border:2px solid #edcf91;background:#0d2730;padding:2px;
+  box-shadow:inset 0 0 9px #0006,0 2px 4px #0008;}
+.ark-reference-layout .ark-hud-meter span{display:block;height:100%;
+  background:linear-gradient(90deg,#62844b,#c8d987 49%,#eef0b2);
+  transition:width .34s ease-out;box-shadow:inset 0 2px #fff8;}
+.ark-reference-layout .ark-arena-hud-player-1 .ark-hud-meter span{margin-left:auto;}
+.ark-reference-layout .ark-hud-techniques{display:flex;gap:6px;justify-content:flex-start;
+  font:700 11px Arial,sans-serif;letter-spacing:.08em;color:#ead3a4;}
+.ark-reference-layout .ark-arena-hud-player-1 .ark-hud-techniques{justify-content:flex-end}
+.ark-reference-layout .ark-hud-techniques span{border:1px solid #c6aa7259;
+  padding:3px 7px;background:#0f2c3ab5;border-radius:2px;}
+.ark-reference-layout .ark-arena-hud-center{display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:1px;color:#f8e0b1;
+  text-shadow:0 2px 2px #061723;}
+.ark-reference-layout .ark-arena-hud-center span{font:bold 9px Georgia,serif;letter-spacing:.1em;}
+.ark-reference-layout .ark-arena-hud-center b{font:bold clamp(19px,2.3vw,34px) Impact,'Arial Black',sans-serif;}
+.ark-reference-layout .ark-arena-hud-center small{font:9px Arial,sans-serif;letter-spacing:.04em;}
+/* Preserve semantic HP progressbars from original fighter DOM, but show the
+   new unobstructed top HUD as the visual health display. */
+.ark-reference-layout .combat-battlefield .combat-fighter-head,
+.ark-reference-layout .combat-battlefield .combat-hp{
+  position:absolute!important;width:1px!important;height:1px!important;
+  padding:0!important;border:0!important;overflow:hidden!important;
+  clip-path:inset(50%)!important;white-space:nowrap!important;
+}
+.ark-reference-layout .combat-heading{
+  position:absolute;top:73px;z-index:26;left:50%;width:190px;
+  transform:translateX(-50%);margin:0;padding:0;
+  justify-content:center;pointer-events:none;
+}
+.ark-reference-layout .combat-heading:after{display:none}
+.ark-reference-layout .combat-heading h1{display:none}
+.ark-reference-layout .combat-heading>span{
+  font-size:9px;font-weight:bold;color:#fff0c3;
+  letter-spacing:.08em;background:#0b263ac9;padding:3px 8px;border-radius:12px;
+}
+.ark-reference-layout .combat-series{position:absolute;z-index:24;
+  top:clamp(91px,13svh,127px);left:50%;transform:translateX(-50%);
+  justify-content:center;gap:15px;width:fit-content;max-width:98%;
+  background:#092332c5;border:1px solid #c3a76b5c;border-radius:4px;
+  padding:3px 12px;font-size:9px;white-space:nowrap;pointer-events:none;}
+.ark-reference-layout .combat-battlefield .combat-match{
+  position:absolute!important;inset:0!important;
+  width:100%!important;height:100%!important;max-width:none!important;
+  min-height:100%!important;margin:0!important;
+  padding:clamp(112px,18svh,180px) clamp(2px,4vw,60px) clamp(167px,25svh,244px)!important;
+  display:grid;grid-template-columns:minmax(0,1fr) minmax(20px,7vw) minmax(0,1fr);
+  align-items:end!important;gap:clamp(5px,2vw,32px);
+}
+.ark-reference-layout .combat-battlefield .combat-fighter{
+  min-height:0;height:100%;align-items:center;justify-content:end;
+  background:none!important;padding:0 2px;
+}
+.ark-reference-layout .combat-battlefield .combat-fighter-art{
+  height:100%!important;max-height:min(52svh,510px)!important;
+  width:100%;max-width:min(43vw,530px);
+  object-fit:contain;object-position:center bottom;
+  filter:drop-shadow(0 15px 5px #102123aa) drop-shadow(0 0 20px #e2bd7540);
+}
+.ark-reference-layout .combat-battlefield .combat-fighter:nth-child(3) .combat-fighter-art{
+  transform:scaleX(-1);
+}
+.ark-reference-layout .combat-battlefield .combat-animal-name{
+  font:700 clamp(12px,1.6vw,19px) Impact,'Arial Black',sans-serif;
+  letter-spacing:.1em;margin:0 0 4px;
+  padding:4px 10px;border:1px solid #c8ab728c;
+  background:#0c293baf;text-shadow:0 2px 2px #000;}
+.ark-reference-layout .combat-battlefield .combat-selections{
+  font-size:11px;gap:12px;background:#0b2739ba;padding:4px 13px;}
+.ark-reference-layout .combat-battlefield .combat-versus{display:none!important}
+/* Mirrored attack/power bank lives at the very bottom, always in the scene. */
+.ark-reference-layout .combat-controls{
+  position:absolute;z-index:29;bottom:0;left:0;right:0;
+  width:100%;height:clamp(151px,24svh,214px);
+  margin:0;padding:12px clamp(14px,3vw,42px) 10px;
+  display:grid;grid-template-columns:minmax(0,1fr) clamp(116px,17vw,196px) minmax(0,1fr);
+  grid-template-rows:22px minmax(80px,1fr) 22px;
+  column-gap:clamp(8px,1.5vw,20px);row-gap:4px;
+  background:linear-gradient(180deg,#091e2b44 0%,#0a2534ed 18%,#081a2aed 100%);
+  border-top:4px double #d6b77b;
+  box-shadow:0 -8px 26px #07172377;
+}
+.ark-reference-layout .combat-reel-label{
+  grid-column:1/-1;grid-row:1;justify-self:center;
+  font:700 clamp(12px,1.5vw,17px) Impact,'Arial Black',sans-serif;
+  letter-spacing:.16em;color:#f7e1ab;text-shadow:0 1px 3px #000;
+}
+.ark-reference-layout .combat-reel{
+  grid-column:1;grid-row:2;align-self:stretch;justify-self:stretch;
+  width:100%;max-width:unset;min-width:0;min-height:72px;
+  gap:clamp(4px,1.8vw,20px);margin:0;
+  background:linear-gradient(#102d3b,#214d50 50%,#102c3e)!important;
+  border:3px solid #d6b879;border-radius:7px;
+}
+.ark-reference-layout .combat-reel [data-combat-current]{font-size:clamp(30px,5vw,59px);
+  width:clamp(56px,8vw,95px);height:100%;}
+.ark-reference-layout .combat-reel-neighbor{font-size:clamp(17px,2.2vw,28px);min-width:20px;}
+.ark-reference-layout .combat-stop{
+  grid-column:2;grid-row:2;align-self:center;justify-self:center;
+  width:clamp(94px,11vw,125px);height:clamp(94px,11vw,125px);
+  min-height:0;max-width:100%;margin:0;padding:7px;
+  display:flex;flex-direction:column;gap:6px;
+  border-radius:50%;border:5px solid #f5d390;
+  line-height:1.08;text-align:center;
+  box-shadow:inset 0 4px #fff6,0 6px #122535,0 0 0 4px #293e3c,0 10px 18px #0008;
+  font-size:clamp(10px,1.1vw,15px);letter-spacing:.03em;
+}
+.ark-reference-layout .combat-stop .combat-light{
+  width:20px;height:20px;box-shadow:0 0 12px #fff8;background:#fff9;
+}
+.ark-reference-layout .ark-reel-opponent{
+  grid-column:3;grid-row:2;align-self:stretch;
+  border:3px solid #c5a16a;border-radius:7px;
+  background:linear-gradient(145deg,#17313c,#354b46 50%,#163240);
+  color:#f6ddb3;display:flex;align-items:center;flex-direction:column;
+  justify-content:center;gap:5px;min-width:0;
+  box-shadow:inset 0 0 19px #0008,0 4px 14px #0007;
+}
+.ark-reference-layout .ark-reel-opponent-label{font:700 clamp(10px,1.2vw,14px) Impact,'Arial Black',sans-serif;
+  letter-spacing:.16em;}
+.ark-reference-layout .ark-reel-opponent-value{
+  font:700 clamp(35px,5vw,64px) Impact,'Arial Black',sans-serif;
+  color:#f3cb74;text-shadow:0 2px #0b252e;}
+.ark-reference-layout .ark-reel-opponent-caption{font:10px Georgia,serif;letter-spacing:.11em;}
+.ark-reference-layout .combat-instruction{
+  grid-column:1/-1;grid-row:3;align-self:center;margin:0;
+  font:bold clamp(10px,1.15vw,13px) Georgia,serif;letter-spacing:.035em;color:#ffe4ae;
+}
+/* In the original reference, an overlay calls out the correct button, not
+   a separate content page. This stays visible without obscuring fighters. */
+.ark-reference-layout .combat-message{
+  position:absolute;z-index:26;top:clamp(148px,28svh,260px);left:20%;right:20%;
+  margin:0;padding:12px 20px;background:#08283bd9;
+  border:2px solid #e5c17e;box-shadow:0 5px 20px #0006;
+}
+.ark-reference-layout .combat-ready,
+.ark-reference-layout .combat-finish{
+  position:absolute;z-index:31;bottom:clamp(170px,26svh,240px);left:50%;
+  transform:translateX(-50%);width:min(580px,92vw);
+  background:#0b2b3fe8;border:2px solid #d8b16d;
+  padding:14px 17px;box-shadow:0 5px 25px #0009;
+}
+.ark-reference-layout .combat-footer{position:absolute;z-index:32;
+  right:10px;bottom:clamp(156px,25svh,226px);width:auto;
+  border:0;margin:0;padding:0;justify-content:end;}
+.ark-reference-layout .combat-footer span{display:none;}
+.ark-reference-layout .combat-footer button{
+  border-color:#bd9d6caa;background:#092336c2;
+  min-height:31px;padding:6px 10px;font-size:11px;}
+.ark-reference-layout .combat-disclaimer{
+  position:absolute;width:1px;height:1px;overflow:hidden;
+  clip-path:inset(50%);white-space:nowrap;margin:0;padding:0;
+}
+.ark-reference-layout .combat-battlefield.battlefield-impact{
+  animation:combat-camera-recoil .52s ease-out both;
+}
+@media(max-width:650px){
+  .game .ark-reference-layout{height:100svh!important}
+  .ark-reference-layout .ark-arena-hud{height:96px;grid-template-columns:minmax(0,1fr) 65px minmax(0,1fr);
+    padding:6px 7px;gap:4px;}
+  .ark-reference-layout .ark-hud-nameplate{display:flex;flex-direction:column;gap:0;align-items:flex-start;}
+  .ark-reference-layout .ark-arena-hud-player-1 .ark-hud-nameplate{align-items:flex-end}
+  .ark-reference-layout .ark-hud-side{font-size:8px;}
+  .ark-reference-layout .ark-hud-nameplate strong{font-size:12px;}
+  .ark-reference-layout .ark-hud-health-value{font-size:9px;}
+  .ark-reference-layout .ark-hud-techniques{gap:2px;font-size:9px;}
+  .ark-reference-layout .ark-hud-techniques span{padding:2px 3px;}
+  .ark-reference-layout .ark-arena-hud-center span{font-size:7px;}
+  .ark-reference-layout .ark-arena-hud-center b{font-size:15px;}
+  .ark-reference-layout .ark-arena-hud-center small{font-size:7px;}
+  .ark-reference-layout .combat-heading{top:101px;width:90%;}
+  .ark-reference-layout .combat-heading>span{font-size:8px;}
+  .ark-reference-layout .combat-series{top:123px;font-size:8px;gap:7px;padding:2px 5px;}
+  .ark-reference-layout .combat-battlefield .combat-match{
+    padding:155px 2px 175px!important;grid-template-columns:minmax(0,1fr) 0 minmax(0,1fr);gap:2px;}
+  .ark-reference-layout .combat-battlefield .combat-fighter-art{max-height:40svh!important;max-width:47vw;}
+  .ark-reference-layout .combat-battlefield .combat-animal-name{
+    font-size:11px;padding:3px 5px;white-space:normal;}
+  .ark-reference-layout .combat-battlefield .combat-selections{font-size:9px;gap:3px;padding:3px;}
+  .ark-reference-layout .combat-controls{
+    height:171px;grid-template-columns:minmax(0,1fr) 94px minmax(0,1fr);
+    grid-template-rows:22px minmax(80px,1fr) 27px;
+    column-gap:5px;padding:8px 6px 5px;}
+  .ark-reference-layout .combat-reel{gap:0;min-height:74px;}
+  .ark-reference-layout .combat-reel-neighbor{font-size:14px;min-width:15px;}
+  .ark-reference-layout .combat-reel [data-combat-current]{width:35px;font-size:29px;}
+  .ark-reference-layout .combat-stop{width:87px;height:87px;font-size:10px;
+    border-width:4px;padding:3px;gap:3px;letter-spacing:0;}
+  .ark-reference-layout .combat-stop .combat-light{width:14px;height:14px;}
+  .ark-reference-layout .ark-reel-opponent-value{font-size:37px;}
+  .ark-reference-layout .ark-reel-opponent-label{font-size:10px;}
+  .ark-reference-layout .ark-reel-opponent-caption{font-size:8px;}
+  .ark-reference-layout .combat-instruction{font-size:10px;}
+  .ark-reference-layout .combat-message{left:6%;right:6%;top:27%;padding:9px 12px;}
+  .ark-reference-layout .combat-ready,.ark-reference-layout .combat-finish{bottom:174px;padding:8px;}
+  .ark-reference-layout .combat-footer{right:5px;bottom:173px;}
+}
+@media(max-height:550px){
+  .ark-reference-layout .ark-arena-hud{height:62px;padding:2px 8px;}
+  .ark-reference-layout .ark-hud-nameplate strong{font-size:13px}
+  .ark-reference-layout .ark-hud-meter{height:11px;}
+  .ark-reference-layout .ark-hud-techniques{font-size:8px;gap:2px;}
+  .ark-reference-layout .ark-hud-techniques span{padding:1px 3px;}
+  .ark-reference-layout .ark-arena-hud-center b{font-size:15px;}
+  .ark-reference-layout .combat-heading{top:60px;}
+  .ark-reference-layout .combat-series{top:76px;max-height:24px;}
+  .ark-reference-layout .combat-battlefield .combat-match{padding:90px 15px 138px!important;}
+  .ark-reference-layout .combat-battlefield .combat-fighter-art{max-height:28svh!important;}
+  .ark-reference-layout .combat-battlefield .combat-animal-name{font-size:10px;padding:2px;}
+  .ark-reference-layout .combat-battlefield .combat-selections{display:none;}
+  .ark-reference-layout .combat-controls{height:129px;grid-template-rows:19px 77px 18px;padding:2px 10px 2px;}
+  .ark-reference-layout .combat-stop{width:72px;height:72px;border-width:3px;font-size:9px;}
+  .ark-reference-layout .combat-stop .combat-light{height:10px;width:10px;}
+  .ark-reference-layout .combat-reel{min-height:63px;}
+  .ark-reference-layout .combat-reel [data-combat-current]{height:50px;}
+  .ark-reference-layout .ark-reel-opponent-value{font-size:27px;}
+  .ark-reference-layout .combat-footer{bottom:127px;}
+  .ark-reference-layout .combat-ready,.ark-reference-layout .combat-finish{
+    bottom:132px;width:min(480px,95vw);padding:8px;}
+  .ark-reference-layout .combat-message{top:26%;padding:5px;}
+  .ark-reference-layout .combat-message strong{font-size:13px;}
+  .ark-reference-layout .combat-message span{font-size:10px;}
+}
+@media(prefers-reduced-motion:reduce){
+  .ark-reference-layout .ark-hud-meter span{transition:none;}
+}

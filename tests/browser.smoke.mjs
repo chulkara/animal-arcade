@@ -145,6 +145,17 @@ await run('combat-solo-1440x900',{width:1440,height:900},async page=>{
   await page.locator('[data-prototype-intro]').click();
   await page.locator('[data-prototype-fight]').click();
   assert.equal(await page.locator('#game').getAttribute('data-screen'),'BATTLE_PLAY');
+  assert.equal(await page.locator('[data-tiger-lab-toggle]').count(),1);
+  await page.locator('[data-tiger-lab-toggle]').click();
+  assert.equal(await page.locator('[data-tiger-hero]').count(),1);
+  assert.equal(await page.locator('[data-tiger-run]').count(),1);
+  assert.equal(await page.locator('[data-tiger-action]').count(),7);
+  assert.ok(await page.evaluate(()=>typeof window.NoahsTigerActionCore?.sampleAction==='function'));
+  await page.locator('[data-tiger-action="ko"]').click();
+  assert.match(await page.locator('[data-tiger-status]').innerText(),/Load both GLBs first/);
+  await page.keyboard.press('Escape');
+  assert.equal(await page.locator('.ark-tiger-lab').count(),0);
+  assert.equal(await page.locator('#game').getAttribute('data-screen'),'BATTLE_PLAY');
   assert.equal(await page.locator('.combat-hp').count(),2);
   assert.match(await page.locator('.combat-reel-label').innerText(),/PLAYER 1/);
   await page.keyboard.press('g');
@@ -352,6 +363,52 @@ await run('versus-set-mode-390x844',{width:390,height:844},async page=>{
   assert.match(await page.locator('.combat-heading').innerText(),/BOUT 1 · FIRST TO 2/);
   assert.match(await page.locator('.combat-series').innerText(),/PLAYER 2 WINS/);
   assert.equal(await page.locator('.combat-card-reward').count(),0);
+});
+
+
+await run('reference-arena-layout-desktop',{width:1440,height:900},async page=>{
+  await page.locator('.painted-hotspots [data-art-action="PLAY"]').click();
+  await page.locator('[data-mode="SOLO_SELECT"]').click();
+  await page.locator('[data-animal="tiger"]').click();
+  await page.locator('[data-prototype-intro]').click();
+  await page.locator('[data-prototype-fight]').click();
+  assert.equal(await page.locator('#game').getAttribute('data-screen'),'BATTLE_PLAY');
+  assert.equal(await page.locator('.ark-arena-hud-player').count(),2);
+  assert.equal(await page.locator('.ark-reel-opponent').count(),1);
+  const metrics=await page.evaluate(()=>{
+    const rect=x=>{const r=document.querySelector(x).getBoundingClientRect();
+      return {x:r.x,y:r.y,w:r.width,h:r.height,right:r.right,bottom:r.bottom};};
+    return {panel:rect('.ark-reference-layout'),stage:rect('.combat-battlefield'),
+      hud:rect('.ark-arena-hud'),dock:rect('.combat-controls'),
+      stop:rect('.combat-stop'),buttons:document.querySelectorAll('[data-combat-stop]').length};
+  });
+  assert.ok(metrics.panel.w>=1438,'Battle view must occupy game width, not a 1000px card');
+  assert.ok(metrics.stage.h>=890,'Stage should fill game vertically');
+  assert.ok(metrics.hud.y<10,'Health/status must be at the very top');
+  assert.ok(metrics.dock.bottom<=901&&metrics.dock.bottom>=890,'Reels should dock to bottom');
+  assert.ok(metrics.stop.w>=70,'Primary input must be arcade-sized');
+  assert.equal(metrics.buttons,1);
+  const art=await page.locator('.combat-fighter-art').evaluateAll(nodes=>nodes.map(el=>el.naturalWidth));
+  assert.ok(art.length===2&&art.every(n=>n>0),'Both original animal artworks must load');
+});
+await run('reference-arena-layout-landscape',{width:844,height:390},async page=>{
+  await page.locator('.painted-hotspots [data-art-action="PLAY"]').click();
+  await page.locator('[data-mode="DUEL_SELECT"]').click();
+  await page.locator('[data-animal="lion"]').click();
+  await page.locator('[data-animal="tiger"]').click();
+  await page.locator('[data-prototype-intro]').click();
+  await page.locator('[data-prototype-fight]').click();
+  const frame=await page.evaluate(()=>{
+    const selectors=['.ark-reference-layout','.combat-controls','.ark-arena-hud'];
+    return selectors.map(sel=>{const r=document.querySelector(sel).getBoundingClientRect();
+      return {sel,x:r.x,y:r.y,w:r.width,bottom:r.bottom};});
+  });
+  assert.ok(frame.every(x=>x.x>=-1&&x.w<=846&&x.bottom<=391),
+    'HUD and controls must fit within small landscape viewport');
+  assert.ok(await page.locator('[data-combat-stop]').isVisible(),'Touch reel stop must be reachable');
+  await page.keyboard.press('g');
+  assert.equal(await page.locator('.combat-reel').getAttribute('data-reel-type'),'ATTACK',
+    'Local player two must get their own attack stop');
 });
 
 await browser.close();

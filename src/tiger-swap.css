@@ -1,0 +1,51 @@
+/* Development-only model-swap stage. Never affects approved main-menu painting. */
+.ark-tiger-3d-layers{
+  position:absolute;inset:0;z-index:18;pointer-events:none;
+  overflow:hidden;isolation:isolate;
+}
+.ark-tiger-3d-slot{position:absolute;overflow:hidden;pointer-events:none}
+.ark-tiger-3d-slot[hidden],.ark-tiger-3d-layers[hidden]{display:none!important}
+.ark-tiger-3d-slot{
+  isolation:isolate;
+  filter:drop-shadow(0 4px 5px rgba(5,19,19,.22));
+}
+.ark-tiger-3d-slot:before{
+  content:'';position:absolute;z-index:0;
+  left:10%;right:10%;bottom:1%;height:11%;
+  border-radius:50%;
+  background:radial-gradient(ellipse at center,rgba(8,24,20,.65),rgba(8,24,20,0) 73%);
+  transform:scaleY(.55);pointer-events:none;
+}
+.ark-tiger-3d-slot canvas{position:relative;z-index:1;width:100%;height:100%;display:block}
+.ark-tiger-3d-slot[data-slot="1"] canvas{transform:scaleX(-1)}
+.combat-fighter.ark-tiger-3d-live>.combat-fighter-art{visibility:hidden!important}
+.ark-reference-layout .combat-footer [data-tiger-lab-toggle]{
+  background:#254b45;color:#fff0ce;border:1px solid #bda471;
+  padding:5px 10px;font:bold 10px Arial,sans-serif;
+  letter-spacing:.06em;cursor:pointer;
+}
+.ark-tiger-lab{
+  position:absolute;z-index:90;left:50%;top:50%;
+  transform:translate(-50%,-50%);width:min(520px,calc(100vw - 24px));
+  max-height:86svh;overflow:auto;display:flex;flex-direction:column;gap:13px;
+  background:linear-gradient(155deg,#0c2939,#173832);border:2px solid #d3b37d;
+  box-shadow:0 22px 75px #000e;padding:22px;color:#f4e7c9;
+  font:13px/1.5 Arial,sans-serif;text-align:left;
+}
+.ark-tiger-lab-head{display:flex;align-items:center;justify-content:space-between;gap:14px}
+.ark-tiger-lab-head h2{font:700 21px Impact,'Arial Black',sans-serif;letter-spacing:.1em;margin:0}
+.ark-tiger-lab p{margin:0}
+.ark-tiger-lab label{display:flex;flex-direction:column;gap:7px;font-weight:700;letter-spacing:.06em}
+.ark-tiger-lab input[type=file]{width:100%;color:#ffebbc;padding:10px;background:#0b2432;border:1px solid #a78f63}
+.ark-tiger-lab-actions{display:flex;flex-wrap:wrap;gap:7px}
+.ark-tiger-lab button{border:1px solid #e0c38c;background:#b48b4e;color:#101f2a;
+  font:bold 12px Arial,sans-serif;padding:9px 12px;cursor:pointer}
+.ark-tiger-lab button[data-tiger-close]{font-size:20px;background:transparent;color:#f8e3b8;line-height:1}
+.ark-tiger-status{border-left:3px solid #91b585;background:#0b2b32;padding:12px}
+.ark-tiger-status[data-error=true]{border-color:#ee8a76}
+.ark-tiger-warning{font-size:11px;color:#b9c5b8}
+@media(max-width:650px){
+  .ark-tiger-lab{padding:14px;gap:9px}
+  .ark-tiger-lab-head h2{font-size:16px}
+  .ark-reference-layout .combat-footer [data-tiger-lab-toggle]{font-size:9px}
+}

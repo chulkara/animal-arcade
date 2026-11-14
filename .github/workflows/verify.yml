@@ -24,6 +24,10 @@ jobs:
           node --check src/combat-ui.js
           node --check src/cards-core.js
           node --check src/cards-ui.js
+          node --check src/tiger-swap-core.js
+          node --check src/tiger-action-core.js
+          node --check src/tiger-swap.js
+          node --check scripts/verify-tiger-assets.mjs
       - name: Verify menu logic and original-art checksum
         run: npm test
       - name: Prepare exact GitHub Pages output for browser testing
