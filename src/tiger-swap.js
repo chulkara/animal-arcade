@@ -128,7 +128,9 @@
     const key=new THREE.DirectionalLight(0xffe5c0,3.0);key.position.set(-4,8,6);scene.add(key);
     const fill=new THREE.DirectionalLight(0xb9cfdf,1.1);fill.position.set(2,4,-6);scene.add(fill);
     const camera=new THREE.PerspectiveCamera(34,1,.01,100);
-    camera.position.set(7.1,3.1,1.1);camera.lookAt(0,1.1,0);
+    // Both GLBs face down their +Z axis after runner normalization.
+    // View from the opposite side so the left fighter faces center-screen.
+    camera.position.set(-7.1,3.1,1.1);camera.lookAt(0,1.1,0);
     const motionRoot=new THREE.Group();scene.add(motionRoot);
     function addModel(gltf){
       const sceneRoot=clone(gltf.scene);
@@ -224,7 +226,9 @@
       const sign=slot===0?1:-1;
       // Deliberately bounded additive acting on the hero rig. This improves
       // readability but is not a substitute for hand-keyed quadruped motion.
-      motionRoot.position.set(sign*pose.travel,pose.lift,0);
+      // Both tigers travel forward along +Z. The right viewport is mirrored
+      // by CSS, so both appear to charge toward the opponent.
+      motionRoot.position.set(0,pose.lift,pose.travel);
       motionRoot.rotation.set(pose.pitch*.38,0,sign*pose.roll*.65);
       twistBone(bones.chest,axisZ,sign*pose.pitch*.28);
       twistBone(bones.neck,axisX,pose.neck*.50);
