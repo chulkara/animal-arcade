@@ -57,3 +57,30 @@ test('safe input handling and reduced motion',()=>{
  assert.throws(()=>textureFor('wings'),RangeError);
  assert.throws(()=>textureFor('head','neon'),RangeError);
 });
+
+test('Power stomp actively loads both hind legs through four distinct phases',()=>{
+ const crouch=sampleMove('Power',390).pose;
+ const rise=sampleMove('Power',850).pose;
+ const land=sampleMove('Power',1220).pose;
+ for(const limb of ['left','right']){
+   const hip=limb+'HindHip',knee=limb+'HindKnee',hock=limb+'HindHock';
+   assert.ok(crouch[hip]<-.25&&crouch[knee]>.55&&crouch[hock]<-.27,limb+' crouch');
+   assert.ok(rise[hip]>.35&&rise[knee]<-.25&&rise[hock]>.15,limb+' extension');
+   assert.ok(land[hip]<-.25&&land[knee]>.5&&land[hock]<-.25,limb+' impact');
+ }
+ assert.ok(crouch.hindPlant>.95&&rise.hindPlant>.95);
+ assert.ok(rise.leftHoof>1&&rise.rightHoof>1);
+ assert.ok(Math.abs(crouch.pelvis-rise.pelvis)>.30);
+});
+test('Power ends neutral, other moves never inherit hind-leg offsets',()=>{
+ const end=sampleMove('Power',MOVES.Power.frames.at(-1).ms);
+ assert.ok(Object.values(end.pose).every(x=>x===0));
+ const fields=['pelvis','leftHindHip','rightHindHip','leftHindKnee','rightHindKnee',
+  'leftHindHock','rightHindHock','leftHindAnkle','rightHindAnkle','hindPlant'];
+ for(const name of ['Guts','Technique','Special']){
+   for(const frame of MOVES[name].frames){
+     const pose=sampleMove(name,frame.ms).pose;
+     for(const field of fields)assert.equal(pose[field],0,name+' '+field);
+   }
+ }
+});
