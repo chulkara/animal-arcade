@@ -140,7 +140,7 @@
     const hit=s.lastEvent?.kind==='HIT'&&['RESULT','FINISHED'].includes(s.phase)?
       s.lastEvent:null;
     const feedback=hit?(hit.attacker===i?'combat-striker':'combat-struck'):'';
-    return `<div class="combat-fighter ${feedback}">
+    return `<div class="combat-fighter ${feedback}" data-tiger-slot="${i}" data-tiger-id="${f.id}">
       <div class="combat-fighter-head"><span>${actorName(s,i)}</span><strong>${f.hp} / ${f.maxHp}</strong></div>
       <div class="combat-hp" role="progressbar" aria-label="${a.label} health" aria-valuemin="0" aria-valuemax="${f.maxHp}" aria-valuenow="${f.hp}">
         <span style="width:${Math.round(100*f.hp/f.maxHp)}%"></span>
@@ -252,6 +252,7 @@
       <p class="combat-disclaimer">Original prototype balance. Strong cards boost matching attacks; Miracle cards boost winning ✦ rolls. Exact historical damage values remain under research.</p>
       <div class="combat-footer">
         <span>KEYS: G = GREEN · Y = YELLOW · SPACE = STOP · ESC = BACK</span>
+        <button type="button" data-tiger-lab-toggle aria-label="Open experimental 3D tiger motion lab">3D TIGER LAB</button>
         <button type="button" data-combat-quit>← BACK TO ARENA</button>
       </div>
     </section>`;
