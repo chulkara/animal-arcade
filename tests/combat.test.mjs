@@ -6,7 +6,7 @@ const require=createRequire(import.meta.url);
 const {createBattle,TECHNIQUES,POWERS,BASE_HP}=require('../src/combat-engine.js');
 
 test('solo attack and power slots resolve CPU response and real damage',()=>{
-  const b=createBattle({mode:'SOLO',picks:['tiger','lion'],rng:()=>0});
+  const b=createBattle({mode:'SOLO',picks:['bear','moose'],rng:()=>0});
   assert.equal(b.getState().phase,'ATTACK');
   b.stop('P');
   assert.equal(b.getState().phase,'POWER');
@@ -22,7 +22,7 @@ test('solo attack and power slots resolve CPU response and real damage',()=>{
 });
 
 test('local two-player requires a green and yellow stop per player',()=>{
-  const b=createBattle({mode:'DUEL',picks:['lion','tiger']});
+  const b=createBattle({mode:'DUEL',picks:['moose','bear']});
   b.stop('G');
   assert.equal(b.getState().phase,'ATTACK');
   assert.equal(b.getState().actor,1);
@@ -43,7 +43,7 @@ test('local two-player requires a green and yellow stop per player',()=>{
 });
 
 test('power ties reroll without damage and add tiebreaker charge',()=>{
-  const b=createBattle({mode:'DUEL',picks:['tiger','lion']});
+  const b=createBattle({mode:'DUEL',picks:['bear','moose']});
   b.stop('T');b.stop('P');
   b.stop(20);b.stop(20);
   let s=b.getState();
@@ -61,14 +61,14 @@ test('power ties reroll without damage and add tiebreaker charge',()=>{
 });
 
 test('higher numbered power wins; special fighting mark outranks 50',()=>{
-  const b=createBattle({mode:'DUEL',picks:['tiger','tiger']});
+  const b=createBattle({mode:'DUEL',picks:['bear','bear']});
   b.stop('P');b.stop('G');
   b.stop(50);b.stop('MARK');
   assert.equal(b.getState().lastEvent.attacker,1);
 });
 
 test('knockout ends the match, prevents extra input and rematch resets HP',()=>{
-  const b=createBattle({mode:'DUEL',picks:['tiger','lion']});
+  const b=createBattle({mode:'DUEL',picks:['bear','moose']});
   for(let n=0;n<10;n++){
     const s=b.getState();
     if(s.phase==='FINISHED')break;
