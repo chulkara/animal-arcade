@@ -132,7 +132,7 @@
     // View from the opposite side so the left fighter faces center-screen.
     camera.position.set(-7.1,3.1,1.1);camera.lookAt(0,1.1,0);
     const motionRoot=new THREE.Group();scene.add(motionRoot);
-    function addModel(gltf){
+    function addModel(gltf,matteFur=false){
       const sceneRoot=clone(gltf.scene);
       const bounds=new THREE.Box3().setFromObject(sceneRoot);
       const dimensions=bounds.getSize(new THREE.Vector3());
@@ -151,6 +151,9 @@
         if(!object.isMesh)return;
         const cloneMaterial=mat=>{
           const m=mat.clone();m.transparent=true;m.opacity=1;
+          // Fur should be matte. The source hero's metallic PBR default made
+          // its orange coat look darker than the native running model.
+          if(matteFur){m.metalness=.02;m.roughness=.85;}
           materials.push(m);return m;
         };
         object.material=Array.isArray(object.material)?
@@ -159,7 +162,7 @@
       });
       return {root:positionRoot,body:sceneRoot,materials,scale,dimensions};
     }
-    const hero=addModel(loaded.hero),runner=addModel(loaded.runner);
+    const hero=addModel(loaded.hero,true),runner=addModel(loaded.runner,false);
     // The native donor points the opposite way from the high-detail hero.
     // Turn its root 180°, not the entire canvas, so both face the opponent.
     runner.root.rotation.y=Math.PI;
