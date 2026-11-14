@@ -149,3 +149,26 @@ test('collection scripts and routing are present without changing menu original'
   assert.ok(ui.includes('Cloud Binder is planned'));
   assert.ok(readFileSync('src/painted-menu.js','utf8').includes("const ART='./assets/approved-menu.png'"));
 });
+
+
+test('old Tiger/Lion saves migrate to active Bear/Moose without losing strong or miracle cards',()=>{
+ const disk=storage();
+ const old={schema:1,inventory:{'animal:tiger':1,'animal:lion':1,
+  'strong:wind':1,'strong:guard':2,'miracle:storm':1},
+  decks:{p1:{animal:'animal:tiger',strong:'strong:wind',miracle:'miracle:storm'},
+   p2:{animal:'animal:lion',strong:'strong:guard',miracle:'miracle:dawn'}},
+  wins:9,lastReward:'strong:wind'};
+ disk.setItem(cards.KEY,JSON.stringify(old));
+ const store=cards.createStore(disk),s=store.getState();
+ assert.equal(s.inventory['animal:bear'],1);
+ assert.equal(s.inventory['animal:moose'],1);
+ assert.equal(s.inventory['strong:wind'],1);
+ assert.equal(s.inventory['strong:guard'],2);
+ assert.equal(s.inventory['miracle:storm'],1);
+ assert.equal(s.wins,9);
+ assert.equal(s.lastReward,'strong:wind');
+ assert.equal(store.getDeck('p1').animal,'animal:bear');
+ assert.equal(store.getDeck('p2').animal,'animal:moose');
+ assert.equal(store.getDeck('p1').strong,'strong:wind');
+ assert.equal(store.getDeck('p1').miracle,'miracle:storm');
+});
