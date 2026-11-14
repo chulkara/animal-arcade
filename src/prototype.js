@@ -53,7 +53,7 @@
     return `<section class="panel battle-stage-panel screen-copy ${state.phase==='READY'?'battle-ready':''}" aria-label="Battle stage prototype">
       <div class="section-eyebrow">THE ARENA AWAITS</div>
       <h1 class="panel-title">BATTLE STAGE</h1>
-      <p class="prototype-status">${state.mode==='SOLO'?'SINGLE PLAYER · THREE-CHALLENGER RUN':'LOCAL TWO-PLAYER · FIRST TO TWO BOUTS'}</p>
+      <p class="prototype-status">${state.mode==='SOLO'?'SINGLE PLAYER · THREE-BOUT EXPEDITION':'LOCAL TWO-PLAYER · FIRST TO TWO BOUTS'}</p>
       <div class="arena" aria-label="Animal matchup">
         <div class="arena-fighter">
           <div class="arena-health"><span>PLAYER 1</span><div aria-hidden="true"><i></i></div></div>
