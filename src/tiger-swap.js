@@ -298,18 +298,26 @@
     runningScreen=inBattle;
     if(!inBattle){layers&&(layers.hidden=true);closeLab();lastHit='';return;}
     if(!loaded){attemptAuto();return;}
-    if(!actors.length){
-      try{actors.push(createActor(0));actors.push(createActor(1));}
-      catch(e){disposeActors();status('3D rendering unavailable: '+(e?.message||e),true);return;}
+    const fighters=[...document.querySelectorAll('.combat-fighter[data-tiger-slot]')];
+    const tigerSlots=fighters.filter(node=>node.dataset.tigerId==='tiger')
+      .map(node=>Number(node.dataset.tigerSlot));
+    // Avoid allocating a second 3D renderer when the other fighter is
+    // illustrated. Also rebuild actors when a new match changes the roster.
+    if(actors.length!==tigerSlots.length||
+       actors.some(actor=>!tigerSlots.includes(actor.slot))){
+      disposeActors();lastHit='';
+      if(tigerSlots.length){
+        try{for(const slot of tigerSlots)actors.push(createActor(slot));}
+        catch(e){disposeActors();status('3D rendering unavailable: '+(e?.message||e),true);return;}
+      }
     }
+    if(!layers)return;
     layers.hidden=false;
-    const fighters=document.querySelectorAll('.combat-fighter[data-tiger-slot]');
     const state=combat();
     for(const actor of actors){
-      const fighter=[...fighters].find(el=>Number(el.dataset.tigerSlot)===actor.slot);
-      const tiger=fighter?.dataset.tigerId==='tiger';
-      actor.host.hidden=!tiger;
-      if(tiger)fighter.classList.add('ark-tiger-3d-live');
+      const fighter=fighters.find(el=>Number(el.dataset.tigerSlot)===actor.slot);
+      actor.host.hidden=!fighter;
+      if(fighter)fighter.classList.add('ark-tiger-3d-live');
     }
     if(state?.lastEvent?.kind==='HIT'){
       const ev=state.lastEvent;
@@ -317,13 +325,13 @@
       if(key!==lastHit){
         lastHit=key;
         if(state.animals[ev.attacker]?.id==='tiger'){
-          actors[ev.attacker].perform('attack',{
+          actors.find(actor=>actor.slot===ev.attacker)?.perform('attack',{
             technique:ev.technique,special:Boolean(ev.special),
             after:state.phase==='FINISHED'&&state.winner===ev.attacker?'victory':null
           });
         }
         if(state.animals[ev.defender]?.id==='tiger'){
-          actors[ev.defender].perform(state.animals[ev.defender].hp<=0?'ko':'hurt');
+          actors.find(actor=>actor.slot===ev.defender)?.perform(state.animals[ev.defender].hp<=0?'ko':'hurt');
         }
       }
     }else if(!state?.lastEvent)lastHit='';
