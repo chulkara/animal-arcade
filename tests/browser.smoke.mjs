@@ -312,7 +312,7 @@ await run('battle-feel-desktop-1440x900',{width:1440,height:900},async page=>{
   const an=await page.locator('.combat-striker .combat-fighter-art')
     .evaluate(el=>getComputedStyle(el).animationName);
   assert.notEqual(an,'none','The original animal portrait should animate on attack');
-  assert.match(await page.locator('.combat-message').innerText(),/AMBER FANG|MOONSTEP|SHADOW RESOLVE|GOLDEN HEART|SUNWARD FEINT|SOVEREIGN ROAR/);
+  assert.match(await page.locator('.combat-message').innerText(),/THUNDER CHARGE|LOW CLAW|HIGH CLAW|FERAL STRIKE|ANTLER CHARGE|CROSS-ANTLER SWEEP|HOOF STOMP|LEAPING DRIVE/);
 }, {reducedMotion:'no-preference'});
 await run('battle-feel-reduced-motion-390x844',{width:390,height:844},async page=>{
   await page.locator('.painted-mobile-nav [data-art-action="PLAY"]').click();
