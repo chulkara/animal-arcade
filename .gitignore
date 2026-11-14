@@ -1,0 +1,6 @@
+# Source-pack FBX/PNG animal assets are private until license is verified.
+assets/private-3d/
+node_modules/
+test-results/
+.DS_Store
+*.log
