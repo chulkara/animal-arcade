@@ -257,7 +257,14 @@
       if(w!==lastWidth||h!==lastHeight){
         lastWidth=w;lastHeight=h;
         renderer.setSize(w,h,false);
-        camera.aspect=w/h;camera.updateProjectionMatrix();
+        camera.aspect=w/h;
+        // Frame a full tiger even in narrower fighter viewports, with room
+        // for the short attack travel and front paw extension.
+        const halfTan=Math.tan(THREE.MathUtils.degToRad(camera.fov*.5));
+        const distance=Math.max(8.4,5.4/(2*halfTan*Math.max(.75,camera.aspect)));
+        camera.position.set(-distance,1.1+distance*.26,.5);
+        camera.lookAt(0,1.05,0);
+        camera.updateProjectionMatrix();
       }
     }
 
