@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 520" role="img" aria-labelledby="title desc">
+<title id="title">Moose</title><desc id="desc">Original hand-authored vector moose portrait with broad antlers.</desc>
+<defs>
+<linearGradient id="coat" x2=".7" y2="1"><stop stop-color="#a27651"/><stop offset=".55" stop-color="#684730"/><stop offset="1" stop-color="#322a25"/></linearGradient>
+<linearGradient id="horn" x2=".7" y2="1"><stop stop-color="#e3bf80"/><stop offset=".55" stop-color="#b98a53"/><stop offset="1" stop-color="#765735"/></linearGradient>
+<linearGradient id="nose" x2="1" y2="1"><stop stop-color="#a77e5e"/><stop offset="1" stop-color="#644531"/></linearGradient>
+<filter id="shadow"><feGaussianBlur stdDeviation="10"/></filter>
+</defs>
+<ellipse cx="320" cy="493" rx="245" ry="14" fill="#0b1a1a" opacity=".4" filter="url(#shadow)"/>
+<path d="M0 420 92 359l55 36 101-79 87 85 76-92 78 78 78-68 73 104v97H0Z" fill="#2b4b50" opacity=".5"/>
+<path d="M0 477q156-56 319-5 160-57 321-2v50H0" fill="#294a40"/>
+<path d="M299 187q-87-30-128-67-23-24-41-69l-17 5q-8 56 17 98-53-18-75-65l-24 13q22 79 102 110-51 0-96-23l-11 26q87 73 215 62l60 10Z" fill="url(#horn)" stroke="#75532f" stroke-width="9" stroke-linejoin="round"/>
+<path d="M346 187q87-30 128-67 23-24 41-69l17 5q8 56-17 98 53-18 75-65l24 13q-22 79-102 110 51 0 96-23l11 26q-87 73-215 62l-60 10Z" fill="url(#horn)" stroke="#75532f" stroke-width="9" stroke-linejoin="round"/>
+<path d="M129 190q84 46 155 37m228-37q-84 46-155 37" fill="none" stroke="#f0d49a" stroke-width="7" opacity=".58"/>
+<path d="M155 515q6-117 70-159 47-35 100-33 55-4 102 35 63 53 63 157Z" fill="url(#coat)" stroke="#3a3028" stroke-width="9"/>
+<path d="M257 241q-31-38-62-30-32 22-15 62 24 30 68 17M383 241q31-38 62-30 32 22 15 62-24 30-68 17" fill="#8a6044" stroke="#4a362b" stroke-width="8"/>
+<path d="M280 177q-47 19-61 80-16 69 10 121 14 29 35 45l15 66q43 42 94 0l16-74q30-26 34-100 6-94-48-134-41-28-95-4Z" fill="url(#coat)" stroke="#443229" stroke-width="9"/>
+<path d="M277 219q14-20 43-20t43 20" fill="none" stroke="#d4a473" stroke-width="10" opacity=".35"/>
+<path d="M234 298q28-20 63 0M353 299q31-18 61 0" stroke="#3e3029" stroke-width="16" stroke-linecap="round"/>
+<ellipse cx="270" cy="300" rx="11" ry="14" fill="#171d1d"/><ellipse cx="380" cy="300" rx="11" ry="14" fill="#171d1d"/>
+<circle cx="273" cy="295" r="4" fill="#ffefc3"/><circle cx="383" cy="294" r="4" fill="#ffefc3"/>
+<path d="M275 364q43-20 94-2 35 19 38 60 4 41-24 65-62 45-126 0-29-33-18-74 5-31 36-49Z" fill="url(#nose)" stroke="#513a2c" stroke-width="8"/>
+<ellipse cx="277" cy="441" rx="14" ry="8" fill="#3c2b26" transform="rotate(20 277 441)"/>
+<ellipse cx="366" cy="441" rx="14" ry="8" fill="#3c2b26" transform="rotate(-20 366 441)"/>
+<path d="M304 477q20 8 39 0" fill="none" stroke="#332720" stroke-width="7" stroke-linecap="round"/>
+<path d="M90 495q225-29 465 0" fill="none" stroke="#d8b67c" stroke-width="3" opacity=".6"/>
+</svg>
