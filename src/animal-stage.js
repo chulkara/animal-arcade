@@ -48,7 +48,7 @@ async function dependencies(){
  three={THREE,clone};loader=new FBXLoader();return three;
 }
 function sourceUrl(kind,filename){
- const local=files[kind]?.get(filename.toLowerCase());
+ const local=files[kind]?.get(filename.split('/').at(-1).toLowerCase());
  if(local){
   const url=URL.createObjectURL(local);
   objectUrls.push(url);
