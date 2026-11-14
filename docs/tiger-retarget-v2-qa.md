@@ -27,3 +27,16 @@
 6. The approved main-menu painting's SHA-256 must remain unchanged.
 
 **Note:** Blender and online package retrieval were unavailable in this execution environment. The workbench implements offline glTF skeletal mathematics and mesh/texture previews, but does not pretend to have performed a Blender IK bake or complete 3D cinematic quality review.
+
+
+## Final V2.3 experimental export (November 14)
+
+The downloadable workbench was refined beyond the initial V2 report to **`white_tiger_directional_grounded_v23_WIP.glb`**, 15,353,336 bytes, SHA-256 `e29d4212d506329b39ab982d1cba369df4158d06ed11c90ed210cc630191e346`. The experimental model is **not in GitHub** and **not shipped**.
+
+- Run and Walk Fast now have **zero positional discontinuity at the looping boundary**; the blend also matches the initial motion tangent approximately, but still needs visual inspection for foot-plant quality.
+- Revised offline floor checks at 25 samples per clip: **Run minimum −0.258 cm**, Walk −0.149 cm, Walk Fast −0.15 cm, Howl −0.15 cm, Attack −0.15 cm (ground plane at zero). This is a geometric clearance check, not genuine paw IK.
+- Texture-sampled multi-frame GIF reviews were generated for Run, Walk, Howl and Attack. **Attack remains rejected** as the sequence is mostly an unsupported crouch, not a forward strike with camera-worthy impact.
+- Included the GLB and reproducible processing tools in the conversation-linked `noahs_tiger_motion_v23_experimental.zip`, alongside a Three.js local-file review HTML and explicit attribution.
+- Retaining **draft PR #8**. The remaining critical work is quadruped foot IK, actual travel/contact/action choreography, real 3D lighting and rig review, then integration and final visual approval.
+
+The supplied Tiger models remain attribution-licensed CC BY 4.0 inputs. No copyrighted Animal Kaiser models or sounds were used.
