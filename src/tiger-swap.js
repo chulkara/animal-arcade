@@ -270,7 +270,9 @@
     for(const actor of actors){
       const target=[...fighters].find(el=>Number(el.dataset.tigerSlot)===actor.slot&&el.dataset.tigerId==='tiger');
       if(!target){actor.host.hidden=true;continue;}
-      actor.layout(target.getBoundingClientRect(),gameRect);
+      // Align canvas to the original portrait artwork, not the entire fighter HUD.
+      const art=target.querySelector('.combat-fighter-art');
+      actor.layout((art||target).getBoundingClientRect(),gameRect);
       actor.tick(dt,time);
     }
     raf=requestAnimationFrame(draw);
