@@ -96,5 +96,17 @@
     const duration=Number.isFinite(durationMs)&&durationMs>0?durationMs:1050;
     return Math.max(180,Math.min(1400,Math.round(duration*.47)));
   }
-  return Object.freeze({REQUIRED,MAX_FILE,MAX_TOTAL,basename,planFiles,motionKey,battleEvent,contactMs});
+  function actionDuration(id,move,nativeMs){
+    if(!Object.hasOwn(REQUIRED,id)||!['G','T','P','S'].includes(move))
+      throw new RangeError('Unknown action duration');
+    // Exact lengths of our Moose V2 action-score keyframes. Native Bear
+    // source durations are read at runtime from the actual imported clip.
+    if(id==='moose')return {G:1450,T:1300,P:1840,S:2280}[move];
+    return Number.isFinite(nativeMs)&&nativeMs>0?nativeMs:1450;
+  }
+  function settleMs(id,move,nativeMs){
+    return Math.max(contactMs(id,move,nativeMs)+400,actionDuration(id,move,nativeMs)+280);
+  }
+  return Object.freeze({REQUIRED,MAX_FILE,MAX_TOTAL,basename,planFiles,motionKey,
+    battleEvent,contactMs,actionDuration,settleMs});
 });
