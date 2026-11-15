@@ -10,12 +10,12 @@
   const KEY='noahs-arkade.cards.v1';
   const TYPES=['animal','strong','miracle'];
   const CARDS=Object.freeze([
-    {id:'animal:tiger',type:'animal',name:'BLUE TIGER',tag:'STRIPED HUNTER',symbol:'虎',
-      animalId:'tiger',affinity:'forest',art:'./assets/tiger-illustration.webp',
-      description:'A shadow at the edge of the moonlit forest.'},
-    {id:'animal:lion',type:'animal',name:'GOLDEN LION',tag:'SAVANNA KING',symbol:'獅',
-      animalId:'lion',affinity:'sun',art:'./assets/lion-illustration.webp',
-      description:'The guardian of an endless golden horizon.'},
+    {id:'animal:bear',type:'animal',name:'BROWN BEAR',tag:'FOREST GUARDIAN',symbol:'熊',
+      animalId:'bear',affinity:'forest',art:'./assets/bear-placeholder.svg',
+      description:'A mighty guardian of the old forest.'},
+    {id:'animal:moose',type:'animal',name:'MOUNTAIN MOOSE',tag:'HIGHLAND TITAN',symbol:'鹿',
+      animalId:'moose',affinity:'highland',art:'./assets/moose-placeholder.svg',
+      description:'The thunder of hooves across the highland.'},
     {id:'strong:fang',type:'strong',name:'FANG STANDARD',tag:'POWER · +8',symbol:'⚔',
       technique:'P',bonusDamage:8,description:'A sharpened strike for the relentless hunter.'},
     {id:'strong:guard',type:'strong',name:'OAKEN GUARD',tag:'GUTS · +7',symbol:'◆',
@@ -38,11 +38,16 @@
       affinity:'sun',bonusDamage:15,description:'A crown of night over the savanna.'}
   ].map(card=>Object.freeze(card)));
   const BY_ID=Object.freeze(Object.fromEntries(CARDS.map(card=>[card.id,card])));
-  const STARTER_IDS=Object.freeze(['animal:tiger','animal:lion','strong:fang','strong:guard','miracle:meteor','miracle:dawn']);
+  const STARTER_IDS=Object.freeze(['animal:bear','animal:moose','strong:fang','strong:guard','miracle:meteor','miracle:dawn']);
   const DEFAULT_DECKS=Object.freeze({
-    p1:Object.freeze({animal:'animal:tiger',strong:'strong:fang',miracle:'miracle:meteor'}),
-    p2:Object.freeze({animal:'animal:lion',strong:'strong:guard',miracle:'miracle:dawn'})
+    p1:Object.freeze({animal:'animal:bear',strong:'strong:fang',miracle:'miracle:meteor'}),
+    p2:Object.freeze({animal:'animal:moose',strong:'strong:guard',miracle:'miracle:dawn'})
   });
+  // Backward-compatible local-save upgrade. Older Tiger/Lion Animal cards
+  // convert to the active Bear/Moose choices without losing earned cards or wins.
+  const LEGACY_IDS=Object.freeze({'animal:bear':'animal:tiger','animal:moose':'animal:lion'});
+  const migrateAnimal=id=>id==='animal:tiger'?'animal:bear':
+    id==='animal:lion'?'animal:moose':id;
   const safeCount=n=>Number.isSafeInteger(n)&&n>=0&&n<=99?n:0;
   const clone=obj=>JSON.parse(JSON.stringify(obj));
   const init=()=>({schema:1,inventory:Object.fromEntries(CARDS.map(c=>[c.id,STARTER_IDS.includes(c.id)?1:0])),
@@ -51,19 +56,19 @@
     const result=init();
     if(!raw||typeof raw!=='object'||Array.isArray(raw)||raw.schema!==1)return result;
     for(const card of CARDS){
-      const count=safeCount(raw.inventory?.[card.id]);
+      const count=safeCount(raw.inventory?.[card.id]??raw.inventory?.[LEGACY_IDS[card.id]]);
       result.inventory[card.id]=STARTER_IDS.includes(card.id)?Math.max(1,count):count;
     }
     for(const side of ['p1','p2']){
       for(const type of TYPES){
-        const id=raw.decks?.[side]?.[type];
+        const id=migrateAnimal(raw.decks?.[side]?.[type]);
         if(typeof id==='string'&&BY_ID[id]?.type===type&&result.inventory[id]>0)
           result.decks[side][type]=id;
       }
     }
     result.wins=Number.isSafeInteger(raw.wins)?Math.max(0,Math.min(1000000,raw.wins)):0;
-    if(typeof raw.lastReward==='string'&&BY_ID[raw.lastReward])
-      result.lastReward=raw.lastReward;
+    const reward=migrateAnimal(raw.lastReward);
+    if(typeof reward==='string'&&BY_ID[reward])result.lastReward=reward;
     return result;
   }
   function createStore(storage){
