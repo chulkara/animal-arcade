@@ -57,6 +57,10 @@ test('reviewed motion timing stays distinctive and asset scripts do not ship FBX
  assert.ok(core.contactMs('moose','P',500)>core.contactMs('moose','T',500));
  assert.ok(core.contactMs('moose','S',500)>core.contactMs('moose','G',500));
  assert.ok(core.contactMs('bear','G',1000)>=180);
+ assert.equal(core.actionDuration('moose','P'),1840);
+ assert.equal(core.actionDuration('moose','S'),2280);
+ assert.ok(core.settleMs('moose','S')>2280,'Special must not return to Idle before landing');
+ assert.ok(core.settleMs('bear','G',1800)>1800,'Bear native strike must finish before victory transition');
  assert.throws(()=>core.contactMs('moose','Q'),RangeError);
  const html=readFileSync('index.html','utf8');
  const script=readFileSync('src/arena3d-runtime.js','utf8');
