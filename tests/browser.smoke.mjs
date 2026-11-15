@@ -404,6 +404,30 @@ await run('reference-arena-layout-landscape',{width:844,height:390},async page=>
     'Local player two must get their own attack stop');
 });
 
+await run('private-3d-dialog-mobile-390x844',{width:390,height:844},async page=>{
+  await page.locator('.painted-mobile-nav [data-art-action="PLAY"]').click();
+  await page.locator('[data-mode="SOLO_SELECT"]').click();
+  await page.locator('[data-animal="moose"]').click();
+  await page.locator('[data-prototype-intro]').click();
+  await page.locator('[data-prototype-fight]').click();
+  assert.equal(await page.locator('#game').getAttribute('data-screen'),'BATTLE_PLAY');
+  assert.ok(await page.locator('[data-ark3d-open]').isVisible());
+  const status=await page.evaluate(()=>window.NoahsArena3D.getStatus());
+  assert.equal(status.bear,false);
+  assert.equal(status.moose,false);
+  await page.locator('[data-ark3d-open]').click();
+  assert.equal(await page.locator('.ark-fbx-dialog').count(),1);
+  assert.equal(await page.locator('[data-ark3d-folder]').count(),2);
+  await page.locator('[data-ark3d-load="moose"]').click();
+  assert.match(await page.locator('[data-ark3d-status]').innerText(),/Choose an extracted moose folder/);
+  await page.locator('[data-ark3d-close]').click();
+  assert.equal(await page.locator('.ark-fbx-dialog').count(),0);
+  assert.equal(await page.locator('#game').getAttribute('data-screen'),'BATTLE_PLAY');
+  await page.keyboard.press('g');
+  assert.equal(await page.locator('.combat-reel').getAttribute('data-reel-type'),'POWER');
+  assert.equal(await page.locator('.combat-fighter-art').count(),2);
+});
+
 await browser.close();
 if(failures.length) {
   console.error(JSON.stringify(failures,null,2));
