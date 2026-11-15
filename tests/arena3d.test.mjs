@@ -72,3 +72,25 @@ test('reviewed motion timing stays distinctive and asset scripts do not ship FBX
  assert.ok(script.includes("data-ark3d-folder"));
  assert.ok(readFileSync('src/painted-menu.js','utf8').includes("const ART='./assets/approved-menu.png'"));
 });
+
+test('3D asset material binding scripts load before the FBX importer',()=>{
+ const html=readFileSync('index.html','utf8');
+ const loader=readFileSync('src/arena3d-loader.js','utf8');
+ const loadOrder=[
+   'src/bear-material-core.js',
+   'src/moose-assets-core.js',
+   'src/arena3d-core.js',
+   'src/arena3d-loader.js',
+   'src/arena3d-runtime.js'
+ ].map(src=>html.indexOf('src="./'+src+'"'));
+ assert.ok(loadOrder.every(index=>index!==-1),'3D dependency script is missing from the page');
+ assert.ok(loadOrder.every((index,i)=>i===0||loadOrder[i-1]<index),
+   '3D material helpers must load before the FBX loader');
+ const bear=require('../src/bear-material-core.js');
+ const moose=require('../src/moose-assets-core.js');
+ assert.equal(bear.materialRole('Material_003',0),'body');
+ assert.equal(bear.materialRole('Material_001',1),'head');
+ assert.equal(bear.materialRole('Material_002',2),'teeth');
+ assert.equal(moose.roleFor('Chifre_Moose','Moose_Chifre',0),'antlers');
+ assert.match(loader,/material mapping script did not load/);
+});
