@@ -49,7 +49,7 @@ await run('desktop-1440x900',{width:1440,height:900},async page=>{
   assert.equal(await page.locator('#game').getAttribute('data-screen'),'MODE_MENU');
   await page.locator('[data-mode="SOLO_SELECT"]').click();
   assert.equal(await page.locator('#game').getAttribute('data-screen'),'ANIMAL_SELECT');
-  assert.match(await page.locator('.prototype-note').innerText(),/Prototype roster/);
+  assert.match(await page.locator('.prototype-note').innerText(),/Active roster: Bear and Moose/);
   await page.locator('[data-prototype-mode]').click();
   assert.equal(await page.locator('#game').getAttribute('data-screen'),'MODE_MENU');
   await page.locator('[data-back]').click();
