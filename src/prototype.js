@@ -1,10 +1,7 @@
 /* Noah's Arkade Phase 2: honest presentation prototype, not a combat engine. */
 (function(){
   'use strict';
-  const animals={
-    tiger:{name:'BLUE TIGER',type:'STRIPED HUNTER',art:'./assets/tiger-illustration.webp',legend:'A silent stalker of the wild.'},
-    lion:{name:'GOLDEN LION',type:'SAVANNA KING',art:'./assets/lion-illustration.webp',legend:'A fierce guardian of the plains.'}
-  };
+  const animals=window.NoahsRoster.ANIMALS;
   const state={mode:'SOLO',picks:[],phase:'INTRO'};
   const ui=document.getElementById('ui');
   function open(screen){window.__arkade?.openScreen(screen);}
@@ -18,7 +15,7 @@
     if(!Object.prototype.hasOwnProperty.call(animals,id))return;
     if(state.mode==='SOLO'){
       window.NoahsCards?.equipAnimal(0,id);
-      state.picks=[id,id==='tiger'?'lion':'tiger'];
+      state.picks=[id,window.NoahsRoster.opponentOf(id)];
       state.phase='INTRO';
       open('BATTLE_STAGE');return;
     }
@@ -44,7 +41,7 @@
           <span class="animal-legend">${animal.legend}</span>
         </button>`).join('')}
       </div>
-      <p class="prototype-note">Prototype roster: Blue Tiger and Golden Lion. Each selection uses that player's equipped Strong and Miracle cards from the Battle Binder.</p>
+      <p class="prototype-note">Active roster: Bear and Moose. Temporary original silhouettes appear until the reviewed 3D models are cleared for public use. Equipped Strong and Miracle cards still apply.</p>
       <button type="button" class="arcade-back" data-prototype-mode>← BACK TO PLAY MENU</button>
     </section>`;
   }
