@@ -12,7 +12,7 @@
 })(typeof window!=='undefined'?window:null,function(engine){
   'use strict';
   if(!engine?.createBattle)throw Error('Combat engine must load before match coordinator');
-  function createMatch({mode='SOLO',picks=['tiger','lion'],modifiers=[],rng=Math.random}={}){
+  function createMatch({mode='SOLO',picks=['bear','moose'],modifiers=[],rng=Math.random}={}){
     if(!['SOLO','DUEL'].includes(mode))throw Error('Invalid match mode');
     if(!Array.isArray(picks)||picks.length!==2)throw Error('Match requires two animals');
     const target=mode==='SOLO'?3:2;
