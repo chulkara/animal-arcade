@@ -253,6 +253,7 @@
       <p class="combat-disclaimer">Original prototype balance. Bear native and Moose experimental motion cues are connected, but private 3D model files are not rendered in this preview. Strong and Miracle cards affect damage.</p>
       <div class="combat-footer">
         <span>KEYS: G = GREEN · Y = YELLOW · SPACE = STOP · ESC = BACK</span>
+        <button type="button" data-ark3d-open>3D ARENA SETUP</button>
         <button type="button" data-combat-quit>← BACK TO ARENA</button>
       </div>
     </section>`;
