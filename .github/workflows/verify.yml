@@ -27,6 +27,10 @@ jobs:
           node --check src/tiger-swap-core.js
           node --check src/tiger-action-core.js
           node --check src/tiger-swap.js
+          node --check src/roster-core.js
+          node --check src/bear-motion-core.js
+          node --check src/moose-assets-core.js
+          node --check src/moose-action-core.js
           node --check src/bear-motion-core.js
           node --check src/bear-material-core.js
           node --check src/moose-assets-core.js
