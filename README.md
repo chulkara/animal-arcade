@@ -22,7 +22,7 @@ For a local network: use `python3 -m http.server 4173 --bind 0.0.0.0` only when 
 
 - When the original painting loads, the game opens directly on its illustrated menu; select **PLAY**, **MY CARDS**, **BINDER**, **SHOP**, or **SETTINGS**.
 - **MY CARDS** shows owned and undiscovered cards; **BINDER** lets you equip one Animal, one Strong and one Miracle for each local player. Complete a battle to earn a card. Export/import JSON to back up saves. The binder is local-only, not online-synced.
-- **PLAY** opens single-player, local two-player, Edit Binder, and How to Play. Selecting a mode opens animal selection; choose an original Tiger or Lion portrait, then see the two-animal battle-stage preview. In two-player mode, each person chooses in turn on the same device. Choose **BEGIN INTRO → START BATTLE** to play the prototype. Use the **green** button to stop the G/T/P attack slot, then **yellow** to stop the power slot. Higher power hits; ties reroll. Press **G**, **Y**, or **Space** as shortcuts. It is not a full historical recreation.
+- **PLAY** opens single-player, local two-player, Edit Binder, and How to Play. Selecting a mode opens animal selection; choose Bear or Moose from two original temporary silhouette portraits, then see the two-animal battle-stage preview. In two-player mode, each person chooses in turn on the same device. Choose **BEGIN INTRO → START BATTLE** to play the prototype. Use the **green** button to stop the G/T/P attack slot, then **yellow** to stop the power slot. Higher power hits; ties reroll. Press **G**, **Y**, or **Space** as shortcuts. It is not a full historical recreation.
 - If the approved painting cannot load, **Enter**, **Space**, or **PRESS START** opens the previous fallback menu.
 - Use **Up/Down** or **W/S** to select, **Enter/Space** to confirm, and **Escape/Backspace** to go back.
 - Mouse and touch can navigate the menu. All options are reversible.
@@ -53,3 +53,7 @@ See [Phase 3 mechanics](docs/phase3-combat.md) and [Phase 4 cards and binder](do
 ## GitHub Pages
 
 The `.github/workflows/pages.yml` workflow publishes the static website from `main`. The separate verification workflow runs Node tests and Chromium smoke tests on desktop, tablet, and phones. The original menu painting is never modified by Phase 2, Phase 3, Phase 4 or Phase 4.5.
+
+## Bear and Moose roster (draft PR only)
+
+Bear and Moose are the only battle-selectable animals on this development branch. The approved painted main-menu image is identical to the release version, and Tiger V4 remains preserved in its separate draft work. The selector and combat use original placeholder SVGs, not the privately reviewed 3D meshes. The game exposes Bear native clip filenames and Moose V2 procedural action cues for later runtime integration, but browser battles do **not** yet play those 3D FBX animations. Existing local Tiger/Lion Animal cards migrate to Bear/Moose; wins and Strong/Miracle cards persist. **Do not merge or publicly serve private 3D assets without verified redistribution rights and browser QA.** See `docs/bear-moose-playable-roster.md`.
