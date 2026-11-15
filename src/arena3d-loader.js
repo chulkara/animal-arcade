@@ -16,6 +16,9 @@
     const core=window.NoahsArena3DCore;
     const plan=core.planFiles(id,files);
     if(!plan.ready)throw Error(id.toUpperCase()+' missing: '+plan.missing.join(', ')+'. Extract the private Motion Lab ZIP and choose its asset folder.');
+    const materialMap=id==='bear'?window.NoahsBearMaterialCore:window.NoahsMooseAssetsCore;
+    if(typeof (id==='bear'?materialMap?.materialRole:materialMap?.roleFor)!=='function')
+      throw Error('The '+id+' material mapping script did not load. Pull the latest development branch and hard-refresh the game.');
     const {THREE,FBXLoader,clone}=await getDeps();
     const textureUrls=new Map();
     const imageFiles=Array.from(files).filter(f=>/\.(png|jpg|jpeg|webp)$/i.test(f.name));
@@ -57,8 +60,8 @@
         const original=Array.isArray(node.material)?node.material:[node.material];
         const material=original.map((item,index)=>{
           const role=id==='bear'?
-            window.NoahsBearMaterialCore.materialRole(item?.name,index):
-            window.NoahsMooseAssetsCore.roleFor(node.name,item?.name,index);
+            materialMap.materialRole(item?.name,index):
+            materialMap.roleFor(node.name,item?.name,index);
           const map=materialTextures[role]||null;
           const matte=new THREE.MeshStandardMaterial({
             color:0xffffff,map,roughness:.9,metalness:0,
