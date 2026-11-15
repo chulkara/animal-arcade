@@ -1,0 +1,63 @@
+/* Draft 3D arena overlay: no changes to approved painted title image. */
+.ark-reference-layout .ark-fbx-layer{
+ position:absolute;inset:0;z-index:16;pointer-events:none;overflow:hidden;
+}
+.ark-reference-layout .ark-fbx-layer[hidden]{display:none!important}
+.ark-reference-layout .ark-fbx-layer canvas{display:block;width:100%;height:100%}
+.ark-reference-layout .combat-battlefield .combat-match{z-index:17}
+.ark-reference-layout .combat-fighter[data-3d-visible="true"] .combat-fighter-art{
+ opacity:0!important;animation:none!important;pointer-events:none;
+}
+.ark-reference-layout .combat-footer [data-ark3d-open]{
+ color:#f6e3b9;border-color:#e3bf7e;
+ background:#1d4a46e8;
+ min-height:40px;padding:8px 12px;
+ font:700 11px Arial,sans-serif;letter-spacing:.08em;
+}
+.ark-reference-layout .combat-footer [data-ark3d-open]:focus-visible{
+ outline:3px solid #ffe29b;outline-offset:3px;
+}
+.ark-fbx-dialog{
+ position:fixed;z-index:90;top:50%;left:50%;transform:translate(-50%,-50%);
+ width:min(680px,calc(100vw - 18px));max-height:min(89svh,800px);
+ overflow:auto;overscroll-behavior:contain;box-sizing:border-box;
+ border:2px solid #cfae72;border-radius:10px;
+ background:linear-gradient(150deg,#102e3d,#163932 72%,#10272f);
+ box-shadow:0 24px 80px #000c,0 0 0 200vmax #0009;
+ padding:18px;color:#f3e7c8;font:14px/1.45 Georgia,serif;
+}
+.ark-fbx-dialog-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.ark-fbx-dialog h2{font:700 clamp(17px,3vw,23px) Impact,'Arial Black',sans-serif;
+ letter-spacing:.07em;margin:0;color:#ffe4a5}
+.ark-fbx-dialog p{margin:12px 0}
+.ark-fbx-dialog button{font:700 12px Arial,sans-serif;color:#fff1ca;
+ border:1px solid #c5a270;border-radius:5px;background:#285450;padding:10px 12px;
+ min-height:44px}
+.ark-fbx-dialog button:hover{background:#39685d}
+.ark-fbx-dialog button:focus-visible,.ark-fbx-dialog input:focus-visible{
+ outline:3px solid #ffdf94;outline-offset:2px}
+.ark-fbx-dialog button:disabled{opacity:.5;cursor:wait}
+.ark-fbx-dialog-head [data-ark3d-close]{font:22px Arial,sans-serif;min-width:44px}
+.ark-fbx-import{border:1px solid #c6ac765a;border-radius:8px;padding:12px;
+ background:#071e25a6;display:grid;gap:8px;margin:10px 0}
+.ark-fbx-import strong{color:#f8deaa;font:700 18px Impact,'Arial Black',sans-serif;letter-spacing:.08em}
+.ark-fbx-import small{font:12px Arial,sans-serif;color:#cdd8c9}
+.ark-fbx-import label{display:grid;gap:4px;color:#e5d0a6;
+ font:700 10px Arial,sans-serif;letter-spacing:.09em}
+.ark-fbx-import input{box-sizing:border-box;width:100%;min-height:36px;
+ color:#e9e2d1;border:1px solid #9eac9b79;border-radius:5px;
+ background:#1a3034;padding:6px;font:12px Arial,sans-serif}
+.ark-fbx-import-actions{display:flex;gap:7px;flex-wrap:wrap}
+.ark-fbx-import-actions [data-ark3d-load]{background:#437050;border-color:#e9cf95}
+.ark-fbx-import-actions [data-ark3d-unload]{background:#493c3b}
+.ark-fbx-status{border-left:3px solid #e9c78b;background:#061c25bd;
+ padding:10px 12px;min-height:22px;overflow-wrap:anywhere}
+.ark-fbx-legal{font:12px/1.5 Arial,sans-serif;color:#cccfbe}
+@media(max-width:650px){
+ .ark-fbx-dialog{padding:12px;max-height:90svh}
+ .ark-fbx-import{padding:9px}
+ .ark-reference-layout .combat-footer [data-ark3d-open]{font-size:10px;min-height:44px}
+}
+@media(prefers-reduced-motion:reduce){
+ .ark-reference-layout .ark-fbx-layer{transition:none}
+}
