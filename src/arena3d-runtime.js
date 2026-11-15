@@ -223,7 +223,7 @@
       sequence.contact=true;
       defender?.native(event.knockout?'knockout':'hit');
     }
-    if(!sequence.finished&&sequence.elapsed>=Math.max(contact+300,Number.isFinite(length)?length:1500)+350){
+    if(!sequence.finished&&sequence.elapsed>=core.settleMs(event.attackerId,event.move,length)){
       sequence.finished=true;
       if(event.finished){
         attacker?.native('victory');
@@ -238,7 +238,8 @@
     const dt=lastFrame?Math.min(.05,Math.max(0,(time-lastFrame)/1000)):0;
     lastFrame=time;
     for(const actor of actors)actor?.tick(dt);
-    advanceEvent(reduced()?0:dt);
+    // Reduced motion freezes 3D bones but keeps fight results/KO cues current.
+    advanceEvent(dt);
     renderer.render(scene,camera);
     startLoop();
   }
