@@ -8,7 +8,7 @@
   if(!api||!matchApi||!ui)return;
   let battle=null,slotIndex=0,interval=null,matchReward=null,rewardClaimed=false;
   let reelStart=0,reelOffset=0;
-  const REEL_STEP_MS=115;
+  const REEL_STEP_MS=96;
   const animal=window.NoahsRoster.ANIMALS;
   const MOVES=Object.freeze(Object.fromEntries(window.NoahsRoster.ids.map(
     id=>[id,animal[id].moves])));
@@ -41,7 +41,16 @@
     const node=ui.querySelector('[data-combat-current]');
     const prev=ui.querySelector('[data-combat-prev]');
     const next=ui.querySelector('[data-combat-next-value]');
-    if(node)node.textContent=token(values[index]);
+    if(node){
+      node.textContent=token(values[index]);
+      node.dataset.mark=values[index]==='MARK'?'true':'false';
+      node.classList.remove('ark-reel-tick');
+      if(!window.__arkade?.getSettings()?.reducedMotion &&
+         !window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+        void node.offsetWidth;
+        node.classList.add('ark-reel-tick');
+      }
+    }
     if(prev)prev.textContent=token(values[(index+values.length-1)%values.length]);
     if(next)next.textContent=token(values[(index+1)%values.length]);
   }
@@ -76,10 +85,21 @@
     const event=result.lastEvent;
     const newHit=event?.kind==='HIT'&&
       (before==='POWER'&&result.phase!=='POWER');
-    if(newHit)window.NoahsAudio?.cue(result.phase==='FINISHED'?'ko':event.special?'special':'impact');
+    if(newHit)window.NoahsAudio?.cue('cinemaIntro');
     else if(before==='POWER'&&event?.kind==='TIE')window.NoahsAudio?.cue('tie');
-    else window.NoahsAudio?.cue('slot');
+    else window.NoahsAudio?.cue('arcadeStop');
     open();
+    window.dispatchEvent(new CustomEvent('arkade:reelstop',{
+      detail:{phase:before,value,actor:s.actor,round:s.round,hit:newHit}
+    }));
+    const snap=ui.querySelector('.combat-controls')||ui.querySelector('.combat-battlefield');
+    if(snap){
+      const flash=document.createElement('div');
+      flash.className='ark-reel-snap';
+      flash.textContent=(before==='ATTACK'?'ATTACK':'POWER')+'  '+token(value)+'  LOCKED';
+      flash.setAttribute('aria-hidden','true');snap.append(flash);
+      window.setTimeout(()=>flash.remove(),520);
+    }
   }
   function next(){
     if(current()?.phase!=='RESULT')return;
@@ -202,6 +222,7 @@
         <span class="combat-reel-neighbor" data-combat-prev aria-hidden="true">—</span>
         <span data-combat-current aria-live="off">${token(valueNow())}</span>
         <span class="combat-reel-neighbor" data-combat-next-value aria-hidden="true">—</span>
+        <div class="ark-reel-lamps" aria-hidden="true">${Array.from({length:10},(_,i)=>'<i style="--lamp:'+i+'"></i>').join('')}</div>
       </div>
       <button type="button" data-combat-stop data-initial-focus class="combat-stop ${isAttack?'combat-green':'combat-yellow'}">
       <span aria-hidden="true" class="combat-light"></span>${action} — ${label}</button>
@@ -250,7 +271,7 @@
       </div>
       ${results(s)}
       ${controls(s)}
-      <p class="combat-disclaimer">Original prototype balance. Bear native and Moose experimental motion cues are connected, but private 3D model files are not rendered in this preview. Strong and Miracle cards affect damage.</p>
+      <p class="combat-disclaimer">Original prototype combat tuning. Private FBX creatures render only after local import; battles remain playable with the illustrated fallback.</p>
       <div class="combat-footer">
         <span>KEYS: G = GREEN · Y = YELLOW · SPACE = STOP · ESC = BACK</span>
         <button type="button" data-ark3d-open>3D ARENA SETUP</button>
