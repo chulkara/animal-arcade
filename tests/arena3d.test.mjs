@@ -94,3 +94,20 @@ test('3D asset material binding scripts load before the FBX importer',()=>{
  assert.equal(moose.roleFor('Chifre_Moose','Moose_Chifre',0),'antlers');
  assert.match(loader,/material mapping script did not load/);
 });
+
+test('optional angry stance and rear transition load from local folders without becoming required',()=>{
+ const spec=core.REQUIRED.bear;
+ const required=[spec.base,...Object.values(spec.motions),...Object.values(spec.textures)]
+   .map(name=>fake(name));
+ const original=core.planFiles('bear',required);
+ assert.equal(original.ready,true);
+ assert.equal(original.clips.rear,undefined);
+ assert.equal(original.clips.angry,undefined);
+ const complete=core.planFiles('bear',required.concat([
+   fake(core.OPTIONAL.bear.rear),fake(core.OPTIONAL.bear.angry)
+ ]));
+ assert.equal(complete.ready,true);
+ assert.equal(complete.clips.rear.name,'Trans_Stand_to_StandHind.FBX');
+ assert.equal(complete.clips.angry.name,'StandAngry_Breathing_01.FBX');
+ assert.deepEqual(complete.missing,[]);
+});
