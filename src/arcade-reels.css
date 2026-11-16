@@ -157,3 +157,22 @@
 .game.reduce-motion .combat-stop:before,
 .game.reduce-motion .combat-stop .combat-light,
 .game.reduce-motion .ark-reel-lamps i{animation:none!important}
+
+
+.ark-reel-snap{position:absolute;z-index:28;left:50%;top:clamp(115px,19svh,166px);
+ transform:translateX(-50%);border:3px ridge #edce8e;border-radius:6px;
+ background:linear-gradient(155deg,#0e2d3cef,#2b594add);color:#fff4cf;
+ font:italic 900 clamp(12px,2vw,23px) Impact,'Arial Black',sans-serif;
+ letter-spacing:.11em;white-space:nowrap;padding:8px 20px;
+ box-shadow:0 6px 22px #04111cae,0 0 22px #f5cf7580;
+ pointer-events:none;animation:ark-reel-snap .52s cubic-bezier(.24,.82,.3,1) both}
+.combat-controls>.ark-reel-snap{left:50%;top:auto;bottom:calc(100% + 11px)}
+@keyframes ark-reel-snap{
+ 0%{opacity:0;transform:translate(-50%,-25px) scale(1.35)}
+ 35%{opacity:1;transform:translate(-50%,0) scale(1)}
+ 75%{opacity:1}100%{opacity:0;transform:translate(-50%,9px) scale(.94)}
+}
+@media(prefers-reduced-motion:reduce){
+ .ark-reel-snap{animation:none;opacity:0}
+}
+.game.reduce-motion .ark-reel-snap{animation:none;opacity:0}
