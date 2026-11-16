@@ -179,3 +179,15 @@ test('Guts uses a stable two-fighter setup before the attack cut',()=>{
  assert.equal(contact.targetX,0);
  assert.ok(contact.z>12);
 });
+
+
+test('Bear victory is now four camera cuts plus small native-rig celebration accents',()=>{
+ const source=readFileSync('src/arena3d-runtime.js','utf8');
+ assert.ok(source.includes('actor.victoryGesture=(elapsed)=>'));
+ assert.ok(source.includes("winner.victoryGesture(sequence.elapsed-start)"));
+ for(const joint of ['RigHead','RigNeck','RigSpine1','RigLFLeg1','RigRFLeg1'])
+   assert.ok(source.includes("set('"+joint+"'"),'Expected a restrained victory accent for '+joint);
+ assert.ok(source.includes('camera.position.copy(wanted)'), '3D camera must cut on a new shot');
+ assert.ok(source.includes('actor.soleRest'),'Bear must retain a planted hind-foot reference');
+ assert.ok(source.includes('rootAnchors'),'Native RigRoot should not teleport the model');
+});
