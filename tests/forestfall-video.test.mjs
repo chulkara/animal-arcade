@@ -56,3 +56,9 @@ test('the upload and non-scoring preview are optional and accessible',()=>{
  assert.ok(script.includes("resume.addEventListener('click'"));
  assert.ok(script.includes("window.NoahsForestfall=Object.freeze"));
 });
+
+test('local Forestfall controller is valid browser JavaScript',()=>{
+ assert.doesNotThrow(()=>new Function(script));
+ assert.match(script,/function playVideo\(/);
+ assert.match(script,/function close\(/);
+});
