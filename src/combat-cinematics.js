@@ -152,9 +152,10 @@ function draw(time){
      winCued=true;
    }
  }
+ const winnerVisible=p.beat==='VICTORY'&&p.local>=api.VICTORY_BANNER_MS;
+ overlay.dataset.result=winnerVisible?'visible':'hidden';
  const winner=overlay.querySelector('[data-ark-cinema-winner]');
- if(winner)winner.textContent=p.beat==='VICTORY'&&
-   p.local>=api.VICTORY_BANNER_MS?
+ if(winner)winner.textContent=winnerVisible?
    event.attackerId.toUpperCase()+' WINS!':'';
  const root=ui.querySelector('.ark-reference-layout');
  if(elapsed>=timing.total){
