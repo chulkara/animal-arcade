@@ -64,10 +64,14 @@ function duration(event,nativeMs){
   const contact=event.attackerId==='moose'?{G:830,T:680,P:1220,S:1330}[event.move]:
     clamp(attack*.47,180,1400);
   const miracleLead=event.miracleName?850:0;
-  const finish=miracleLead+Math.max(attack+260,contact+580);
-  return Object.freeze({attack,contact,miracleLead,finish,
-    victoryStart:event.finished?finish+100:Infinity,
-    total:event.finished?finish+3800:finish+480});
+  // The reference takes time to prepare a signature move. Our previous
+  // edit triggered the native FBX on frame one, so no strike had a buildup.
+  const focusLead={G:340,T:380,P:780,S:880}[event.move];
+  const actionLead=miracleLead+focusLead;
+  const finish=actionLead+Math.max(attack+260,contact+580);
+  const victoryStart=event.finished?finish+180:Infinity;
+  return Object.freeze({attack,contact,miracleLead,focusLead,actionLead,finish,
+    victoryStart,total:event.finished?victoryStart+4000:finish+480});
 }
 function shot(event,elapsed,nativeMs){
   const timing=duration(event,nativeMs);
@@ -77,14 +81,18 @@ function shot(event,elapsed,nativeMs){
     return Object.freeze({name:'miracle',beat:'MIRACLE',shot:'wide',pose:POSES.wide,
       local:t,progress:timing.miracleLead? t/timing.miracleLead:1,timing,
       accent:miracle(event.miracleName)?.accent||'gold'});
+  if(t<timing.actionLead)
+    return Object.freeze({name:'focus',beat:'FOCUS',shot:'focus',pose:POSES.hunter,
+      local:t-timing.miracleLead,progress:(t-timing.miracleLead)/timing.focusLead,
+      timing,accent:descriptor.accent});
   if(event.finished&&t>=timing.victoryStart){
     const v=t-timing.victoryStart;
-    const stage=v<950?0:v<1930?1:v<2900?2:3;
+    const stage=v<900?0:v<1850?1:v<2900?2:3;
     const name=['lowHero','sideHero','highHero','finale'][stage];
     return Object.freeze({name,beat:'VICTORY',shot:name,pose:POSES[name],local:v,
       progress:clamp(v/3800,0,1),timing,accent:descriptor.accent});
   }
-  const attackTime=t-timing.miracleLead,contact=timing.contact;
+  const attackTime=t-timing.actionLead,contact=timing.contact;
   let stage,beat;
   if(attackTime<Math.min(contact*.32,340)){stage=0;beat='INTRO';}
   else if(attackTime<contact){stage=1;beat='ATTACK';}
@@ -112,21 +120,29 @@ function camera(event,elapsed,nativeMs){
     targetX=attackerX;
     if(beat.shot==='lowHero'){
       // A low front-quarter shot from the direction the Bear faces.
-      x=attackerX+facing*3.7;y=.78;z=6.6;
-      targetY=1.55;zoom=1.02;
+      x=attackerX+facing*5.0;y=.76;z=4.2;
+      targetY=1.52;zoom=1.10;
     }else if(beat.shot==='sideHero'){
       // Reverse angle: the viewer now sees the opposite flank.
-      x=attackerX-facing*3.5;y=2.2;z=7.2;
-      targetY=1.49;zoom=1.05;
+      x=attackerX-facing*4.5;y=1.97;z=4.5;
+      targetY=1.47;zoom=1.17;
     }else if(beat.shot==='highHero'){
       // Clearly overhead, not another chest-height profile.
-      x=attackerX+facing*1.85;y=7.1;z=6.4;
-      targetY=1.20;zoom=.98;
+      x=attackerX+facing*3.2;y=7.45;z=3.8;
+      targetY=1.30;zoom=1.06;
     }else{
-      // Final wide is a deliberate two-animal composition with Bear standing.
-      x=attackerX*.28;y=2.55;z=13.2;
-      targetX=attackerX*.28;targetY=1.33;zoom=.94;
+      // The arcade reference closes on the winner's face, not on an
+      // empty wide arena. Reserve the last cut for a real portrait.
+      x=attackerX+facing*8.2;y=2.42;z=1.5;
+      targetX=attackerX;targetY=2.23;zoom=1.63;
     }
+  }else if(beat.beat==='FOCUS'){
+    // Unlike the other shots this view is almost head-on, along the
+    // facing direction of the animal. It sells concentration and scale.
+    targetX=attackerX;x=attackerX+facing*7.0;
+    y=event.move==='P'?2.15:1.7;z=2.8;
+    targetY=event.move==='P'?2.18:1.52;
+    zoom=event.move==='P'?1.22:1.06;
   }else if(beat.beat==='MIRACLE'){
     x=0;targetX=0;y=3.1;z=12.3;zoom=.96;
   }else if(beat.beat==='INTRO'&&event.move==='G'){
@@ -160,7 +176,7 @@ function camera(event,elapsed,nativeMs){
 // not fling an animal through/behind its opponent. The pivot owns travel.
 function blocking(event,elapsed,nativeMs){
   const timing=duration(event,nativeMs);
-  const t=Math.max(0,(Number(elapsed)||0)-timing.miracleLead);
+  const t=Math.max(0,(Number(elapsed)||0)-timing.actionLead);
   const contact=timing.contact;
   const move=event.move;
   const travel={G:.84,T:.24,P:.43,S:.68}[move];
@@ -193,8 +209,10 @@ function panel(event,elapsed,nativeMs){
   const b=shot(event,elapsed,nativeMs);
   const descriptor=spec(event.attackerId,event.move),m=miracle(event.miracleName);
   const title=b.beat==='MIRACLE'?m?.label||'MIRACLE':
+    b.beat==='FOCUS'? 'THE WILD AWAKENS':
     b.beat==='VICTORY'?'VICTORY':descriptor.name;
   const sub=b.beat==='MIRACLE'?'A WILD FORCE AWAKENS':
+    b.beat==='FOCUS'?'THE SIGNATURE STRIKE IS COMING':
     b.beat==='CONTACT'?'DIRECT HIT':
     b.beat==='REACTION'?('−'+event.damage+' · '+(event.knockout?'KNOCKOUT':'HIT REACTION')):
     b.beat==='VICTORY'?'THE WILD HAS A CHAMPION':
