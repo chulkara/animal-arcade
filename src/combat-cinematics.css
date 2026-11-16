@@ -39,9 +39,9 @@
 .ark-cinema[data-beat="contact"] .ark-cinema-speed{opacity:.60;
  animation:ark-cine-speed .6s cubic-bezier(.2,.8,.2,1) both}
 .ark-cinema-flash{position:absolute;inset:0;opacity:0;z-index:2;
- background:radial-gradient(circle at 51% 46%,#f9f2d6aa,transparent 70%)}
+ background:radial-gradient(circle at 51% 46%,#f9f2d63b,transparent 64%)}
 .ark-cinema[data-beat="contact"] .ark-cinema-flash{
- animation:ark-cine-impact .3s ease-out both}
+ animation:ark-cine-impact .21s ease-out both}
 .ark-cinema-title{position:absolute;left:clamp(18px,5vw,76px);right:clamp(18px,5vw,76px);
  bottom:clamp(205px,29svh,305px);z-index:5;max-width:900px;
  display:flex;flex-direction:column;gap:5px;align-items:flex-start;
