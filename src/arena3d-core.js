@@ -86,7 +86,10 @@
       move:motionKey(ids[hit.attacker],hit.technique,Boolean(hit.special)),
       technique:hit.technique,special:Boolean(hit.special),
       knockout:s.animals[hit.defender].hp===0,
-      finished:s.phase==='FINISHED'
+      finished:s.phase==='FINISHED',
+      miracleName:hit.miracleBonus>0?hit.miracleName:null,
+      miracleBonus:hit.miracleBonus||0,damage:hit.damage||0,
+      remainingHp:hit.remainingHp
     });
   }
   function contactMs(id,move,durationMs){
