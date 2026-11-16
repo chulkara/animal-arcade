@@ -43,7 +43,8 @@ function sync(){
  if(!onBattle()){cleanup();return;}
  const el=ui.querySelector('.combat-battlefield');
  if(!el){cleanup();return;}
- const s=battle(),event=arena.battleEvent(s);
+ const s=battle(),review=window.NoahsArena3D?.getReviewState?.();
+ const event=review?.active?review.event:arena.battleEvent(s);
  if(!event){
    if(sequence){cleanup();}
    return;
@@ -74,7 +75,11 @@ function draw(time){
  const length=sequence.nativeLength||captureNativeLength(event);
  sequence.nativeLength=length;
  const timing=api.duration(event,length);
- const elapsed=reduce()?timing.total:Math.min(timing.total,Math.max(0,now-sequence.started));
+ const review=window.NoahsArena3D?.getReviewState?.();
+ const rehearsal=Boolean(review?.active&&review.event?.key===event.key);
+ const elapsed=rehearsal?
+   Math.min(timing.total,Math.max(0,review.elapsed)):
+   reduce()?timing.total:Math.min(timing.total,Math.max(0,now-sequence.started));
  sequence.elapsed=elapsed;
  const panel=api.panel(event,elapsed,length);
  const beat=panel.beat;
@@ -88,11 +93,16 @@ function draw(time){
    const kicker=overlay.querySelector('[data-ark-cinema-kicker]');
    const heading=overlay.querySelector('[data-ark-cinema-title]');
    const sub=overlay.querySelector('[data-ark-cinema-sub]');
-   if(kicker)kicker.textContent=beat==='VICTORY'?'BOUT CONQUERED':
+   if(kicker)kicker.textContent=rehearsal?'BROWN BEAR · MOTION REVIEW':
+     beat==='VICTORY'?'BOUT CONQUERED':
       beat==='MIRACLE'?'MIRACLE CARD ACTIVATED':
       beat==='CONTACT'?'THE IMPACT':beat==='REACTION'?'THE AFTERSHOCK':'SIGNATURE MOVE';
    if(heading)heading.textContent=panel.title;
-   if(sub)sub.textContent=panel.sub;
+   if(sub)sub.textContent=rehearsal?
+     beat==='CONTACT'?'STAGED CONTACT · NO HP CHANGES':
+     beat==='REACTION'?'OPPONENT HIT REACTION':
+     beat==='VICTORY'?'FOUR CAMERA ANGLES · NATIVE VICTORY CLIP':
+     'SIGNATURE ATTACK · REPEATABLE MOVEMENT':panel.sub;
    if(!reduce())cueForBeat(beat);
  }
  const p=api.shot(event,elapsed,length);
@@ -116,6 +126,7 @@ function draw(time){
  if(!sequence.done&&!document.hidden)timer=requestAnimationFrame(draw);
 }
 window.addEventListener('arkade:screenchange',sync);
+window.addEventListener('arkade:bearreviewchange',sync);
 window.addEventListener('arkade:reelstop',e=>{
   const data=e.detail||{};
   const locked=data.value==='MARK'?'✦':String(data.value??'');
