@@ -161,6 +161,31 @@
       // this is still experimental, not full-body IK/foot locking.
       pivot.position.y=pose.lift*.5-Math.max(0,pose.lift)*pose.hindPlant*.16;
     };
+    // Add subtle original gesture accents to the native upright victory
+    // loop. They are deliberately small so the source FBX still owns the
+    // Bear's anatomy and foot planting. Missing optional joints are skipped.
+    actor.victoryGesture=(elapsed)=>{
+      if(id!=='bear'||!Number.isFinite(elapsed)||elapsed<0)return;
+      const t=Math.max(0,elapsed);
+      const pulse=(start,end)=>{
+        const p=Math.max(0,Math.min(1,(t-start)/(end-start)));
+        return Math.sin(Math.PI*p);
+      };
+      const set=(name,axis,angle)=>{
+        const bone=joint.get(name);
+        if(!bone||!Number.isFinite(angle)||Math.abs(angle)<.0001)return;
+        if(!actor.additive.has(bone))actor.additive.set(bone,bone.quaternion.clone());
+        bone.quaternion.multiply(new THREE.Quaternion().setFromAxisAngle(axis,angle));
+      };
+      const X=new THREE.Vector3(1,0,0),Y=new THREE.Vector3(0,1,0),Z=new THREE.Vector3(0,0,1);
+      const front=pulse(0,950),reverse=pulse(950,1930),overhead=pulse(1930,2900);
+      set('RigHead',X,.055*front-.035*overhead);
+      set('RigHead',Y,.095*reverse-.065*overhead);
+      set('RigNeck',X,.042*front);
+      set('RigSpine1',Z,.032*reverse-.024*overhead);
+      set('RigLFLeg1',X,-.075*reverse);
+      set('RigRFLeg1',X,-.065*overhead);
+    };
     actor.tick=(delta)=>{
       resetApplied(actor);
       mixer.update(reduced()?0:delta);
@@ -571,6 +596,11 @@
     for(const actor of actors)actor?.tick(dt);
     advanceEvent(dt);
     advanceBearReview(dt);
+    const winner=sequence?.event?.finished?actors[sequence.event.attacker]:null;
+    if(winner?.id==='bear'&&sequence.finished){
+      const start=cinematics.duration(sequence.event,nativeLength(sequence.event)).victoryStart;
+      winner.victoryGesture(sequence.elapsed-start);
+    }
     applyBlocking();
     applyCamera(dt);
     paintEffects();
