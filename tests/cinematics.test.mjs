@@ -180,8 +180,9 @@ test('Guts uses a stable two-fighter setup before the attack cut',()=>{
  const intro=director.camera(evt,t.actionLead+20,1600);
  const contact=director.camera(evt,t.actionLead+t.contact+20,1600);
  assert.equal(focus.beat,'FOCUS');
- assert.ok(Math.abs(focus.x-focus.targetX)>6,
-  'Camera must face down the Bear muzzle, not show another side profile');
+ assert.ok(Math.abs(focus.x-focus.targetX)>2,
+  'Guts must approach from a low rear-quarter instead of a static side camera');
+ assert.ok(focus.y<1.25,'Guts buildup should feel heavy and ground-level');
  assert.equal(intro.beat,'INTRO');
  assert.equal(intro.targetX,0);
  assert.ok(intro.z>12);
@@ -311,4 +312,35 @@ test('signature finish adds a rush cut, low technique sweep and ground shockwave
  assert.ok(arenaCode.includes('shockMaterial.opacity'));
  assert.ok(css.includes('[data-shot="rush"]'));
  assert.ok(css.includes('[data-shot="sweep"]'));
+});
+
+test('Guts, Technique, Power and Special have individually directed preparation shots',()=>{
+ const names=[];
+ const focusCameras={};
+ for(const move of ['G','T','P','S']){
+   const evt={...base,attackerId:'bear',defenderId:'moose',move};
+   const cam=director.camera(evt,100,1600);
+   assert.equal(cam.beat,'FOCUS');
+   focusCameras[move]=cam;
+   names.push(director.panel(evt,100,1600).title);
+ }
+ assert.equal(new Set(names).size,4,'Each attack has a name during anticipation');
+ assert.ok(focusCameras.T.y<focusCameras.G.y,
+   'Low swipe camera should be lower than the charge preparation');
+ assert.ok(focusCameras.P.y>focusCameras.T.y+1,
+   'Power should build with a raised upper-body camera');
+ assert.ok(focusCameras.P.x!==focusCameras.G.x,
+   'Power and Guts must not share a generic muzzle closeup');
+ const runtime=readFileSync('src/arena3d-runtime.js','utf8');
+ assert.ok(runtime.includes('new THREE.InstancedMesh'),'Environment depth should be efficient');
+ assert.ok(runtime.includes('scene.add(trunks,crowns)'),'Distant trees ground the scene');
+ assert.ok(runtime.includes('new THREE.DodecahedronGeometry'),'Rocks make the stage less empty');
+});
+
+test('the winning Bear howl is staged without hiding its muzzle',()=>{
+ const css=readFileSync('src/combat-cinematics.css','utf8');
+ const ui=readFileSync('src/combat-cinematics.js','utf8');
+ assert.ok(css.includes('ark-bear-howl-wave'));
+ assert.ok(ui.includes('ark-cinema-howl-waves'));
+ assert.ok(ui.includes('overlay.dataset.winner=event.attackerId'));
 });
