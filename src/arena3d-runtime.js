@@ -1029,6 +1029,9 @@
     getClipDuration:(index,move)=>nativeLength({attacker:index,move}),
     getStatus:()=>({bear:Boolean(loaded.bear),moose:Boolean(loaded.moose),
       sceneReady:Boolean(renderer),active:actors.filter(Boolean).length,
+      // The private FBX may not have a jaw bone or mouth morph. Expose
+      // only the detected capability, not the private model data itself.
+      bearHowlFace:actors.find(actor=>actor?.id==='bear')?.howlCapabilities||null,
       panelOpen:Boolean(panel),loading})
   });
 })();
