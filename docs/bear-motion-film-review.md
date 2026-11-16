@@ -37,3 +37,19 @@ A single continuous recording is enough. Avoid changing the display scale, rotat
 Automated tests can verify the **event order, timing, non-scoring nature, setup dialog safety, and required script loading**. They **cannot verify** the actual private source model's shape, perspective, foot contact, or live WebGL quality because its original source files are not published to CI. The review remains a draft until a real Mac playback recording is examined. The uploaded source assets stay local to the browser; this mode does not transmit or record the files automatically.
 
 The user-approved painted main menu is never altered, Tiger remains paused and Moose is not redesigned. The film review uses our original cinematography with the existing reviewed Bear V2 source motions.
+
+## November 16 footage review and corrective pass
+
+The user submitted `Screen Recording 2026-11-16 at 12.18.12 AM.mov` (26.32 seconds, 2554×1628 at 60 fps). I inspected the complete take and sampled frames around 7.5, 13.5, 15 and 20 seconds.
+
+- **7.5s, Technique:** Bear's attacking forelimb is visible but the frame favors Moose far too much. The LOW SWIPE name occupies the animal space.
+- **13.5s, Power:** Bear is partially cropped off the left edge, the overlarge HIGH PAW STRIKE title is clipped and overlays the animal, and the camera hides important contact.
+- **15s, knockout:** Bear's front half is outside the frame while Moose drops onto the foreground. The giant opponent dominates the composition and the attack does not land as one clear readable beat.
+- **20s through end, victory:** Bear is almost entirely missing, sometimes only a paw visible at the far left. The downed Moose and empty mountains take over what was intended to be Bear's four-angle hero sequence.
+- Throughout, Battle HUD, unchanged 180/180 HP, in-world animal names, reel output and a full-width recording toolbar clutter this temporary non-scoring cinematic mode.
+
+**Root cause confirmed from code:** `cinematics.camera()` mapped attacker slot 0 to the positive-X side even though slot 0's actor pivot is at `-2.02`. Victory's targetX therefore pointed to the defeated right-side opponent instead of the winning left-side Bear. The same sign mismatch affected attack shots. The face-cropping and giant on-screen text made the error worse.
+
+**Corrected in the draft:** Consistent slot coordinates for both attacker positions; hero-following low/side/high/wide victory cameras; centered two-animal impact; modest zoom and decisive edits; stable imported FBX model-root X/Z anchoring; smaller top-anchored titles with safer animation origins; hidden non-scoring HP/name overlays in review; compact recording controls; tests covering left/right winners and centered contact.
+
+**Still open:** This fixes the identified camera math and scene composition, **not** the overall commercial-quality motion. The native private Bear V2 animations need another Mac film take to verify foot contact, strike silhouettes, genuine impact synchronization, rig geometry and shot proportions. A fully bespoke scene-specific action cutscene would require additional original rig/animation production.
