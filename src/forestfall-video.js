@@ -67,7 +67,13 @@
     video.playsInline=true;
     video.preload='auto';
     video.src=objectUrl;
-    video.muted=Boolean(window.__arkade?.getSettings()?.mute);
+    const settings=window.__arkade?.getSettings?.()||{};
+    const master=Math.max(0,Math.min(1,(Number(settings.master??100))/100));
+    const effects=Math.max(0,Math.min(1,(Number(settings.sfx??100))/100));
+    video.volume=master*effects;
+    video.muted=Boolean(settings.mute)||video.volume===0;
+    const reduced=Boolean(settings.reducedMotion)||
+      Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
     const result=document.createElement('div');
     result.className='ark-forestfall-result';
     result.setAttribute('aria-live','polite');
@@ -116,11 +122,16 @@
     });
     // A power-slot stop is a direct user gesture, so browsers may allow
     // audio. If autoplay is blocked, offer an explicit button instead.
-    video.play().catch(()=>{
-      if(!active||active.node!==node)return;
+    if(reduced){
       resume.hidden=false;
-      status.textContent='SELECT PLAY FORESTFALL TO START THE CINEMATIC';
-    });
+      status.textContent='REDUCED MOTION ENABLED · PLAY VIDEO MANUALLY OR SKIP';
+    }else{
+      video.play().catch(()=>{
+        if(!active||active.node!==node)return;
+        resume.hidden=false;
+        status.textContent='SELECT PLAY FORESTFALL TO START THE CINEMATIC';
+      });
+    }
     skip.focus();
     return true;
   }
