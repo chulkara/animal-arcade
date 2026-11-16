@@ -99,12 +99,12 @@ test('film review distinguishes actual mouth animation from body-only fallback',
 
 test('head lift uses world-space hinge axes, not accidental local FBX twist',()=>{
  const runtime=readFileSync('src/arena3d-runtime.js','utf8');
- assert.ok(runtime.includes('const pitchWorld=new THREE.Vector3(0,0,face)'));
+ assert.ok(runtime.includes('const pitchWorld=facingWorld.clone().cross(yawWorld).normalize()'));
  assert.ok(runtime.includes('getWorldQuaternion(q)'));
  assert.ok(runtime.includes('axis.clone().applyQuaternion(q.invert()).normalize()'));
  assert.ok(runtime.includes("setWorld('RigHead',pitchWorld,-howl.headPitch*strength)"));
  assert.ok(runtime.includes("setWorld('RigNeck',pitchWorld,-howl.neckPitch*strength)"));
- assert.ok(runtime.includes('orientation.rotation.x=0'));
+ assert.ok(runtime.includes('orientation.rotation.set(0,baseYaw,0)'));
  assert.ok(!runtime.includes("set('RigHead',X,howl.headPitch*strength)"));
 });
 
@@ -130,4 +130,13 @@ test('victory-only replay starts from the winner pose without changing match res
  assert.ok(runtime.includes("actors[event.attacker]?.native('victory')"));
  assert.ok(runtime.includes("actors[event.defender]?.native('knockout')"));
  assert.ok(css.includes('[data-bear-review-howl]'));
+});
+
+test('turning the Bear for camera review keeps the howl hinge aligned to its actual facing',()=>{
+ const runtime=readFileSync('src/arena3d-runtime.js','utf8');
+ assert.ok(runtime.includes('const baseYaw=(slot===0?Math.PI/2:-Math.PI/2)+yaw[id]'));
+ assert.ok(runtime.includes('applyAxisAngle(yawWorld,baseYaw)'));
+ assert.ok(runtime.includes('facingWorld.clone().cross(yawWorld).normalize()'));
+ assert.ok(runtime.includes('orientation.quaternion.premultiply('));
+ assert.ok(!runtime.includes('orientation.rotation.z=-face*howl.bodyLean'));
 });
