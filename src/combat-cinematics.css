@@ -311,3 +311,30 @@
 .game.reduce-motion .ark-cinema[data-beat="attack"][data-shot="rush"] .ark-cinema-speed,
 .game.reduce-motion .ark-cinema[data-beat="attack"][data-shot="sweep"] .ark-cinema-speed{
  animation:none;opacity:.04}
+
+
+/* Bear's final howl sends a restrained vibration through the scene.
+   These concentric rings sit behind the face and never block the mouth. */
+.ark-cinema-howl-waves{position:absolute;z-index:2;left:50%;top:31%;
+ width:clamp(120px,21vw,360px);height:clamp(120px,21vw,360px);
+ pointer-events:none;transform:translate(-50%,-50%);opacity:0}
+.ark-cinema-howl-waves i{position:absolute;inset:0;border-radius:50%;
+ border:2px solid #ffe5a8a3;box-shadow:0 0 15px #ffe6ad58;
+ opacity:0;transform:scale(.4)}
+.ark-cinema[data-beat="victory"][data-shot="finale"][data-winner="bear"] .ark-cinema-howl-waves{
+ opacity:.55}
+.ark-cinema[data-beat="victory"][data-shot="finale"][data-winner="bear"] .ark-cinema-howl-waves i{
+ animation:ark-bear-howl-wave 1.55s cubic-bezier(.18,.59,.23,1) 1 both}
+.ark-cinema[data-beat="victory"][data-shot="finale"][data-winner="bear"] .ark-cinema-howl-waves i:nth-child(2){
+ animation-delay:.20s}
+.ark-cinema[data-beat="victory"][data-shot="finale"][data-winner="bear"] .ark-cinema-howl-waves i:nth-child(3){
+ animation-delay:.40s}
+@keyframes ark-bear-howl-wave{
+ 0%{opacity:0;transform:scale(.4)}
+ 24%{opacity:.68}
+ 100%{opacity:0;transform:scale(1.9)}
+}
+@media(prefers-reduced-motion:reduce){
+ .ark-cinema-howl-waves{display:none!important}
+}
+.game.reduce-motion .ark-cinema-howl-waves{display:none!important}
