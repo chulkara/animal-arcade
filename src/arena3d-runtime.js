@@ -71,6 +71,10 @@
     const fitted=new THREE.Box3().setFromObject(model);
     const center=fitted.getCenter(new THREE.Vector3());
     model.position.set(-center.x,-fitted.min.y,-center.z);
+    // Keep a stable stage anchor for authored clip playback. Some motion
+    // files include local root translation that can otherwise accumulate
+    // into a disappearing fighter during the long victory montage.
+    const restX=model.position.x,restZ=model.position.z;
     pivot.position.x=slot===0?-2.02:2.02;
     orientation.rotation.y=(slot===0?Math.PI/2:-Math.PI/2)+yaw[id];
     const mixer=new THREE.AnimationMixer(model),joint=new Map();
@@ -137,6 +141,9 @@
     actor.tick=(delta)=>{
       resetApplied(actor);
       mixer.update(reduced()?0:delta);
+      // Root travel is staged explicitly on pivot, not by imported FBX.
+      // Preserve vertical lift and all bone articulation for the strike.
+      model.position.x=restX;model.position.z=restZ;
       if(actor.proc){
         actor.procElapsed+=reduced()?0:delta*1000;
         const sample=window.NoahsMooseActionCore.sampleMove(actor.proc,
@@ -474,7 +481,9 @@
     const focusX=(wants?.targetX??0)*fit;
     const focusY=(wants?.targetY??1.18)*fit;
     const wanted=new THREE.Vector3(x,y,z);
-    const alpha=wants?.cut?.30:.16;
+    // Film edits should land immediately. The earlier .30 eased halfway
+    // through some shots and visibly framed the wrong subject.
+    const alpha=wants?.cut?.88:1-Math.exp(-Math.max(dt,1/120)*10);
     camera.position.lerp(wanted,alpha);
     cameraLook.lerp(new THREE.Vector3(focusX,focusY,0),alpha);
     camera.lookAt(cameraLook);
