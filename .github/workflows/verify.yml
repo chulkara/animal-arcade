@@ -29,6 +29,7 @@ jobs:
           node --check src/tiger-swap.js
           node --check src/roster-core.js
           node --check src/arena3d-core.js
+          node --check src/bear-review-core.js
           node --check src/combat-cinematics-core.js
           node --check src/combat-cinematics.js
           node --check src/arena3d-loader.js
