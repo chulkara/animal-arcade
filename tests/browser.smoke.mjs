@@ -312,6 +312,16 @@ await run('battle-feel-desktop-1440x900',{width:1440,height:900},async page=>{
     .includes(await page.locator('.ark-cinema').getAttribute('data-beat')));
   await page.locator('.combat-message').waitFor({state:'visible',timeout:8000});
   assert.match(await page.locator('.combat-message').innerText(),/FERAL CHARGE|LOW SWIPE|HIGH PAW STRIKE|RAGING REAR|ANTLER CHARGE|CROSS-ANTLER SWEEP|TWO-HOOF STOMP|LEAPING ANTLER DRIVE/);
+  await page.evaluate(()=>window.NoahsCinematics.sync());
+  assert.equal(await page.locator('.combat-battlefield .ark-cinema').count(),1,
+    'Repeated director sync must not leave ghost move titles');
+  await page.evaluate(()=>{
+    if(window.NoahsCombat.getState().phase==='FINISHED')window.NoahsCombat.rematch();
+    else window.NoahsCombat.next();
+    window.NoahsCinematics.sync();
+  });
+  assert.equal(await page.locator('.combat-battlefield .ark-cinema').count(),0,
+    'Returning to reels must remove the previous cinematic title DOM');
 }, {reducedMotion:'no-preference'});
 await run('battle-feel-reduced-motion-390x844',{width:390,height:844},async page=>{
   await page.locator('.painted-mobile-nav [data-art-action="PLAY"]').click();
