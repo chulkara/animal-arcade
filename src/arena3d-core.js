@@ -110,7 +110,12 @@
     if(!['G','T','P','S'].includes(move))throw new RangeError('Invalid move');
     if(id==='moose')return {G:830,T:680,P:1220,S:1330}[move];
     const duration=Number.isFinite(durationMs)&&durationMs>0?durationMs:1050;
-    return Math.max(180,Math.min(1400,Math.round(duration*.47)));
+    // Reviewed Bear V2 clips have a visible commitment before the paw or
+    // muzzle makes contact. The old fixed 47% trigger made the victim fall
+    // before the native Bear actually delivered the strike.
+    const ratios={G:.58,T:.68,P:.74,S:.69};
+    return Math.max(180,Math.min(duration+180,2400,
+      Math.round(duration*ratios[move])));
   }
   function actionDuration(id,move,nativeMs){
     if(!Object.hasOwn(REQUIRED,id)||!['G','T','P','S'].includes(move))
