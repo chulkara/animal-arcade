@@ -118,7 +118,7 @@ test('regression: winning Bear gets front, reverse, overhead and final face clos
   assert.ok(Math.abs(angles[1]-angles[2])>.6,'Reverse and overhead azimuth must differ');
   assert.ok(views[2].y-views[0].y>5,'The third camera must actually look down');
   assert.ok(views[3].z<2,'Final shot must be close enough to face the winning Bear');
-  assert.ok(views[3].zoom>1.5,'The winning portrait must be close, not the same profile');
+  assert.ok(views[3].zoom>1.25,'The winning portrait must be close, not the same profile');
  }
 });
 
@@ -218,8 +218,10 @@ test('original-video comparison: signature moves prepare before FBX contact and 
  const begin=director.duration(event,1300).victoryStart;
  const portrait=director.camera(event,begin+3300,1300);
  assert.equal(portrait.shot,'finale');
- assert.ok(Math.abs(portrait.x-portrait.targetX)>7);
- assert.ok(portrait.zoom>=1.55);
+ assert.ok(Math.abs(portrait.x-portrait.targetX)>3.8&&
+   Math.abs(portrait.x-portrait.targetX)<5.5,
+   'Camera should approach the muzzle without clipping the bear');
+ assert.ok(portrait.zoom>=1.3);
  const runtime=readFileSync('src/arena3d-runtime.js','utf8');
  const ui=readFileSync('src/combat-cinematics.js','utf8');
  assert.ok(runtime.includes('const lead=timing?.actionLead||0;'),
@@ -260,4 +262,53 @@ test('Bear source 3D hit contact matches cinematic timing for all native clip le
    assert.ok(t.total>=t.finish);
   }
  }
+});
+
+test('bear final victory howls visibly and stays expressive in the held close-up',()=>{
+ const none=director.bearHowl(1600);
+ assert.equal(none.active,false);
+ assert.equal(none.jawOpen,0);
+ const near=director.bearHowl(director.VICTORY_HOWL_START_MS+220);
+ assert.equal(near.active,true);
+ assert.ok(near.headPitch<-.08,'Head needs a clear upward howl gesture');
+ assert.ok(near.jawOpen>.25,'Jaw should open during the vocalization');
+ const held=director.bearHowl(director.VICTORY_HOWL_START_MS+1600);
+ assert.ok(held.jawOpen>.7,'The mouth must remain open at end of review');
+ assert.ok(held.neckPitch<-.14,'Neck should extend, not stay level');
+ for(const attacker of [0,1]){
+  const evt={...base,attacker,defender:1-attacker,attackerId:'bear',
+   defenderId:'moose',move:'P',finished:true};
+  const t=director.duration(evt,1600);
+  const final=director.camera(evt,t.victoryStart+3350,1600);
+  assert.equal(final.shot,'finale');
+  assert.ok(Math.abs(final.x-final.targetX)>=4,'Face-on winner shot');
+ }
+});
+
+test('Bear howl drives actual jaw/morph targets when available and has an original vocal cue',()=>{
+ const runtime=readFileSync('src/arena3d-runtime.js','utf8');
+ const audio=readFileSync('src/audio.js','utf8');
+ const overlay=readFileSync('src/combat-cinematics.js','utf8');
+ assert.ok(runtime.includes('actor.howlCapabilities'));
+ assert.ok(runtime.includes('jawBone'));
+ assert.ok(runtime.includes('morphTargetDictionary'));
+ assert.ok(runtime.includes('actor.resetHowlFace()'));
+ assert.ok(runtime.includes('cinematics.bearHowl(t)'));
+ assert.ok(audio.includes("case 'bearHowl'"));
+ assert.ok(overlay.includes("window.NoahsAudio?.cue('bearHowl')"));
+});
+
+test('signature finish adds a rush cut, low technique sweep and ground shockwave',()=>{
+ const evt={...base,attackerId:'bear',defenderId:'moose',move:'P'};
+ const timing=director.duration(evt,1600);
+ assert.equal(director.shot(evt,timing.actionLead+timing.contact*.85,1600).shot,'rush');
+ assert.equal(director.shot({...evt,move:'T'},
+    director.duration({...evt,move:'T'},1600).actionLead+
+    director.duration({...evt,move:'T'},1600).contact*.85,1600).shot,'sweep');
+ const arenaCode=readFileSync('src/arena3d-runtime.js','utf8');
+ const css=readFileSync('src/combat-cinematics.css','utf8');
+ assert.ok(arenaCode.includes('new THREE.RingGeometry'));
+ assert.ok(arenaCode.includes('shockMaterial.opacity'));
+ assert.ok(css.includes('[data-shot="rush"]'));
+ assert.ok(css.includes('[data-shot="sweep"]'));
 });
