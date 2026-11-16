@@ -263,7 +263,7 @@
       }
       point.position.set(x,y,z);
       if(kind!=='storm')point.scale.setScalar(kind==='dust'?(.6+t*1.2):
-        kind==='triumph'?.38+.36*pulse:.4+.42*pulse);
+        kind==='triumph' ? .38+.36*pulse : .4+.42*pulse);
       material.color.setHex(colors[kind]||colors.triumph);
       material.opacity=Math.max(0,Math.min(.85,alpha));
     }
@@ -342,7 +342,7 @@
     const impact=core.contactMs(event.attackerId,event.move,length);
     const progress=Math.min(1,t/Math.max(1,impact));
     const release=Math.max(0,Math.min(1,1-(t-impact)/600));
-    const travel=(event.move==='G'||event.move==='S')?.72:(event.move==='P'?.37:.25);
+    const travel=(event.move==='G'||event.move==='S') ? 0.72 : (event.move==='P' ? 0.37 : 0.25);
     const enter=progress*progress*(3-2*progress);
     const offset=travel*enter*release;
     if(attacker){
