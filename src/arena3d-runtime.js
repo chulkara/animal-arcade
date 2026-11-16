@@ -676,6 +676,7 @@
     reviewToolbar.innerHTML='<div class="ark-bear-review-info">'+
       '<strong data-bear-review-step></strong>'+
       '<span data-bear-review-detail></span></div>'+
+      '<button type="button" data-bear-review-howl>REPLAY HOWL ONLY</button>'+
       '<button type="button" data-bear-review-replay>REPLAY FROM GUTS</button>'+
       '<button type="button" data-bear-review-stop>STOP REVIEW</button>';
     root?.append(reviewToolbar);
@@ -697,6 +698,27 @@
     beginEvent(bearReview.event);
     updateReviewToolbar();
     reviewChange();
+  }
+  function replayBearHowl(){
+    if(!bearReview?.events?.[2]||!cinematics)return false;
+    const event=bearReview.events[2];
+    bearReview.index=2;bearReview.event=event;
+    bearReview.cameraShot=null;bearReview.howlStage=null;
+    bearReview.countdown=0;bearReview.done=false;
+    actors.forEach(actor=>actor?.idle());
+    shownEvent=event.key;beginEvent(event);
+    const timeline=cinematics.duration(event,nativeLength(event));
+    // This is a non-scoring film rehearsal, not a shortcut through a real
+    // fight. Start with the same winner/victim poses as the longer review.
+    sequence.elapsed=timeline.victoryStart;
+    sequence.attackStarted=true;sequence.contact=true;
+    sequence.finished=true;sequence.victoryPlayed=true;
+    actors[event.attacker]?.native('victory');
+    actors[event.defender]?.native('knockout');
+    updateReviewToolbar();
+    reviewChange();
+    startLoop();
+    return true;
   }
   function advanceBearReview(delta){
     if(!bearReview||document.hidden)return;
@@ -1041,6 +1063,7 @@
       }
       return;
     }
+    if(event.target.closest('[data-bear-review-howl]')){replayBearHowl();return;}
     if(event.target.closest('[data-bear-review-replay]')){startBearReview();return;}
     if(event.target.closest('[data-bear-review-stop]')){stopBearReview();return;}
     if(event.target.closest('[data-ark3d-open]'))openPanel();
