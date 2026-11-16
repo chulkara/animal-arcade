@@ -38,6 +38,23 @@
     g.gain.exponentialRampToValueAtTime(.00001,now+duration);
     o.connect(g);g.connect(ctx.destination);o.start(now);o.stop(now+duration+.018);
   }
+  function burst(duration=.14,gain=.14,filterHz=800,delay=0){
+    if(!ctx||effective(settings.sfx)<=0)return;
+    const size=Math.max(256,Math.ceil(ctx.sampleRate*duration));
+    const buffer=ctx.createBuffer(1,size,ctx.sampleRate),samples=buffer.getChannelData(0);
+    let seed=0x4c415241;
+    for(let i=0;i<size;i++){
+      seed^=seed<<13;seed^=seed>>>17;seed^=seed<<5;
+      samples[i]=((seed>>>0)/2147483648-1)*Math.pow(1-i/size,2);
+    }
+    const src=ctx.createBufferSource(),filter=ctx.createBiquadFilter(),vol=ctx.createGain();
+    src.buffer=buffer;filter.type='lowpass';filter.frequency.value=filterHz;
+    const at=ctx.currentTime+delay;
+    vol.gain.setValueAtTime(Math.max(.00001,effective(settings.sfx)*gain),at);
+    vol.gain.exponentialRampToValueAtTime(.00001,at+duration);
+    src.connect(filter);filter.connect(vol);vol.connect(ctx.destination);
+    src.start(at);src.stop(at+duration+.01);
+  }
   function cue(name){
     if(!ctx)return;
     switch(name){
@@ -49,8 +66,27 @@
       // Audio still respects master/SFX/mute and starts only after a gesture.
       case 'slot':
         tone(580,.065,'square',.085);tone(870,.095,'sine',.07,.045);break;
+      case 'arcadeStop':
+        burst(.11,.16,3700);
+        tone(620,.10,'square',.13);tone(990,.19,'sine',.09,.065);
+        tone(1450,.26,'triangle',.045,.12);break;
+      case 'cinemaIntro':
+        burst(.2,.10,1100);tone(235,.22,'sawtooth',.14);
+        tone(370,.38,'triangle',.08,.12);break;
+      case 'cinemaMiracle':
+        tone(330,.22,'sine',.09);tone(495,.30,'triangle',.10,.08);
+        tone(660,.38,'sine',.09,.17);tone(990,.44,'sine',.07,.30);
+        burst(.27,.085,4800,.26);break;
+      case 'cinemaReaction':
+        burst(.16,.10,700);tone(158,.27,'triangle',.10,.06);break;
+      case 'cinemaVictory':
+        tone(261.6,.55,'triangle',.10);
+        tone(392,.56,'triangle',.10,.13);
+        tone(523.25,.65,'triangle',.10,.30);
+        tone(783.99,.77,'sine',.065,.47);break;
       case 'impact':
-        tone(125,.24,'sawtooth',.21);tone(75,.33,'triangle',.12,.06);break;
+        burst(.24,.24,1600);tone(125,.24,'sawtooth',.21);
+        tone(75,.33,'triangle',.12,.06);tone(53,.42,'triangle',.11,.09);break;
       case 'special':
         tone(380,.26,'triangle',.12);tone(570,.29,'sine',.12,.04);
         tone(860,.34,'sine',.10,.10);tone(125,.25,'sawtooth',.13,.11);break;
