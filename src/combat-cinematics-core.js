@@ -168,9 +168,23 @@ function camera(event,elapsed,nativeMs){
     y=event.move==='P'?1.65:2.1;
     z=10.8;targetY=1.3;zoom=1.00;
   }
-  const shake=beat.beat==='CONTACT'?Math.sin(beat.local*1.45)*.025:0;
-  return Object.freeze({x:x+shake,y,z,targetX,targetY,zoom,angle:0,
+  const age=beat.local-beat.timing.contact;
+  const punch=beat.beat==='CONTACT'?
+    Math.max(0,1-Math.max(0,age)/145):0;
+  const shake=beat.beat==='CONTACT'?Math.sin(age*.16)*.085*punch:0;
+  return Object.freeze({x:x+shake,y:y+shake*.35,z,targetX,targetY,
+    zoom:zoom+.075*punch,angle:0,
     beat:beat.beat,shot:beat.shot,cut:true});
+}
+// A sub-100ms impact freeze is a core part of the original arcade's
+// perceived force. It freezes both rigs for the first impact frames while
+// audio, sparks and the shot remain active; the battle clock never pauses.
+const HIT_STOP_MS=88;
+function hitStop(event,elapsed,nativeMs){
+  if(!event||!Number.isFinite(elapsed))return false;
+  const timing=duration(event,nativeMs);
+  const age=elapsed-timing.actionLead-timing.contact;
+  return age>=0&&age<HIT_STOP_MS;
 }
 // Art-direct root motion independently from the imported attack FBX.
 // Source FBXs may contain long horizontal RigRoot translations; these must
@@ -223,5 +237,5 @@ function panel(event,elapsed,nativeMs){
     attacker:event.attacker,defender:event.defender,finished:b.beat==='VICTORY',
     duration:b.timing.total});
 }
-return Object.freeze({ATTACKS,MIRACLES,POSES,spec,miracle,duration,shot,camera,blocking,panel});
+return Object.freeze({ATTACKS,MIRACLES,POSES,HIT_STOP_MS,spec,miracle,duration,shot,camera,hitStop,blocking,panel});
 });
