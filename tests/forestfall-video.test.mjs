@@ -1,0 +1,58 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+
+const file=path=>readFileSync(path,'utf8');
+const script=file('src/forestfall-video.js');
+const ui=file('src/combat-ui.js');
+const html=file('index.html');
+const css=file('src/forestfall-video.css');
+
+test('Forestfall video player is local-only, not bundled or uploaded',()=>{
+ assert.ok(script.includes('URL.createObjectURL(file)'));
+ assert.ok(script.includes('URL.revokeObjectURL(objectUrl)'));
+ assert.ok(script.includes("ui.addEventListener('change'"));
+ assert.ok(script.includes("data-forestfall-file"));
+ assert.ok(script.includes("video.src=objectUrl"));
+ assert.ok(!script.includes('fetch('));
+ assert.ok(!script.includes('XMLHttpRequest'));
+ assert.ok(!script.includes('serviceWorker'));
+ assert.ok(!script.includes('localStorage'));
+ assert.ok(!html.includes('Bear_performs_Forestfall_attack'));
+});
+
+test('a real Bear special hit invokes Forestfall, not an ordinary G/T/P attack',()=>{
+ assert.ok(script.includes("window.addEventListener('arkade:reelstop'"));
+ assert.ok(script.includes('event.detail?.hit'));
+ assert.ok(script.includes("hit.kind!=='HIT'||!hit.special"));
+ assert.ok(script.includes("s.animals?.[hit.attacker]?.id!=='bear'"));
+ assert.ok(script.includes("NoahsArena3DCore?.battleEvent(s)"));
+ assert.ok(script.includes('clipEvent.key===lastKey'));
+ assert.ok(script.includes('playVideo({event:clipEvent})'));
+});
+
+test('Forestfall overlays the battle rather than mutating scoring or damage',()=>{
+ assert.ok(script.includes('event.damage'));
+ assert.ok(script.includes('video.currentTime<duration*.755'));
+ assert.ok(script.includes("node.classList.add('ark-forestfall-impact')"));
+ assert.ok(script.includes("video.addEventListener('ended',()=>close(true)"));
+ assert.ok(script.includes("skip.addEventListener('click',()=>close(true))"));
+ assert.ok(!script.includes('battle.stop('));
+ assert.ok(!script.includes('nextRound()'));
+ assert.ok(!script.includes('animals[hit.defender].hp='));
+ assert.ok(css.includes('position:fixed;inset:0;z-index:150'));
+});
+
+test('the upload and non-scoring preview are optional and accessible',()=>{
+ assert.ok(html.includes('./src/forestfall-video.css'));
+ assert.ok(html.includes('./src/forestfall-video.js'));
+ assert.ok(ui.includes('data-forestfall-choose'));
+ assert.ok(ui.includes('data-forestfall-file'));
+ assert.ok(ui.includes('data-forestfall-preview'));
+ assert.ok(ui.includes('data-forestfall-status'));
+ assert.ok(script.includes('LOCAL VIDEO PREVIEW · NO DAMAGE'));
+ assert.ok(script.includes('video.playsInline=true'));
+ assert.ok(script.includes("node.setAttribute('aria-modal','true')"));
+ assert.ok(script.includes("resume.addEventListener('click'"));
+ assert.ok(script.includes("window.NoahsForestfall=Object.freeze"));
+});
