@@ -80,6 +80,8 @@
     interval=requestAnimationFrame(frame);
   }
   function stopSlot(){
+    // Film rehearsal is intentionally separate from the scored slot battle.
+    if(window.NoahsArena3D?.getReviewState?.()?.active)return;
     const s=current();
     if(!s||screen()!=='BATTLE_PLAY'||!['ATTACK','POWER'].includes(s.phase))return;
     const value=valueNow();
@@ -296,7 +298,8 @@
     if(target.closest('[data-combat-quit]')){stopTimer();window.__arkade?.openScreen('BATTLE_STAGE');}
   });
   window.addEventListener('keydown',event=>{
-    if(screen()!=='BATTLE_PLAY'||event.altKey||event.metaKey||event.ctrlKey)return;
+    if(screen()!=='BATTLE_PLAY'||event.altKey||event.metaKey||event.ctrlKey||
+      window.NoahsArena3D?.getReviewState?.()?.active)return;
     const tag=event.target?.tagName;
     if(tag==='INPUT'||tag==='TEXTAREA')return;
     const state=current();
