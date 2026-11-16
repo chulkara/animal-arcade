@@ -35,3 +35,14 @@
 4. The original video’s proprietary tiger model, logo, Japanese special-text artwork and sound files have not been copied or embedded. This pass follows its cinematic staging and pacing with original procedural/code assets.
 
 **Do not merge PR #12** until the user accepts a new local recording. Public GitHub Pages and the approved painted menu remain unchanged.
+
+
+## Continuation: correcting the Bear's actual rig motion
+
+The first native/procedural howl implementation had a further physical flaw: additive `RigHead`, `RigNeck` and `RigChest` adjustments rotated around a guessed **FBX-local X-axis**. A bone's local X is not necessarily the animal's pitch axis, so those changes can read as an almost static pose or a twist. The final body tilt used `orientation.rotation.x`, which can tip the torso out of the standing plane. On top of that, the existing foot-height correction ran *before* the full howl pose, so the body drop overwrote grounding.
+
+This draft now derives the pitch hinge in world coordinates from the Bear's actual world-space facing, including the local 90° TURN control. Each target bone receives the equivalent local-space quaternion, without changing the shipped native FBX or the source skeleton's bindings. The body leans in the same facing plane and the hind-foot correction runs after native animation, additive gestures, and scene blocking. This is a **rigging fix**, not a camera or light effect.
+
+The review toolbar now includes **REPLAY HOWL ONLY**, a non-scoring shortcut to the winning pose and five-and-a-half-second victory timeline. Use this to record rapid repetitions rather than waiting for all three attacks. The review also distinguishes **NATIVE ROAR + JAW KEYS**, **NATIVE ROAR LOADED · VERIFY MOUTH**, **MOUTH RIG AVAILABLE**, **BODY HOWL ONLY · NO MOUTH CONTROL**, and missing head-bone support. These are conservative source-clip/rig capability indicators, not proof of visually convincing mouth opening.
+
+Automated regression tests now check world-aligned head lift, correct order of pose and grounding, mirrored/rotated Bear facing, optional private roar discovery, and instant howl-only review. The actual privately imported Bear still must be visually inspected on the owner's Mac. No private FBX or texture data was published, and `main` and the approved painted menu remain unchanged.
