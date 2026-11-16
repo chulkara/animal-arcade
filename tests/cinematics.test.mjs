@@ -96,23 +96,24 @@ test('battle event carries equipped Miracle identity and damage into the univers
 });
 
 
-test('regression: Bear is framed as the winner, never the KO victim',()=>{
+test('regression: winning Bear gets genuinely different front, reverse, overhead, wide views',()=>{
  for(const attacker of [0,1]){
-   const defender=1-attacker;
-   const evt={...base,attacker,defender,attackerId:'bear',defenderId:'moose',
-     move:'P',finished:true,knockout:true};
-   const victoryStart=director.duration(evt,1200).victoryStart;
-   const heroWorldX=attacker===0?-2.02:2.02;
-   for(const delta of [100,1100,2300,3350]){
-     const cam=director.camera(evt,victoryStart+delta,1200);
-     assert.equal(cam.beat,'VICTORY');
-     assert.equal(cam.targetX,heroWorldX,
-       'All four victory cameras must look at the winning Bear');
-     assert.ok(Math.abs(cam.x-heroWorldX)<1.4,
-       'Camera origin must stay near the hero, not the KO victim');
-     assert.ok(cam.zoom<=1.10,'Do not crop the winning Bear with excessive zoom');
-     assert.ok(cam.cut,'The victory sequence should use decisive film cuts');
-   }
+  const evt={...base,attacker,defender:1-attacker,
+   attackerId:'bear',defenderId:'moose',move:'P',finished:true,knockout:true};
+  const begin=director.duration(evt,1200).victoryStart;
+  const heroWorldX=attacker===0?-2.02:2.02;
+  const views=[100,1100,2300,3350].map(t=>director.camera(evt,begin+t,1200));
+  const angles=views.map(cam=>Math.atan2(cam.x-cam.targetX,cam.z));
+  views.forEach((cam,index)=>{
+   assert.equal(cam.beat,'VICTORY');
+   assert.equal(cam.targetX,index===3?heroWorldX*.28:heroWorldX);
+   assert.ok(cam.zoom<=1.10);
+   assert.equal(cam.cut,true);
+  });
+  assert.ok(Math.abs(angles[0]-angles[1])>.8,'Low front and reverse angles must differ');
+  assert.ok(Math.abs(angles[1]-angles[2])>.6,'Reverse and overhead azimuth must differ');
+  assert.ok(views[2].y-views[0].y>5,'The third camera must actually look down');
+  assert.ok(views[3].z>views[0].z+5,'Final composition pulls back for two animals');
  }
 });
 
@@ -139,5 +140,42 @@ test('cinematic footage UI protects Bear silhouette and hides stale review HUD',
  assert.match(reviewCss,/ark-bear-reviewing \.ark-arena-hud/);
  assert.match(reviewCss,/ark-bear-reviewing \.combat-battlefield \.combat-animal-name/);
  assert.match(model,/model\.position\.x=restX;model\.position\.z=restZ/);
- assert.match(model,/wants\?\.cut \? \.88/);
+ assert.match(model,/camera\\.position\\.copy\\(wanted\\)/);
+ assert.match(model,/lastCameraShot/);
+ assert.match(model,/rootAnchors/);
+ assert.match(model,/actor\\.soleRest/);
+});
+
+test('Bear Guts, Technique and Power have separate bounded approach, impact and recovery',()=>{
+ const values={};
+ for(const move of ['G','T','P']){
+  const evt={...base,attackerId:'bear',defenderId:'moose',move};
+  const t=director.duration(evt,1600);
+  const start=director.blocking(evt,0,1600);
+  const windup=director.blocking(evt,t.contact*.25,1600);
+  const contact=director.blocking(evt,t.contact,1600);
+  const after=director.blocking(evt,t.contact+900,1600);
+  assert.equal(start.attackerTravel,0);
+  assert.ok(Math.abs(windup.attackerTravel)<contact.attackerTravel);
+  assert.ok(contact.attackerTravel>0&&contact.attackerTravel<=.9);
+  assert.ok(contact.attackerLean>0,'Contact has clear forward body weight');
+  assert.equal(after.attackerTravel,0,'Bear returns to its starting point');
+  assert.equal(after.defenderTravel,0,'Victim cannot drift away over time');
+  values[move]=contact.attackerTravel;
+ }
+ assert.ok(values.G>values.P&&values.P>values.T,
+  'Charging Guts travels farther than a high strike or low swipe');
+});
+
+test('Guts uses a stable two-fighter setup before the attack cut',()=>{
+ const evt={...base,attackerId:'bear',move:'G'};
+ const t=director.duration(evt,1600);
+ const intro=director.camera(evt,0,1600);
+ const contact=director.camera(evt,t.contact+20,1600);
+ assert.equal(intro.beat,'INTRO');
+ assert.equal(intro.targetX,0);
+ assert.ok(intro.z>12);
+ assert.equal(contact.beat,'CONTACT');
+ assert.equal(contact.targetX,0);
+ assert.ok(contact.z>12);
 });
