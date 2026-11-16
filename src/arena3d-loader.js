@@ -74,19 +74,27 @@
       });
       const clips={};
       for(const [name,file] of Object.entries(plan.clips)){
-        notify('Preparing '+id+' '+name+' native animation…');
-        const parsed=fbx.parse(await file.arrayBuffer(),'');
-        const clip=parsed.animations?.[0];
-        if(!clip||!clip.tracks?.length||!Number.isFinite(clip.duration)||clip.duration<=0)
-          throw Error(id+' motion '+file.name+' contains no usable animation tracks');
-        // Source motion names are kept intact. The loaded FBX targets Rig* bones
-        // on this model and never modifies the uploaded skeleton's source bytes.
-        const usable=clip.tracks.filter(track=>{
-          const name=track.name.split(/[.\[]/)[0];
-          return boneNames.has(name)||model.getObjectByName(name);
-        });
-        if(!usable.length)throw Error(id+' motion '+file.name+' does not bind to the model skeleton');
-        clips[name]=clip;
+        const optional=Object.hasOwn(core.OPTIONAL?.[id]||{},name);
+        try{
+          notify('Preparing '+id+' '+name+' native animation…');
+          const parsed=fbx.parse(await file.arrayBuffer(),'');
+          const clip=parsed.animations?.[0];
+          if(!clip||!clip.tracks?.length||!Number.isFinite(clip.duration)||clip.duration<=0)
+            throw Error(id+' motion '+file.name+' contains no usable animation tracks');
+          // Native motions target matching Rig* bones; no source bytes
+          // or source motion curves are rewritten by this local importer.
+          const usable=clip.tracks.filter(track=>{
+            const name=track.name.split(/[.\[]/)[0];
+            return boneNames.has(name)||model.getObjectByName(name);
+          });
+          if(!usable.length)throw Error(id+' motion '+file.name+' does not bind to the model skeleton');
+          clips[name]=clip;
+        }catch(error){
+          if(!optional)throw error;
+          // A malformed *optional* animation must never break the user's
+          // original working Bear V2 load. Fall back to the existing idle.
+          notify('Skipping optional '+name+' animation: '+error.message);
+        }
       }
       notify(id.toUpperCase()+' · '+bones+' bones, '+meshes+' skinned meshes, '+Object.keys(clips).length+' native clips ready.');
       return {
