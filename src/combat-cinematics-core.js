@@ -73,7 +73,7 @@ function duration(event,nativeMs){
   const finish=actionLead+Math.max(attack+260,contact+580);
   const victoryStart=event.finished?finish+180:Infinity;
   return Object.freeze({attack,contact,miracleLead,focusLead,actionLead,finish,
-    victoryStart,total:event.finished?victoryStart+5500:finish+480});
+    victoryStart,total:event.finished?victoryStart+VICTORY_END_MS:finish+480});
 }
 function shot(event,elapsed,nativeMs){
   const timing=duration(event,nativeMs);
@@ -89,10 +89,10 @@ function shot(event,elapsed,nativeMs){
       timing,accent:descriptor.accent});
   if(event.finished&&t>=timing.victoryStart){
     const v=t-timing.victoryStart;
-    const stage=v<900?0:v<1820?1:v<2700?2:3;
+    const stage=v<740?0:v<1430?1:v<2140?2:3;
     const name=['lowHero','sideHero','highHero','finale'][stage];
     return Object.freeze({name,beat:'VICTORY',shot:name,pose:POSES[name],local:v,
-      progress:clamp(v/5500,0,1),timing,accent:descriptor.accent});
+      progress:clamp(v/VICTORY_END_MS,0,1),timing,accent:descriptor.accent});
   }
   const attackTime=t-timing.actionLead,contact=timing.contact;
   let stage,beat;
@@ -143,8 +143,13 @@ function camera(event,elapsed,nativeMs){
       // The 9:49 AM recording proves the 4.45-unit portrait shot is
       // unusable: it fills the whole display with fur and excludes the head.
       // Return to the longer front view from the better 9:13 AM take.
-      x=attackerX+facing*8.2;y=2.50;z=1.5;
-      targetX=attackerX;targetY=1.85;zoom=1.08;
+      // The original victor advances on all fours before roaring. Keep
+      // the final lens in a front-quarter direction, with real space
+      // around its muzzle and paws rather than a torso-only portrait.
+      const approach=victoryApproach(beat.local);
+      x=attackerX+facing*8.0;y=1.93;z=5.25;
+      targetX=attackerX+facing*approach.travel;
+      targetY=1.13;zoom=1.04;
     }
   }else if(beat.beat==='FOCUS'){
     // Each technique earns its own visual identity, not the same generic
@@ -226,34 +231,59 @@ function camera(event,elapsed,nativeMs){
 // In the original-game victory, the animal earns its finish: it gathers
 // breath, lowers the muzzle, then throws its head back and cries. A motion
 // curve, not a camera zoom, drives this sequence on the user's local rig.
-const VICTORY_HOWL_START_MS=1940;
-const VICTORY_HOWL_CUE_MS=3000;
-const VICTORY_BANNER_MS=4340;
-const VICTORY_END_MS=5500;
+// From the actual reference footage: the winner approaches on four paws,
+// looks up, roars, and only then the result transitions away. The user
+// approved the first three existing victory camera cuts; this retimes
+// the final cut to feature movement instead of a static hind-leg idle.
+const VICTORY_LOWER_START_MS=1490;
+const VICTORY_LOWER_READY_MS=2500;
+const VICTORY_APPROACH_START_MS=2540;
+const VICTORY_APPROACH_END_MS=3530;
+const VICTORY_HOWL_START_MS=3350;
+const VICTORY_HOWL_CUE_MS=4400;
+const VICTORY_BANNER_MS=3950;
+const VICTORY_END_MS=6600;
+function victoryApproach(victoryElapsed){
+  const elapsed=Math.max(0,Number(victoryElapsed)||0);
+  const lowered=ease((elapsed-VICTORY_LOWER_START_MS)/
+    (VICTORY_LOWER_READY_MS-VICTORY_LOWER_START_MS));
+  const step=ease((elapsed-VICTORY_APPROACH_START_MS)/
+    (VICTORY_APPROACH_END_MS-VICTORY_APPROACH_START_MS));
+  const active=elapsed>=VICTORY_APPROACH_START_MS&&
+    elapsed<VICTORY_APPROACH_END_MS;
+  const stride=active?Math.sin((elapsed-VICTORY_APPROACH_START_MS)*.0145)
+    *Math.sin(Math.PI*clamp((elapsed-VICTORY_APPROACH_START_MS)/
+      (VICTORY_APPROACH_END_MS-VICTORY_APPROACH_START_MS),0,1)):0;
+  return Object.freeze({lowered,step,active,stride,
+    travel:.55*step,depth:.33*step,turn:.43*lowered});
+}
 function bearHowl(victoryElapsed){
   const elapsed=Math.max(0,Number(victoryElapsed)||0);
   const zero=Object.freeze({active:false,phase:'stand',intensity:0,
     headPitch:0,headYaw:0,neckPitch:0,chestPitch:0,jawOpen:0,
     forePaw:0,bodyLean:0,bodyDrop:0,breath:0});
   if(elapsed<VICTORY_HOWL_START_MS)return zero;
-  const inhale=ease((elapsed-VICTORY_HOWL_START_MS)/590);
-  const throwBack=ease((elapsed-2580)/500);
-  const open=ease((elapsed-2760)/360);
-  const fade=ease((elapsed-4680)/770);
-  const vocal=Math.sin((elapsed-3000)*.021);
+  const inhale=ease((elapsed-VICTORY_HOWL_START_MS)/560);
+  const throwBack=ease((elapsed-3850)/540);
+  const open=ease((elapsed-4070)/360);
+  const fade=ease((elapsed-5500)/690);
+  const vocal=Math.sin((elapsed-VICTORY_HOWL_CUE_MS)*.021);
   return Object.freeze({
     active:true,
-    phase:elapsed<2580?'inhale':elapsed<3160?'throw':elapsed<4680?'roar':'hold',
-    intensity:inhale*(1-.16*fade),
-    headPitch:.17*inhale-.70*throwBack+.018*vocal*open,
-    headYaw:.06*throwBack*Math.sin(elapsed*.0031),
-    neckPitch:.08*inhale-.33*throwBack,
-    chestPitch:.13*inhale-.24*throwBack,
-    jawOpen:clamp((.93+.06*vocal)*open*(1-.22*fade),0,1),
-    forePaw:.12*inhale-.30*throwBack,
-    bodyLean:.11*inhale-.17*throwBack,
-    bodyDrop:-.08*inhale+.075*throwBack,
-    breath:(.68+.22*Math.abs(vocal))*open
+    phase:elapsed<3850?'inhale':elapsed<4400?'throw':
+      elapsed<5500?'roar':'hold',
+    intensity:inhale*(1-.14*fade),
+    headPitch:.12*inhale-.59*throwBack+.012*vocal*open,
+    headYaw:.04*throwBack*Math.sin(elapsed*.003),
+    neckPitch:.07*inhale-.29*throwBack,
+    chestPitch:.11*inhale-.18*throwBack,
+    jawOpen:clamp((.94+.05*vocal)*open*(1-.28*fade),0,1),
+    // Walk animation has stopped; only subtle paw/shoulder motion while
+    // both forepaws remain planted during the final roar.
+    forePaw:.035*inhale-.062*throwBack,
+    bodyLean:.07*inhale-.09*throwBack,
+    bodyDrop:-.045*inhale+.035*throwBack,
+    breath:(.7+.22*Math.abs(vocal))*open
   });
 }
 const HIT_STOP_MS=88;
@@ -316,7 +346,9 @@ function panel(event,elapsed,nativeMs){
     attacker:event.attacker,defender:event.defender,finished:b.beat==='VICTORY',
     duration:b.timing.total});
 }
-return Object.freeze({ATTACKS,MIRACLES,POSES,HIT_STOP_MS,VICTORY_HOWL_START_MS,
-  VICTORY_HOWL_CUE_MS,VICTORY_BANNER_MS,VICTORY_END_MS,
-  spec,miracle,duration,shot,camera,bearHowl,hitStop,blocking,panel});
+return Object.freeze({ATTACKS,MIRACLES,POSES,HIT_STOP_MS,
+  VICTORY_LOWER_START_MS,VICTORY_LOWER_READY_MS,
+  VICTORY_APPROACH_START_MS,VICTORY_APPROACH_END_MS,
+  VICTORY_HOWL_START_MS,VICTORY_HOWL_CUE_MS,VICTORY_BANNER_MS,VICTORY_END_MS,
+  spec,miracle,duration,shot,camera,victoryApproach,bearHowl,hitStop,blocking,panel});
 });
