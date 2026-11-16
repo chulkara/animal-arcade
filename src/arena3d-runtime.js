@@ -365,7 +365,12 @@
       detail.textContent='Replay or stop. The real match has not changed.';
     }else{
       line.textContent='BEAR · '+bearReviewCore.label(bearReview.index);
-      detail.textContent='SHOT '+(bearReview.index+1)+' OF 3 · ORIGINAL MATCH UNCHANGED';
+      const angles={lowHero:'01 / 04 · LOW FRONT-QUARTER',
+        sideHero:'02 / 04 · REVERSE QUARTER',
+        highHero:'03 / 04 · HIGH OVERHEAD',
+        finale:'04 / 04 · FINAL WIDE'};
+      detail.textContent=angles[bearReview.cameraShot]||
+        'ATTACK '+(bearReview.index+1)+' OF 3 · MATCH UNCHANGED';
     }
   }
   function stopBearReview(sync=true){
@@ -418,6 +423,7 @@
   function startBearReviewStep(index){
     if(!bearReview)return;
     bearReview.index=index;
+    bearReview.cameraShot=null;
     bearReview.event=bearReview.events[index];
     bearReview.countdown=0;
     bearReview.done=false;
@@ -438,6 +444,14 @@
     if(bearReview.done||!bearReview.event||!sequence)return;
     const length=nativeLength(bearReview.event);
     const total=cinematics.duration(bearReview.event,length).total;
+    if(bearReview.event.finished){
+      const current=cinematics.shot(bearReview.event,sequence.elapsed,length);
+      const shot=current.beat==='VICTORY'?current.shot:null;
+      if(shot!==bearReview.cameraShot){
+        bearReview.cameraShot=shot;
+        updateReviewToolbar();
+      }
+    }
     if(sequence.elapsed>=total+(bearReview.index===2?0:500)){
       if(bearReview.index===2){
         bearReview.done=true;
