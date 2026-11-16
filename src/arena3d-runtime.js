@@ -187,7 +187,7 @@
     layer.append(renderer.domElement);
   }
   function createEffects(){
-    fxGroup=new THREE.Group();scene.add(fxGroup);
+    fxGroup=new THREE.Group();layout.add(fxGroup);
     fxGeometry=new THREE.IcosahedronGeometry(.085,0);
     for(let i=0;i<24;i++){
       const material=new THREE.MeshBasicMaterial({
