@@ -281,6 +281,7 @@
       <p class="combat-disclaimer">Original prototype combat tuning. Private FBX creatures render only after local import; battles remain playable with the illustrated fallback.</p>
       <div class="combat-footer">
         <span>KEYS: G = GREEN · Y = YELLOW · SPACE = STOP · ESC = BACK</span>
+        <button type="button" data-bear-review-quick>BEAR CINEMATIC REVIEW</button>
         <button type="button" data-ark3d-open>3D ARENA SETUP</button>
         <button type="button" data-combat-quit>← BACK TO ARENA</button>
       </div>
