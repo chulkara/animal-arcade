@@ -61,3 +61,52 @@
 @media(prefers-reduced-motion:reduce){
  .ark-reference-layout .ark-fbx-layer{transition:none}
 }
+
+/* Private Bear G/T/P motion review. This UI is not part of the public menu. */
+.ark-fbx-review{display:grid;gap:7px;border:1px solid #efca845e;
+ background:#314a3aab;border-radius:8px;padding:12px;margin:8px 0}
+.ark-fbx-review strong{font:700 17px Impact,'Arial Black',sans-serif;
+ letter-spacing:.08em;color:#ffe1a7}
+.ark-fbx-review p{margin:0;color:#e7e9d9}
+.ark-fbx-review small{font:11px/1.45 Arial,sans-serif;color:#c7d5bf}
+.ark-fbx-review [data-bear-review-start]{font:800 12px Arial,sans-serif;
+ background:#b88a45;color:#0c2429;border-color:#f8db93;padding:11px}
+.ark-fbx-review [data-bear-review-start]:hover{background:#e4b76b}
+.ark-reference-layout.ark-bear-reviewing .combat-controls,
+.ark-reference-layout.ark-bear-reviewing .combat-message,
+.ark-reference-layout.ark-bear-reviewing .combat-ready,
+.ark-reference-layout.ark-bear-reviewing .combat-finish,
+.ark-reference-layout.ark-bear-reviewing .combat-footer{
+ visibility:hidden!important;pointer-events:none!important}
+.ark-reference-layout .ark-bear-review-toolbar{
+ position:absolute;z-index:65;bottom:clamp(8px,3svh,32px);left:50%;
+ transform:translateX(-50%);width:min(840px,94vw);
+ display:flex;align-items:center;justify-content:center;gap:10px;
+ padding:12px 15px;
+ border:2px ridge #e6bc79;border-radius:8px;
+ background:linear-gradient(145deg,#102a37f2,#173d3beb);
+ box-shadow:0 12px 35px #06121fbb,0 0 30px #f6d99835;
+ color:#f4e7c4;font:13px Arial,sans-serif}
+.ark-bear-review-info{display:flex;flex-direction:column;gap:5px;
+ min-width:0;flex:1;align-items:flex-start}
+.ark-bear-review-info strong{font:italic 900 clamp(13px,2vw,20px) Impact,'Arial Black',sans-serif;
+ letter-spacing:.06em;color:#ffe2a6}
+.ark-bear-review-info span{font:700 10px Arial,sans-serif;
+ letter-spacing:.07em;color:#dce7d6}
+.ark-bear-review-toolbar button{min-height:44px;border:1px solid #dfc080;
+ border-radius:6px;background:#244f4d;padding:10px 15px;
+ color:#fff3cc;font:800 11px Arial,sans-serif;letter-spacing:.055em}
+.ark-bear-review-toolbar [data-bear-review-replay]{background:#876c3f;color:#fff0c1}
+.ark-bear-review-toolbar button:hover{filter:brightness(1.14)}
+.ark-bear-review-toolbar button:focus-visible{outline:3px solid #fff1a9;outline-offset:3px}
+@media(max-width:650px){
+ .ark-reference-layout .ark-bear-review-toolbar{padding:8px;gap:5px}
+ .ark-bear-review-info strong{font-size:12px}
+ .ark-bear-review-info span{font-size:8px}
+ .ark-bear-review-toolbar button{font-size:9px;padding:6px;min-height:44px}
+}
+@media(max-height:550px){
+ .ark-reference-layout .ark-bear-review-toolbar{bottom:4px;padding:5px;gap:4px}
+ .ark-bear-review-info{gap:1px}
+ .ark-bear-review-toolbar button{min-height:37px}
+}
