@@ -155,6 +155,40 @@ function camera(event,elapsed,nativeMs){
   return Object.freeze({x:x+shake,y,z,targetX,targetY,zoom,angle:0,
     beat:beat.beat,shot:beat.shot,cut:true});
 }
+// Art-direct root motion independently from the imported attack FBX.
+// Source FBXs may contain long horizontal RigRoot translations; these must
+// not fling an animal through/behind its opponent. The pivot owns travel.
+function blocking(event,elapsed,nativeMs){
+  const timing=duration(event,nativeMs);
+  const t=Math.max(0,(Number(elapsed)||0)-timing.miracleLead);
+  const contact=timing.contact;
+  const move=event.move;
+  const travel={G:.84,T:.24,P:.43,S:.68}[move];
+  const windup={G:.18,T:.28,P:.31,S:.23}[move];
+  const start=contact*windup;
+  const approach=ease(clamp((t-start)/Math.max(1,contact-start),0,1));
+  const withdrawal=1-ease(clamp((t-contact-110)/540,0,1));
+  const offset=travel*approach*withdrawal;
+  const prep=ease(clamp(t/Math.max(1,start),0,1))*
+    (1-ease(clamp((t-start)/Math.max(1,contact-start),0,1)));
+  const strike=ease(clamp((t-contact+80)/150,0,1))*
+    (1-ease(clamp((t-contact-120)/360,0,1)));
+  const recoilMs=Math.max(0,t-contact);
+  const recoil=ease(clamp(recoilMs/140,0,1))*
+    (1-ease(clamp((recoilMs-120)/510,0,1)));
+  return Object.freeze({
+    attackerTravel:offset,
+    // These small rig-container adjustments give impact mass without
+    // forcing every animal to use the same procedural leg animation.
+    attackerLean:-.045*prep+.085*strike,
+    attackerLift:move==='P' ? -.035*prep+.035*strike :
+      move==='G' ? -.025*prep+.018*strike : -.018*prep+.01*strike,
+    defenderTravel:.28*recoil,
+    defenderLean:-.060*recoil,
+    contact,ready:t>=contact,ended:t>=timing.finish-timing.miracleLead,
+    move
+  });
+}
 function panel(event,elapsed,nativeMs){
   const b=shot(event,elapsed,nativeMs);
   const descriptor=spec(event.attackerId,event.move),m=miracle(event.miracleName);
@@ -170,5 +204,5 @@ function panel(event,elapsed,nativeMs){
     attacker:event.attacker,defender:event.defender,finished:b.beat==='VICTORY',
     duration:b.timing.total});
 }
-return Object.freeze({ATTACKS,MIRACLES,POSES,spec,miracle,duration,shot,camera,panel});
+return Object.freeze({ATTACKS,MIRACLES,POSES,spec,miracle,duration,shot,camera,blocking,panel});
 });
