@@ -4,6 +4,7 @@
   'use strict';
   const core=window.NoahsArena3DCore,loader=window.NoahsArena3DLoader;
   const cinematics=window.NoahsCinematicCore;
+  const bearReviewCore=window.NoahsBearReviewCore;
   const game=document.getElementById('game'),ui=document.getElementById('ui');
   if(!core||!loader||!game||!ui)return;
   const selected={bear:null,moose:null},loaded={bear:null,moose:null};
@@ -11,6 +12,7 @@
   let panel=null,stage=null,layer=null,THREE=null,renderer=null,scene=null,camera=null,layout=null;
   let actors=[null,null],running=0,lastFrame=0,shownEvent=null,sequence=null,loading=false;
   let cameraLook=null,fxGroup=null,fxParticles=[],fxGeometry=null,fxMaterials=[];
+  let bearReview=null,reviewToolbar=null;
   let message='Choose an extracted private Motion Lab folder. The files stay on this device.';
   const screen=()=>window.__arkade?.getScreen();
   const state=()=>window.NoahsCombat?.getState();
@@ -39,6 +41,10 @@
         '<div class="ark-fbx-import-actions"><button type="button" data-ark3d-load="'+id+'">LOAD '+id.toUpperCase()+'</button>'+
         '<button type="button" data-ark3d-turn="'+id+'">TURN '+id.toUpperCase()+' 90°</button>'+
         '<button type="button" data-ark3d-unload="'+id+'">REMOVE</button></div></div>').join('')+
+      '<div class="ark-fbx-review"><strong>BEAR · CINEMATIC REVIEW</strong>'+
+      '<p>Replay Guts, Technique and Power, then four victory camera angles. This is a non-scoring test with a 3-second countdown so you can start a screen recording.</p>'+
+      '<button type="button" data-bear-review-start>START BEAR G/T/P + VICTORY REVIEW</button>'+
+      '<small>Requires Bear 3D loaded and Brown Bear selected in this battle; Moose 3D is optional for the victim reaction.</small></div>'+
       '<p class="ark-fbx-status" data-ark3d-status role="status"></p>'+
       '<p class="ark-fbx-legal">Local preview only. The supplied models have unverified public/commercial redistribution rights and are not shipped by this site. Extract ZIPs before choosing a folder.</p>';
     game.append(panel);
@@ -397,6 +403,7 @@
   }
   function syncScene(force=false){
     if(screen()!=='BATTLE_PLAY'){
+      stopBearReview(false);
       stopLoop();clearCanvas();closePanel();sequence=null;shownEvent=null;
       return;
     }
@@ -417,7 +424,7 @@
         else node.removeAttribute('data-3d-visible');
       });
       layer.hidden=!actors.some(Boolean);
-      const hit=core.battleEvent(s);
+      const hit=bearReview?.active?bearReview.event:core.battleEvent(s);
       if(!hit){if(shownEvent||changed){
         sequence=null;shownEvent=null;actors.forEach(actor=>actor?.idle());
       }}else if(changed||shownEvent!==hit.key){
@@ -440,6 +447,7 @@
     try{
       const result=await loader.load(id,files,status);
       const old=loaded[id];
+      stopBearReview(false);
       // Actors are clones of the previously loaded source; free them before
       // disposing original geometry/textures.
       clearActors();
@@ -460,6 +468,7 @@
   }
   function remove(id){
     if(!loaded[id])return;
+    stopBearReview(false);
     clearActors();loaded[id].dispose();loaded[id]=null;
     shownEvent=null;sequence=null;syncScene(true);
     const el=panel?.querySelector('[data-ark3d-loaded="'+id+'"]');
@@ -475,6 +484,7 @@
     if(target.closest('[data-ark3d-close]')){closePanel();return;}
     const load=target.closest('[data-ark3d-load]');
     if(load){importSelected(load.dataset.ark3dLoad);return;}
+    if(target.closest('[data-bear-review-start]')){startBearReview();return;}
     const unload=target.closest('[data-ark3d-unload]');
     if(unload){remove(unload.dataset.ark3dUnload);return;}
     const turn=target.closest('[data-ark3d-turn]');
@@ -506,6 +516,12 @@
   },{once:true});
   window.NoahsArena3D=Object.freeze({
     openPanel,
+    startBearReview,
+    stopBearReview,
+    getReviewState:()=>bearReview?{
+      active:bearReview.active,event:bearReview.event,elapsed:sequence?.elapsed||0,
+      done:bearReview.done,index:bearReview.index,countdown:bearReview.countdown
+    }:null,
     getClipDuration:(index,move)=>nativeLength({attacker:index,move}),
     getStatus:()=>({bear:Boolean(loaded.bear),moose:Boolean(loaded.moose),
       sceneReady:Boolean(renderer),active:actors.filter(Boolean).length,
