@@ -55,6 +55,45 @@
     src.connect(filter);filter.connect(vol);vol.connect(ctx.destination);
     src.start(at);src.stop(at+duration+.01);
   }
+  // Original layered animal vocal: rough breath noise beneath a falling
+  // low register tone. Synthesized locally, with no sampled game audio.
+  function bearHowl(){
+    if(!ctx||effective(settings.sfx)<=0)return;
+    const t=ctx.currentTime+.06,duration=1.65;
+    const out=ctx.createGain();
+    out.gain.setValueAtTime(.00001,t);
+    out.gain.exponentialRampToValueAtTime(Math.max(.00001,effective(settings.sfx)*.19),t+.23);
+    out.gain.setTargetAtTime(Math.max(.00001,effective(settings.sfx)*.14),t+.45,.2);
+    out.gain.exponentialRampToValueAtTime(.00001,t+duration);
+    out.connect(ctx.destination);
+    const formant=ctx.createBiquadFilter();
+    formant.type='bandpass';formant.frequency.value=440;formant.Q.value=.75;
+    formant.connect(out);
+    for(const [f,ratio,type] of [[113,1,'sawtooth'],[118,.40,'triangle'],[224,.20,'sawtooth']]){
+      const o=ctx.createOscillator(),vol=ctx.createGain();
+      o.type=type;o.frequency.setValueAtTime(f,t);
+      o.frequency.linearRampToValueAtTime(f*1.34,t+.37);
+      o.frequency.linearRampToValueAtTime(f*.70,t+duration);
+      vol.gain.value=ratio;
+      o.connect(vol);vol.connect(formant);
+      o.start(t);o.stop(t+duration+.02);
+    }
+    const length=Math.ceil(ctx.sampleRate*duration);
+    const buffer=ctx.createBuffer(1,length,ctx.sampleRate);
+    const samples=buffer.getChannelData(0);
+    let seed=0x524f4152;
+    for(let i=0;i<length;i++){
+      seed^=seed<<13;seed^=seed>>>17;seed^=seed<<5;
+      const phase=i/length;
+      const envelope=Math.sin(Math.PI*phase)**.65;
+      samples[i]=((seed>>>0)/2147483648-1)*envelope;
+    }
+    const noise=ctx.createBufferSource(),band=ctx.createBiquadFilter(),vol=ctx.createGain();
+    noise.buffer=buffer;band.type='lowpass';band.frequency.value=1250;
+    vol.gain.value=.32;
+    noise.connect(band);band.connect(vol);vol.connect(out);
+    noise.start(t);noise.stop(t+duration);
+  }
   function cue(name){
     if(!ctx)return;
     switch(name){
@@ -87,6 +126,11 @@
         tone(587.33,.46,'triangle',.12,.28);
         tone(880,.74,'sine',.09,.43);
         burst(.28,.08,3200,.30);break;
+      case 'bearHowl':bearHowl();break;
+      case 'cinemaRush':
+        burst(.29,.15,4200);
+        tone(190,.22,'sawtooth',.065);
+        tone(110,.29,'triangle',.06,.055);break;
       case 'cinemaMiracle':
         tone(330,.22,'sine',.09);tone(495,.30,'triangle',.10,.08);
         tone(660,.38,'sine',.09,.17);tone(990,.44,'sine',.07,.30);
