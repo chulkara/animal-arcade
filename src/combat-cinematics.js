@@ -5,7 +5,8 @@
 const api=window.NoahsCinematicCore,arena=window.NoahsArena3DCore;
 const game=document.getElementById('game'),ui=document.getElementById('ui');
 if(!api||!arena||!ui)return;
-let stage=null,overlay=null,sequence=null,timer=0,lastBeat='',lastShot='',slotStamp=null,stampUntil=0;
+let stage=null,overlay=null,sequence=null,timer=0,lastBeat='',lastShot='',
+  howlCued=false,winCued=false,slotStamp=null,stampUntil=0;
 const reduce=()=>Boolean(window.__arkade?.getSettings()?.reducedMotion)||
   Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
 const onBattle=()=>window.__arkade?.getScreen()==='BATTLE_PLAY';
@@ -19,7 +20,8 @@ function cleanup(){
  if(stage)delete stage.dataset.cineBeat;
  overlay?.remove();
  ui.querySelectorAll('.combat-battlefield .ark-cinema').forEach(node=>node.remove());
- timer=0;lastBeat='';lastShot='';sequence=null;stage=null;overlay=null;
+ timer=0;lastBeat='';lastShot='';howlCued=false;winCued=false;
+ sequence=null;stage=null;overlay=null;
  const root=ui.querySelector('.ark-reference-layout');
  root?.classList.remove('ark-cinematic-active','ark-cinematic-done');
 }
@@ -67,7 +69,7 @@ function sync(){
  if(!same){
    if(timer)cancelAnimationFrame(timer);
    sequence={event,started:performance.now(),elapsed:0,done:false,nativeLength:captureNativeLength(event)};
-   lastBeat='';lastShot='';
+   lastBeat='';lastShot='';howlCued=false;winCued=false;
    // A fresh event should not inherit the previous overlay's move labels
    // or decorative data attributes even if React/DOM reused the stage.
    if(overlay){overlay.dataset.beat='';overlay.dataset.shot='';}
@@ -133,13 +135,26 @@ function draw(time){
    lastShot=p.shot;
    if(!reduce()&&p.beat==='ATTACK'&&(p.shot==='rush'||p.shot==='sweep'))
      window.NoahsAudio?.cue('cinemaRush');
-   if(p.beat==='VICTORY'&&p.shot==='finale'&&!reduce()){
+ }
+ // A real animal vocal should start when the mouth opens, not at the
+ // beginning of the camera's fourth angle. The result appears after the
+ // howl so it doesn't drown out the actual celebration.
+ const howl=p.beat==='VICTORY'&&event.attackerId==='bear'?
+   api.bearHowl(p.local):null;
+ overlay.dataset.howlPhase=howl?.phase||'none';
+ if(p.beat==='VICTORY'&&!reduce()){
+   if(event.attackerId==='bear'&&p.local>=api.VICTORY_HOWL_CUE_MS&&!howlCued){
+     window.NoahsAudio?.cue('bearHowl');
+     howlCued=true;
+   }
+   if(p.local>=api.VICTORY_BANNER_MS&&!winCued){
      window.NoahsAudio?.cue('cinemaWin');
-     if(event.attackerId==='bear')window.NoahsAudio?.cue('bearHowl');
+     winCued=true;
    }
  }
  const winner=overlay.querySelector('[data-ark-cinema-winner]');
- if(winner)winner.textContent=p.beat==='VICTORY'&&p.shot==='finale'?
+ if(winner)winner.textContent=p.beat==='VICTORY'&&
+   p.local>=api.VICTORY_BANNER_MS?
    event.attackerId.toUpperCase()+' WINS!':'';
  const root=ui.querySelector('.ark-reference-layout');
  if(elapsed>=timing.total){
