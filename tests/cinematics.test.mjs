@@ -229,3 +229,35 @@ test('original-video comparison: signature moves prepare before FBX contact and 
  assert.ok(ui.includes("event.attackerId.toUpperCase()+' WINS!'"));
  assert.ok(readFileSync('src/audio.js','utf8').includes("case 'cinemaWin'"));
 });
+
+
+test('impact hit stop holds the native animals for less than 100ms, not the battle clock',()=>{
+ for(const attackerId of ['bear','moose']){
+  for(const move of ['G','T','P']){
+   const event={...base,attackerId,move};
+   const t=director.duration(event,1200);
+   const at=t.actionLead+t.contact;
+   assert.equal(director.hitStop(event,at-1,1200),false);
+   assert.equal(director.hitStop(event,at,1200),true);
+   assert.equal(director.hitStop(event,at+director.HIT_STOP_MS-1,1200),true);
+   assert.equal(director.hitStop(event,at+director.HIT_STOP_MS,1200),false);
+  }
+ }
+ const runtime=readFileSync('src/arena3d-runtime.js','utf8');
+ assert.ok(runtime.includes('cinematics.hitStop('));
+ assert.ok(runtime.includes('actor?.tick(stopped?0:dt)'));
+ assert.ok(runtime.includes('new THREE.PerspectiveCamera'));
+ assert.ok(runtime.includes('ground.receiveShadow=true'));
+ assert.ok(runtime.includes('new THREE.InstancedMesh'));
+});
+
+test('Bear source 3D hit contact matches cinematic timing for all native clip lengths',()=>{
+ for(const move of ['G','T','P','S']){
+  for(const native of [750,1200,2000,3150]){
+   const t=director.duration({...base,attackerId:'bear',move},native);
+   assert.equal(t.contact,arena.contactMs('bear',move,native));
+   assert.ok(t.actionLead>=t.focusLead);
+   assert.ok(t.total>=t.finish);
+  }
+ }
+});
