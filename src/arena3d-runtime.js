@@ -289,28 +289,40 @@
     if(!live?.event){fxGroup.visible=false;return;}
     const {event,elapsed}=live;
     const timing=cinematics?.duration(event,nativeLength(event));
-    const actionTime=elapsed-(timing?.miracleLead||0);
+    const actionTime=elapsed-(timing?.actionLead||0);
     const contact=timing?.contact||900;
+    const focusPhase=elapsed>=(timing?.miracleLead||0)&&elapsed<(timing?.actionLead||0);
     const miracle=cinematics?.miracle(event.miracleName);
     const miraclePhase=miracle&&elapsed<(timing?.miracleLead||0);
     const hitPhase=actionTime>=contact&&actionTime<contact+650;
     const victor=event.finished&&elapsed>=(timing?.victoryStart||Infinity);
-    if(!miraclePhase&&!hitPhase&&!victor){fxGroup.visible=false;return;}
+    if(!miraclePhase&&!focusPhase&&!hitPhase&&!victor){fxGroup.visible=false;return;}
     fxGroup.visible=true;
     const home=event.attacker===0?-2.02:2.02;
     const target=event.defender===0?-2.02:2.02;
-    const kind=miraclePhase?miracle.type:hitPhase?'dust':'triumph';
+    const kind=miraclePhase?miracle.type:focusPhase?'charge':
+      hitPhase?'dust':'triumph';
     const t=miraclePhase?elapsed/Math.max(1,timing.miracleLead):
+      focusPhase?(elapsed-timing.miracleLead)/Math.max(1,timing.focusLead):
       hitPhase?(actionTime-contact)/650:
-      (elapsed-timing.victoryStart)/3800;
+      (elapsed-timing.victoryStart)/4000;
     const colors={starfall:0xffd28d,storm:0xb9d6ff,tide:0x78e8da,
-      eclipse:0xd7a4ff,dawn:0xffce85,dust:0xded0b0,triumph:0xf8e5a7};
+      eclipse:0xd7a4ff,dawn:0xffce85,charge:0xffb968,
+      dust:0xded0b0,triumph:0xf8e5a7};
     for(let i=0;i<fxParticles.length;i++){
       const point=fxParticles[i],material=fxMaterials[i];
       const a=(i/24)*Math.PI*2,ring=i%4;
       const pulse=Math.sin((i*19.7+elapsed*.004))*0.5+0.5;
       let x=0,y=0,z=0,radius=.4,alpha=.5;
-      if(kind==='starfall'){
+      if(kind==='charge'){
+        // Species-independent energy swirl, with an original amber tint.
+        // Both the center and the camera change as the build-up grows.
+        radius=.45+ring*.17+(1-t)*.32;
+        x=home+Math.cos(a+elapsed*.0045)*radius;
+        z=Math.sin(a+elapsed*.0045)*radius;
+        y=.24+((t*1.4+i*.16)%1)*2.7;
+        alpha=.22+.65*Math.sin(Math.PI*Math.min(1,t));
+      }else if(kind==='starfall'){
         radius=.5+(i%5)*.15;
         x=home+Math.cos(a)*radius;
         y=.25+((1-t+i*.073)%1+1)%1*4.3;
@@ -350,6 +362,20 @@
       material.color.setHex(colors[kind]||colors.triumph);
       material.opacity=Math.max(0,Math.min(.85,alpha));
     }
+  }
+  function paintFocusLight(){
+    if(!focusLight||!sequence||reduced()){
+      if(focusLight)focusLight.intensity=0;
+      return;
+    }
+    const {event}=sequence;
+    const beat=cinematics.shot(event,sequence.elapsed,nativeLength(event));
+    const target=beat.beat==='FOCUS'?3.5:
+      beat.beat==='VICTORY'?2.0:beat.beat==='CONTACT'?1.6:0;
+    focusLight.intensity+=(target-focusLight.intensity)*.14;
+    const actor=actors[event.attacker];
+    const fit=layout?.scale?.x||1;
+    focusLight.position.set((actor?.pivot.position.x??0)*fit,2.05*fit,1.0);
   }
   function clearCanvas(){
     document.querySelectorAll('.combat-fighter[data-animal-id]').forEach(node=>{
@@ -397,7 +423,7 @@
       const angles={lowHero:'01 / 04 · LOW FRONT-QUARTER',
         sideHero:'02 / 04 · REVERSE QUARTER',
         highHero:'03 / 04 · HIGH OVERHEAD',
-        finale:'04 / 04 · FINAL WIDE'};
+        finale:'04 / 04 · WINNER CLOSE-UP'};
       detail.textContent=angles[bearReview.cameraShot]||
         'ATTACK '+(bearReview.index+1)+' OF 3 · MATCH UNCHANGED';
     }
@@ -646,6 +672,7 @@
     applyBlocking();
     applyCamera(dt);
     paintEffects();
+    paintFocusLight();
     renderer.render(scene,camera);
     startLoop();
   }
