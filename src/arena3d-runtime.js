@@ -364,8 +364,13 @@
     const time=live?.elapsed??sequence?.elapsed??0;
     const wants=(!reduced()&&event&&cinematics)?
       cinematics.camera(event,time,nativeLength(event)):null;
-    const x=wants?.x??0,y=wants?.y??3,z=wants?.z??12;
-    const focusX=wants?.targetX??0,focusY=wants?.targetY??1.18;
+    // Camera targets live in the same reference coordinates as the rigs.
+    // Portrait stages scale both animals down, so scale the shot's x focus
+    // as well or the dramatic close-up would pan completely off either rig.
+    const fit=layout?.scale?.x??1;
+    const x=(wants?.x??0)*fit,y=wants?.y??3,z=wants?.z??12;
+    const focusX=(wants?.targetX??0)*fit;
+    const focusY=(wants?.targetY??1.18)*fit;
     const wanted=new THREE.Vector3(x,y,z);
     const alpha=wants?.cut?.30:.16;
     camera.position.lerp(wanted,alpha);
