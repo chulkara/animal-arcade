@@ -21,11 +21,14 @@ test('each animal has three repeatable signature shot sequences plus a fourth sp
 
 test('signature attack timeline yields anticipation, committed move, contact, and victim recoil',()=>{
  const evt={...base,move:'P'};
- const ticks=[0,520,1220,1650].map(ms=>director.shot(evt,ms));
- assert.deepEqual(ticks.map(t=>t.beat),['INTRO','ATTACK','CONTACT','REACTION']);
- assert.ok(director.duration(evt).total>1840);
- assert.equal(director.panel(evt,1230).sub,'DIRECT HIT');
- assert.match(director.panel(evt,1650).sub,/48/);
+ const t=director.duration(evt,1840);
+ const ticks=[0,t.actionLead+100,t.actionLead+500,
+   t.actionLead+t.contact+55,t.actionLead+t.contact+230]
+   .map(ms=>director.shot(evt,ms,1840));
+ assert.deepEqual(ticks.map(v=>v.beat),['FOCUS','INTRO','ATTACK','CONTACT','REACTION']);
+ assert.ok(t.actionLead>=t.focusLead&&t.total>1840);
+ assert.equal(director.panel(evt,t.actionLead+t.contact+55,1840).sub,'DIRECT HIT');
+ assert.match(director.panel(evt,t.actionLead+t.contact+230,1840).sub,/48/);
 });
 
 test('universal Miracle introductions apply to either animal, not a specific rig',()=>{
@@ -35,7 +38,8 @@ test('universal Miracle introductions apply to either animal, not a specific rig
    assert.equal(t.miracleLead,850);
    assert.equal(director.shot(evt,300,1200).beat,'MIRACLE');
    assert.equal(director.panel(evt,300,1200).miracle,'storm');
-   assert.equal(director.shot(evt,900,1200).beat,'INTRO');
+   assert.equal(director.shot(evt,900,1200).beat,'FOCUS');
+   assert.equal(director.shot(evt,t.actionLead+30,1200).beat,'INTRO');
  }
  assert.deepEqual(Object.keys(director.MIRACLES),[
   'FALLING STAR','DAWN CHORUS','STORM BELL','TIDAL WISH','ECLIPSE OATH'
@@ -96,7 +100,7 @@ test('battle event carries equipped Miracle identity and damage into the univers
 });
 
 
-test('regression: winning Bear gets genuinely different front, reverse, overhead, wide views',()=>{
+test('regression: winning Bear gets front, reverse, overhead and final face close-up',()=>{
  for(const attacker of [0,1]){
   const evt={...base,attacker,defender:1-attacker,
    attackerId:'bear',defenderId:'moose',move:'P',finished:true,knockout:true};
@@ -106,14 +110,15 @@ test('regression: winning Bear gets genuinely different front, reverse, overhead
   const angles=views.map(cam=>Math.atan2(cam.x-cam.targetX,cam.z));
   views.forEach((cam,index)=>{
    assert.equal(cam.beat,'VICTORY');
-   assert.equal(cam.targetX,index===3?heroWorldX*.28:heroWorldX);
-   assert.ok(cam.zoom<=1.10);
+   assert.equal(cam.targetX,heroWorldX);
+   assert.ok(cam.zoom<=1.7);
    assert.equal(cam.cut,true);
   });
   assert.ok(Math.abs(angles[0]-angles[1])>.8,'Low front and reverse angles must differ');
   assert.ok(Math.abs(angles[1]-angles[2])>.6,'Reverse and overhead azimuth must differ');
   assert.ok(views[2].y-views[0].y>5,'The third camera must actually look down');
-  assert.ok(views[3].z>views[0].z+5,'Final composition pulls back for two animals');
+  assert.ok(views[3].z<2,'Final shot must be close enough to face the winning Bear');
+  assert.ok(views[3].zoom>1.5,'The winning portrait must be close, not the same profile');
  }
 });
 
@@ -121,7 +126,8 @@ test('regression: Bear contact is a two-fighter shot, not a cropped victim close
  for(const attacker of [0,1]){
    const evt={...base,attacker,defender:1-attacker,
      attackerId:'bear',defenderId:'moose',move:'T'};
-   const at=director.duration(evt,1200).contact+55;
+   const t=director.duration(evt,1200);
+   const at=t.actionLead+t.contact+55;
    const cam=director.camera(evt,at,1200);
    assert.equal(cam.beat,'CONTACT');
    assert.equal(cam.targetX,0);
@@ -152,9 +158,9 @@ test('Bear Guts, Technique and Power have separate bounded approach, impact and 
   const evt={...base,attackerId:'bear',defenderId:'moose',move};
   const t=director.duration(evt,1600);
   const start=director.blocking(evt,0,1600);
-  const windup=director.blocking(evt,t.contact*.25,1600);
-  const contact=director.blocking(evt,t.contact,1600);
-  const after=director.blocking(evt,t.contact+900,1600);
+  const windup=director.blocking(evt,t.actionLead+t.contact*.25,1600);
+  const contact=director.blocking(evt,t.actionLead+t.contact,1600);
+  const after=director.blocking(evt,t.actionLead+t.contact+900,1600);
   assert.equal(start.attackerTravel,0);
   assert.ok(Math.abs(windup.attackerTravel)<contact.attackerTravel);
   assert.ok(contact.attackerTravel>0&&contact.attackerTravel<=.9);
@@ -170,8 +176,12 @@ test('Bear Guts, Technique and Power have separate bounded approach, impact and 
 test('Guts uses a stable two-fighter setup before the attack cut',()=>{
  const evt={...base,attackerId:'bear',move:'G'};
  const t=director.duration(evt,1600);
- const intro=director.camera(evt,0,1600);
- const contact=director.camera(evt,t.contact+20,1600);
+ const focus=director.camera(evt,0,1600);
+ const intro=director.camera(evt,t.actionLead+20,1600);
+ const contact=director.camera(evt,t.actionLead+t.contact+20,1600);
+ assert.equal(focus.beat,'FOCUS');
+ assert.ok(Math.abs(focus.x-focus.targetX)>6,
+  'Camera must face down the Bear muzzle, not show another side profile');
  assert.equal(intro.beat,'INTRO');
  assert.equal(intro.targetX,0);
  assert.ok(intro.z>12);
@@ -190,4 +200,32 @@ test('Bear victory is now four camera cuts plus small native-rig celebration acc
  assert.ok(source.includes('camera.position.copy(wanted)'), '3D camera must cut on a new shot');
  assert.ok(source.includes('actor.soleRest'),'Bear must retain a planted hind-foot reference');
  assert.ok(source.includes('rootAnchors'),'Native RigRoot should not teleport the model');
+});
+
+test('original-video comparison: signature moves prepare before FBX contact and win on a facial closeup',()=>{
+ for(const move of ['G','T','P','S']){
+  const event={...base,attacker:0,defender:1,attackerId:'bear',
+   defenderId:'moose',move,finished:move==='P'};
+  const t=director.duration(event,1300);
+  assert.ok(t.focusLead>=300,'Preparation must last long enough to be visible');
+  assert.equal(t.actionLead,t.miracleLead+t.focusLead);
+  assert.equal(director.shot(event,t.actionLead-10,1300).beat,'FOCUS');
+  assert.equal(director.shot(event,t.actionLead+20,1300).beat,'INTRO');
+  assert.equal(director.shot(event,t.actionLead+t.contact+25,1300).beat,'CONTACT');
+ }
+ const event={...base,attacker:0,defender:1,attackerId:'bear',
+  defenderId:'moose',move:'P',finished:true};
+ const begin=director.duration(event,1300).victoryStart;
+ const portrait=director.camera(event,begin+3300,1300);
+ assert.equal(portrait.shot,'finale');
+ assert.ok(Math.abs(portrait.x-portrait.targetX)>7);
+ assert.ok(portrait.zoom>=1.55);
+ const runtime=readFileSync('src/arena3d-runtime.js','utf8');
+ const ui=readFileSync('src/combat-cinematics.js','utf8');
+ assert.ok(runtime.includes('const lead=timing?.actionLead||0;'),
+  'The native source clip must wait until cinematic focus concludes');
+ assert.ok(runtime.includes("attacker.native('rear')"),
+  'Use the source rear transition when available');
+ assert.ok(ui.includes("event.attackerId.toUpperCase()+' WINS!'"));
+ assert.ok(readFileSync('src/audio.js','utf8').includes("case 'cinemaWin'"));
 });
