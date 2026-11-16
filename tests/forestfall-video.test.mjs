@@ -62,3 +62,11 @@ test('local Forestfall controller is valid browser JavaScript',()=>{
  assert.match(script,/function playVideo\(/);
  assert.match(script,/function close\(/);
 });
+
+test('the Forestfall cinematic respects volume, mute and reduced motion',()=>{
+ assert.ok(script.includes('video.volume=master*effects'));
+ assert.ok(script.includes('video.muted=Boolean(settings.mute)||video.volume===0'));
+ assert.ok(script.includes("prefers-reduced-motion: reduce"));
+ assert.ok(script.includes('REDUCED MOTION ENABLED · PLAY VIDEO MANUALLY OR SKIP'));
+ assert.ok(script.includes('video.play().catch('));
+});
