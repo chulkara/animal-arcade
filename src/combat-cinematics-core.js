@@ -145,12 +145,26 @@ function camera(event,elapsed,nativeMs){
       targetX=attackerX;targetY=2.25;zoom=1.38;
     }
   }else if(beat.beat==='FOCUS'){
-    // Unlike the other shots this view is almost head-on, along the
-    // facing direction of the animal. It sells concentration and scale.
-    targetX=attackerX;x=attackerX+facing*7.0;
-    y=event.move==='P'?2.15:1.7;z=2.8;
-    targetY=event.move==='P'?2.18:1.52;
-    zoom=event.move==='P'?1.22:1.06;
+    // Each technique earns its own visual identity, not the same generic
+    // closeup of Bear's face before every strike.
+    targetX=attackerX;
+    if(event.move==='G'){
+      // The heavy charge gathers weight from a low rear-quarter view.
+      x=attackerX-facing*2.3;y=1.1;z=6.9;
+      targetY=1.08;zoom=1.09;
+    }else if(event.move==='T'){
+      // Paw-level preparation emphasizes the lowered swipe.
+      x=attackerX+facing*1.25;y=.78;z=6.25;
+      targetY=.83;zoom=1.22;
+    }else if(event.move==='P'){
+      // The high strike is introduced looking into the rising bear's face.
+      x=attackerX+facing*5.75;y=2.18;z=2.5;
+      targetY=2.02;zoom=1.29;
+    }else{
+      // Special remains the largest, most frontal moment.
+      x=attackerX+facing*6.65;y=1.8;z=2.9;
+      targetY=1.88;zoom=1.29;
+    }
   }else if(beat.shot==='rush'){
     // Compressed, low front-third shot, distinct from anticipation and the
     // wide impact; the rapid edit is a signature action punctuation.
@@ -260,10 +274,12 @@ function panel(event,elapsed,nativeMs){
   const b=shot(event,elapsed,nativeMs);
   const descriptor=spec(event.attackerId,event.move),m=miracle(event.miracleName);
   const title=b.beat==='MIRACLE'?m?.label||'MIRACLE':
-    b.beat==='FOCUS'? 'THE WILD AWAKENS':
+    b.beat==='FOCUS'?descriptor.name:
     b.beat==='VICTORY'?'VICTORY':descriptor.name;
+  const focusSub={G:'GATHER THE FORCE',T:'LOW AND PRECISE',
+    P:'RISE FOR THE FINISH',S:'UNLEASH THE WILD'};
   const sub=b.beat==='MIRACLE'?'A WILD FORCE AWAKENS':
-    b.beat==='FOCUS'?'THE SIGNATURE STRIKE IS COMING':
+    b.beat==='FOCUS'?focusSub[event.move]:
     b.beat==='CONTACT'?'DIRECT HIT':
     b.beat==='REACTION'?('−'+event.damage+' · '+(event.knockout?'KNOCKOUT':'HIT REACTION')):
     b.beat==='VICTORY'?'THE WILD HAS A CHAMPION':
