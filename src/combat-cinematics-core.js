@@ -125,24 +125,26 @@ function camera(event,elapsed,nativeMs){
   if(beat.beat==='VICTORY'){
     targetX=attackerX;
     if(beat.shot==='lowHero'){
-      // A low front-quarter shot from the direction the Bear faces.
-      x=attackerX+facing*5.0;y=.76;z=4.2;
-      targetY=1.52;zoom=1.10;
+      // A low front-quarter view must preserve the full winning silhouette,
+      // not cut the head off as the upright native clip rises.
+      x=attackerX+facing*5.0;y=.82;z=4.7;
+      targetY=1.55;zoom=1.05;
     }else if(beat.shot==='sideHero'){
       // Reverse angle: the viewer now sees the opposite flank.
-      x=attackerX-facing*4.5;y=1.97;z=4.5;
-      targetY=1.47;zoom=1.17;
+      x=attackerX-facing*4.5;y=2.05;z=5.0;
+      targetY=1.58;zoom=1.08;
     }else if(beat.shot==='highHero'){
       // Clearly overhead, not another chest-height profile.
-      x=attackerX+facing*3.2;y=7.45;z=3.8;
-      targetY=1.30;zoom=1.06;
+      x=attackerX+facing*3.2;y=7.3;z=4.5;
+      targetY=1.55;zoom=1.00;
     }else{
       // The arcade reference closes on the winner's face, not on an
       // empty wide arena. Reserve the last cut for a real portrait.
-      // A portrait near the muzzle: the prior 8.2-unit camera distance
-      // still showed the full upright bear and didn't sell the roar.
-      x=attackerX+facing*4.45;y=2.48;z=1.45;
-      targetX=attackerX;targetY=2.25;zoom=1.38;
+      // The 9:49 AM recording proves the 4.45-unit portrait shot is
+      // unusable: it fills the whole display with fur and excludes the head.
+      // Return to the longer front view from the better 9:13 AM take.
+      x=attackerX+facing*8.2;y=2.50;z=1.5;
+      targetX=attackerX;targetY=1.85;zoom=1.08;
     }
   }else if(beat.beat==='FOCUS'){
     // Each technique earns its own visual identity, not the same generic
@@ -196,6 +198,19 @@ function camera(event,elapsed,nativeMs){
     x=attackerX+facing*1.1;targetX=attackerX+facing*.72;
     y=event.move==='P'?1.65:2.1;
     z=10.8;targetY=1.3;zoom=1.00;
+  }
+  // Cine director framing guard: all four victory angles must keep the
+  // entire standing animal inside a perspective viewport. Preserve each
+  // distinct azimuth by dollying along the shot ray rather than forcing
+  // another generic side view. The 9:49 AM recording failed this guard.
+  if(beat.beat==='VICTORY'){
+    const distance=Math.hypot(x-targetX,y-targetY,z);
+    const minDistance=10.0;
+    const factor=Math.max(1,minDistance/Math.max(.001,distance));
+    x=targetX+(x-targetX)*factor;
+    y=targetY+(y-targetY)*factor;
+    z*=factor;
+    zoom=Math.min(1.08,zoom);
   }
   const age=beat.local-beat.timing.contact;
   const punch=beat.beat==='CONTACT'?
