@@ -117,8 +117,8 @@ test('regression: winning Bear gets front, reverse, overhead and final face clos
   assert.ok(Math.abs(angles[0]-angles[1])>.8,'Low front and reverse angles must differ');
   assert.ok(Math.abs(angles[1]-angles[2])>.6,'Reverse and overhead azimuth must differ');
   assert.ok(views[2].y-views[0].y>5,'The third camera must actually look down');
-  assert.ok(views[3].z<2,'Final shot must be close enough to face the winning Bear');
-  assert.ok(views[3].zoom>1.25,'The winning portrait must be close, not the same profile');
+  assert.ok(views[3].z>1.5,'Final shot must not be embedded in the winner');
+  assert.ok(views[3].zoom<=1.08,'Final shot prioritizes full-frame Bear over excessive zoom');
  }
 });
 
@@ -219,11 +219,10 @@ test('original-video comparison: signature moves prepare before FBX contact and 
  const begin=director.duration(event,1300).victoryStart;
  const portrait=director.camera(event,begin+3300,1300);
  assert.equal(portrait.shot,'finale');
- assert.ok(Math.abs(portrait.x-portrait.targetX)>3.8&&
-   Math.abs(portrait.x-portrait.targetX)<5.5,
-   'Camera should approach the muzzle without clipping the bear');
- assert.ok(portrait.zoom>=1.3);
- const runtime=readFileSync('src/arena3d-runtime.js','utf8');
+ assert.ok(Math.abs(portrait.x-portrait.targetX)>8,
+    'The winning camera must stay outside the Bear torso');
+  assert.ok(portrait.zoom<=1.08);
+  const runtime=readFileSync('src/arena3d-runtime.js','utf8');
  const ui=readFileSync('src/combat-cinematics.js','utf8');
  assert.ok(runtime.includes('const lead=timing?.actionLead||0;'),
   'The native source clip must wait until cinematic focus concludes');
@@ -343,4 +342,36 @@ test('the winning Bear howl is staged without hiding its muzzle',()=>{
  assert.ok(css.includes('ark-bear-howl-wave'));
  assert.ok(ui.includes('ark-cinema-howl-waves'));
  assert.ok(ui.includes('overlay.dataset.winner=event.attackerId'));
+});
+
+test('9:49 AM regression: all four Bear victory angles fit a complete animated winner',()=>{
+ for(const slot of [0,1]){
+  const event={...base,attacker:slot,defender:1-slot,attackerId:'bear',
+   defenderId:'moose',move:'P',finished:true,knockout:true};
+  const begin=director.duration(event,1600).victoryStart;
+  const angles=[];
+  for(const offset of [80,1050,2300,3400]){
+    const view=director.camera(event,begin+offset,1600);
+    const dist=Math.hypot(view.x-view.targetX,view.y-view.targetY,view.z);
+    assert.ok(dist>=9.99,'Victory film camera cannot be inside the winning Bear');
+    assert.ok(view.zoom<=1.08,'Cinematic zoom must preserve body visibility');
+    angles.push(Math.atan2(view.x-view.targetX,view.z));
+  }
+  assert.equal(new Set(angles.map(a=>a.toFixed(2))).size,4,
+    'All four victory viewing directions must remain different');
+ }
+ const runtime=readFileSync('src/arena3d-runtime.js','utf8');
+ assert.ok(runtime.includes('function fitVictoryInFrame(event,wants)'));
+ assert.ok(runtime.includes('joint.getWorldPosition(v)'));
+ assert.ok(runtime.includes('v.clone().project(filmCamera)'));
+});
+
+test('9:49 AM regression: film cleanup removes residual LOW SWIPE overlays',()=>{
+ const source=readFileSync('src/combat-cinematics.js','utf8');
+ assert.ok(source.includes('overlay?.remove()'));
+ assert.ok(source.includes("ui.querySelectorAll('.combat-battlefield .ark-cinema')"));
+ assert.ok(source.includes("battlefield.querySelectorAll('.ark-cinema')"));
+ const runtime=readFileSync('src/arena3d-runtime.js','utf8');
+ assert.ok(!runtime.includes('scene.add(trunks,crowns)'));
+ assert.ok(!runtime.includes('new THREE.DodecahedronGeometry'));
 });
