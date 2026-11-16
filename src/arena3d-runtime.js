@@ -10,7 +10,7 @@
   const yaw={bear:0,moose:0};
   let panel=null,stage=null,layer=null,THREE=null,renderer=null,scene=null,camera=null,layout=null;
   let actors=[null,null],running=0,lastFrame=0,shownEvent=null,sequence=null,loading=false;
-  let cameraLook=null;
+  let cameraLook=null,fxGroup=null,fxParticles=[],fxGeometry=null,fxMaterials=[];
   let message='Choose an extracted private Motion Lab folder. The files stay on this device.';
   const screen=()=>window.__arkade?.getScreen();
   const state=()=>window.NoahsCombat?.getState();
@@ -170,6 +170,7 @@
       new THREE.ShadowMaterial({opacity:.18}));
     floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;
     floor.position.y=-.008;scene.add(floor);
+    createEffects();
     renderer=new THREE.WebGLRenderer({alpha:true,antialias:true,powerPreference:'high-performance'});
     renderer.setClearColor(0x000000,0);
     renderer.outputColorSpace=THREE.SRGBColorSpace;
@@ -184,6 +185,88 @@
     });
     layer=document.createElement('div');layer.className='ark-fbx-layer';
     layer.append(renderer.domElement);
+  }
+  function createEffects(){
+    fxGroup=new THREE.Group();scene.add(fxGroup);
+    fxGeometry=new THREE.IcosahedronGeometry(.085,0);
+    for(let i=0;i<24;i++){
+      const material=new THREE.MeshBasicMaterial({
+        color:0xf5d8a3,transparent:true,opacity:0,depthWrite:false,
+        blending:THREE.AdditiveBlending
+      });
+      const point=new THREE.Mesh(fxGeometry,material);
+      point.scale.setScalar(.5);
+      fxGroup.add(point);fxMaterials.push(material);fxParticles.push(point);
+    }
+    fxGroup.visible=false;
+  }
+  function paintEffects(){
+    if(!fxGroup||reduced()){if(fxGroup)fxGroup.visible=false;return;}
+    const live=window.NoahsCinematics?.getState();
+    if(!live?.event){fxGroup.visible=false;return;}
+    const {event,elapsed}=live;
+    const timing=cinematics?.duration(event,nativeLength(event));
+    const actionTime=elapsed-(timing?.miracleLead||0);
+    const contact=timing?.contact||900;
+    const miracle=cinematics?.miracle(event.miracleName);
+    const miraclePhase=miracle&&elapsed<(timing?.miracleLead||0);
+    const hitPhase=actionTime>=contact&&actionTime<contact+650;
+    const victor=event.finished&&elapsed>=(timing?.victoryStart||Infinity);
+    if(!miraclePhase&&!hitPhase&&!victor){fxGroup.visible=false;return;}
+    fxGroup.visible=true;
+    const home=event.attacker===0?-2.02:2.02;
+    const target=event.defender===0?-2.02:2.02;
+    const kind=miraclePhase?miracle.type:hitPhase?'dust':'triumph';
+    const t=miraclePhase?elapsed/Math.max(1,timing.miracleLead):
+      hitPhase?(actionTime-contact)/650:
+      (elapsed-timing.victoryStart)/3800;
+    const colors={starfall:0xffd28d,storm:0xb9d6ff,tide:0x78e8da,
+      eclipse:0xd7a4ff,dawn:0xffce85,dust:0xded0b0,triumph:0xf8e5a7};
+    for(let i=0;i<fxParticles.length;i++){
+      const point=fxParticles[i],material=fxMaterials[i];
+      const a=(i/24)*Math.PI*2,ring=i%4;
+      const pulse=Math.sin((i*19.7+elapsed*.004))*0.5+0.5;
+      let x=0,y=0,z=0,radius=.4,alpha=.5;
+      if(kind==='starfall'){
+        radius=.5+(i%5)*.15;
+        x=home+Math.cos(a)*radius;
+        y=.25+((1-t+i*.073)%1+1)%1*4.3;
+        z=Math.sin(a)*radius;alpha=.3+.7*(1-t);
+      }else if(kind==='storm'){
+        x=home+Math.cos(a)*(.4+ring*.24);
+        z=Math.sin(a)*(.4+ring*.24);
+        y=.35+2.7*(1-((i*.17+t*1.4)%1));
+        point.scale.set(.18,2.2,.18);alpha=.22+.48*pulse;
+      }else if(kind==='tide'){
+        radius=.6+2*t+ring*.08;x=home+Math.cos(a)*radius;
+        z=Math.sin(a)*radius;y=.12+Math.sin(a*4+t*8)*.15;
+        alpha=.72*(1-t);
+      }else if(kind==='eclipse'){
+        radius=1.14+Math.sin(elapsed*.004)*.12;
+        x=home+Math.cos(a)*radius;
+        y=2.5+Math.sin(a)*radius;
+        z=.0;alpha=.24+.55*pulse;
+      }else if(kind==='dawn'){
+        radius=.35+1.8*t;x=home+Math.cos(a)*radius;
+        y=2.5+Math.sin(a)*radius+1.1*t;z=Math.sin(a*2)*.25;
+        alpha=.65*(1-t*.6);
+      }else if(kind==='dust'){
+        radius=.18+2.2*t*(.5+i%7/9);
+        x=target+Math.cos(a)*radius;
+        z=Math.sin(a)*radius;
+        y=.08+.42*t+ring*.035;alpha=.74*(1-t);
+      }else{
+        radius=.5+(i%6)*.16;
+        x=home+Math.cos(a+elapsed*.001)*radius;
+        z=Math.sin(a+elapsed*.001)*radius;
+        y=.35+((t+i*.11)%1)*2.6;alpha=.4+.35*pulse;
+      }
+      point.position.set(x,y,z);
+      if(kind!=='storm')point.scale.setScalar(kind==='dust'?(.6+t*1.2):
+        kind==='triumph'?.38+.36*pulse:.4+.42*pulse);
+      material.color.setHex(colors[kind]||colors.triumph);
+      material.opacity=Math.max(0,Math.min(.85,alpha));
+    }
   }
   function clearCanvas(){
     document.querySelectorAll('.combat-fighter[data-animal-id]').forEach(node=>{
@@ -259,7 +342,7 @@
     const impact=core.contactMs(event.attackerId,event.move,length);
     const progress=Math.min(1,t/Math.max(1,impact));
     const release=Math.max(0,Math.min(1,1-(t-impact)/600));
-    const travel=event.move==='G'||event.move==='S'?.72:event.move==='P'?.37:.25;
+    const travel=(event.move==='G'||event.move==='S')?.72:(event.move==='P'?.37:.25);
     const enter=progress*progress*(3-2*progress);
     const offset=travel*enter*release;
     if(attacker){
@@ -303,6 +386,7 @@
     advanceEvent(dt);
     applyBlocking();
     applyCamera(dt);
+    paintEffects();
     renderer.render(scene,camera);
     startLoop();
   }
@@ -411,6 +495,8 @@
   document.addEventListener('visibilitychange',()=>{if(document.hidden)stopLoop();else startLoop();});
   window.addEventListener('pagehide',()=>{
     stopLoop();clearActors();for(const id of ['bear','moose'])loaded[id]?.dispose();
+    fxGeometry?.dispose();fxMaterials.forEach(m=>m.dispose());fxMaterials=[];
+    fxParticles=[];fxGroup=null;
     renderer?.dispose();renderer=null;clearCanvas();
   },{once:true});
   window.NoahsArena3D=Object.freeze({
