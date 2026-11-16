@@ -11,7 +11,9 @@
   const yaw={bear:0,moose:0};
   let panel=null,stage=null,layer=null,THREE=null,renderer=null,scene=null,camera=null,filmCamera=null,layout=null;
   let actors=[null,null],running=0,lastFrame=0,shownEvent=null,sequence=null,loading=false;
-  let cameraLook=null,lastCameraShot=null,focusLight=null,fxGroup=null,fxParticles=[],fxGeometry=null,fxMaterials=[];
+  let cameraLook=null,lastCameraShot=null,focusLight=null,
+    fxGroup=null,fxParticles=[],fxGeometry=null,fxMaterials=[],
+    shockRing=null,shockGeometry=null,shockMaterial=null;
   let bearReview=null,reviewToolbar=null;
   let message='Choose an extracted private Motion Lab folder. The files stay on this device.';
   const screen=()=>window.__arkade?.getScreen();
@@ -393,11 +395,27 @@
       fxGroup.add(point);fxMaterials.push(material);fxParticles.push(point);
     }
     fxGroup.visible=false;
+    shockGeometry=new THREE.RingGeometry(.55,.68,48);
+    shockMaterial=new THREE.MeshBasicMaterial({color:0xf1cf9d,
+      transparent:true,opacity:0,depthWrite:false,side:THREE.DoubleSide});
+    shockRing=new THREE.Mesh(shockGeometry,shockMaterial);
+    shockRing.rotation.x=-Math.PI/2;
+    shockRing.position.y=.025;
+    shockRing.visible=false;
+    fxGroup.add(shockRing);
   }
   function paintEffects(){
-    if(!fxGroup||reduced()){if(fxGroup)fxGroup.visible=false;return;}
+    if(!fxGroup||reduced()){
+      if(fxGroup)fxGroup.visible=false;
+      if(shockRing)shockRing.visible=false;
+      return;
+    }
     const live=window.NoahsCinematics?.getState();
-    if(!live?.event){fxGroup.visible=false;return;}
+    if(!live?.event){
+      fxGroup.visible=false;
+      if(shockRing)shockRing.visible=false;
+      return;
+    }
     const {event,elapsed}=live;
     const timing=cinematics?.duration(event,nativeLength(event));
     const actionTime=elapsed-(timing?.actionLead||0);
@@ -407,7 +425,15 @@
     const miraclePhase=miracle&&elapsed<(timing?.miracleLead||0);
     const hitPhase=actionTime>=contact&&actionTime<contact+650;
     const victor=event.finished&&elapsed>=(timing?.victoryStart||Infinity);
-    if(!miraclePhase&&!focusPhase&&!hitPhase&&!victor){fxGroup.visible=false;return;}
+    const heroTime=victor?elapsed-timing.victoryStart:0;
+    // Hold a clean winning portrait instead of floating white bubbles
+    // cluttering Bear's face throughout the final roar.
+    const cleanPortrait=victor&&heroTime>=cinematics.VICTORY_HOWL_START_MS;
+    if(!miraclePhase&&!focusPhase&&!hitPhase&&!victor){
+      fxGroup.visible=false;
+      if(shockRing)shockRing.visible=false;
+      return;
+    }
     fxGroup.visible=true;
     const home=event.attacker===0?-2.02:2.02;
     const target=event.defender===0?-2.02:2.02;
@@ -420,6 +446,17 @@
     const colors={starfall:0xffd28d,storm:0xb9d6ff,tide:0x78e8da,
       eclipse:0xd7a4ff,dawn:0xffce85,charge:0xffb968,
       dust:0xded0b0,triumph:0xf8e5a7};
+    if(shockRing){
+      shockRing.visible=hitPhase;
+      if(hitPhase){
+        const age=Math.max(0,actionTime-contact);
+        const size=.65+age/245;
+        shockRing.position.x=target;
+        shockRing.position.z=0;
+        shockRing.scale.setScalar(size);
+        shockMaterial.opacity=.68*Math.exp(-age/190);
+      }
+    }
     for(let i=0;i<fxParticles.length;i++){
       const point=fxParticles[i],material=fxMaterials[i];
       const a=(i/24)*Math.PI*2,ring=i%4;
@@ -471,7 +508,7 @@
       if(kind!=='storm')point.scale.setScalar(kind==='dust'?(.6+t*1.2):
         kind==='triumph' ? .38+.36*pulse : .4+.42*pulse);
       material.color.setHex(colors[kind]||colors.triumph);
-      material.opacity=Math.max(0,Math.min(.85,alpha));
+      material.opacity=cleanPortrait?0:Math.max(0,Math.min(.85,alpha));
     }
   }
   function paintFocusLight(){
@@ -933,6 +970,8 @@
     stopBearReview(false);
     stopLoop();clearActors();for(const id of ['bear','moose'])loaded[id]?.dispose();
     fxGeometry?.dispose();fxMaterials.forEach(m=>m.dispose());fxMaterials=[];
+    shockGeometry?.dispose();shockMaterial?.dispose();
+    shockRing=null;shockGeometry=null;shockMaterial=null;
     fxParticles=[];fxGroup=null;
     renderer?.dispose();renderer=null;clearCanvas();
   },{once:true});
