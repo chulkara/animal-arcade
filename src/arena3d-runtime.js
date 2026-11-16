@@ -9,7 +9,7 @@
   if(!core||!loader||!game||!ui)return;
   const selected={bear:null,moose:null},loaded={bear:null,moose:null};
   const yaw={bear:0,moose:0};
-  let panel=null,stage=null,layer=null,THREE=null,renderer=null,scene=null,camera=null,layout=null;
+  let panel=null,stage=null,layer=null,THREE=null,renderer=null,scene=null,camera=null,filmCamera=null,layout=null;
   let actors=[null,null],running=0,lastFrame=0,shownEvent=null,sequence=null,loading=false;
   let cameraLook=null,lastCameraShot=null,focusLight=null,fxGroup=null,fxParticles=[],fxGeometry=null,fxMaterials=[];
   let bearReview=null,reviewToolbar=null;
@@ -233,9 +233,15 @@
     const deps=await loader.getDeps();
     THREE=deps.THREE;
     scene=new THREE.Scene();
-    camera=new THREE.OrthographicCamera(-4,4,2.5,-2.5,.1,80);
+    camera=new THREE.OrthographicCamera(-4,4,2.5,-2.5,.1,100);
+    // The flat orthographic camera keeps the default reel arena legible.
+    // As soon as a cinematic runs, a real perspective lens provides
+    // foreground scale, strong animal volume and purposeful camera angles.
+    filmCamera=new THREE.PerspectiveCamera(28,1,.1,100);
     camera.position.set(0,3,12);cameraLook=new THREE.Vector3(0,1.18,0);
     camera.lookAt(cameraLook);
+    filmCamera.position.copy(camera.position);
+    filmCamera.lookAt(cameraLook);
     layout=new THREE.Group();scene.add(layout);
     scene.add(new THREE.HemisphereLight(0xf6e4c0,0x344b4c,2.0));
     const sun=new THREE.DirectionalLight(0xffdeb0,3.4);
@@ -249,10 +255,46 @@
     // Warm procedural key light for charged attacks and the winner.
     focusLight=new THREE.PointLight(0xffbb72,0,10,1.7);
     focusLight.position.set(0,2.0,2);scene.add(focusLight);
-    const floor=new THREE.Mesh(new THREE.CircleGeometry(7,64),
-      new THREE.ShadowMaterial({opacity:.18}));
-    floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;
-    floor.position.y=-.008;scene.add(floor);
+    // Real ground geometry gives the animals a shared shadow plane
+    // that changes perspective with each movie cut. Previously both
+    // animals floated over a static CSS mountain painting.
+    const groundGeometry=new THREE.PlaneGeometry(64,64,24,24);
+    const groundColor=new Float32Array(groundGeometry.attributes.position.count*3);
+    const vertex=groundGeometry.attributes.position;
+    for(let i=0;i<vertex.count;i++){
+      const x=vertex.getX(i),y=vertex.getY(i);
+      const wave=Math.sin(x*1.3+y*.85)*.035+Math.sin(x*.53-y*1.2)*.027;
+      const edge=Math.max(0,Math.min(1,Math.hypot(x,y)/25));
+      groundColor[i*3]=.20+wave*.32+edge*.06;
+      groundColor[i*3+1]=.31+wave*.55+edge*.05;
+      groundColor[i*3+2]=.24+wave*.28+edge*.06;
+    }
+    groundGeometry.setAttribute('color',new THREE.BufferAttribute(groundColor,3));
+    const ground=new THREE.Mesh(groundGeometry,new THREE.MeshStandardMaterial({
+      vertexColors:true,roughness:1,metalness:0,side:THREE.DoubleSide
+    }));
+    ground.rotation.x=-Math.PI/2;
+    ground.position.y=-.035;ground.receiveShadow=true;
+    scene.add(ground);
+    // A restrained scattering of procedural grass adds depth cues,
+    // without downloading a game texture or replacing the painted sky.
+    const grassGeometry=new THREE.ConeGeometry(.038,.17,3);
+    const grassMaterial=new THREE.MeshStandardMaterial({
+      color:0x6c8760,roughness:1,side:THREE.DoubleSide
+    });
+    const grass=new THREE.InstancedMesh(grassGeometry,grassMaterial,75);
+    const grassMatrix=new THREE.Matrix4(),grassPosition=new THREE.Vector3();
+    let seed=0x57494c44;
+    const rand=()=>{seed=(1664525*seed+1013904223)>>>0;return seed/4294967296;};
+    for(let i=0;i<75;i++){
+      let x=(rand()-.5)*13,z=(rand()-.5)*9;
+      if(Math.abs(x)<2.8&&Math.abs(z)<1.1)z+=(z<0?-1:1)*1.3;
+      grassPosition.set(x,.05+rand()*.08,z);
+      grassMatrix.makeTranslation(grassPosition.x,grassPosition.y,grassPosition.z);
+      grass.setMatrixAt(i,grassMatrix);
+    }
+    grass.instanceMatrix.needsUpdate=true;
+    scene.add(grass);
     createEffects();
     renderer=new THREE.WebGLRenderer({alpha:true,antialias:true,powerPreference:'high-performance'});
     renderer.setClearColor(0x000000,0);
@@ -397,6 +439,10 @@
     camera.left=-viewHeight*ratio/2;camera.right=viewHeight*ratio/2;
     camera.top=viewHeight/2;camera.bottom=-viewHeight/2;
     camera.updateProjectionMatrix();
+    if(filmCamera){
+      filmCamera.aspect=ratio;
+      filmCamera.updateProjectionMatrix();
+    }
     layout.scale.setScalar(Math.min(1,Math.max(.27,(viewHeight*ratio-.25)/6.6)));
   }
   function stopLoop(){if(running)cancelAnimationFrame(running);running=0;lastFrame=0;}
@@ -655,6 +701,14 @@
       }
     }
     camera.lookAt(cameraLook);
+    if(filmCamera){
+      filmCamera.position.copy(camera.position);
+      filmCamera.lookAt(cameraLook);
+      const fit=Math.max(.27,layout?.scale?.x||1);
+      const heroFactor=Math.min(1.75,1/fit);
+      filmCamera.zoom=Math.min(2.2,(wants?.zoom??1)*heroFactor);
+      filmCamera.updateProjectionMatrix();
+    }
   }
   function frame(time){
     running=0;
@@ -673,7 +727,8 @@
     applyCamera(dt);
     paintEffects();
     paintFocusLight();
-    renderer.render(scene,camera);
+    const event=sequence?.event;
+    renderer.render(scene,event&&!reduced()?filmCamera:camera);
     startLoop();
   }
   function syncScene(force=false){
