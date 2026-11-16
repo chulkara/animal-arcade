@@ -106,9 +106,8 @@
 .ark-reference-layout.ark-cinematic-done .combat-message strong{font-size:12px}
 .ark-reference-layout.ark-cinematic-done .combat-message span{font-size:10px}
 /* Cinematics still read properly with the temporary SVG fighters. */
-.ark-reference-layout.ark-cinematic-active .combat-striker .combat-fighter-art,
-.ark-reference-layout.ark-cinematic-active .combat-struck .combat-fighter-art{
- animation:none!important}
+/* Temporary illustrated fighters keep their existing reaction animations
+   until the 3D models are locally loaded. */
 .ark-reference-layout .combat-battlefield[data-cine-beat="attack"] .combat-striker:not([data-3d-visible="true"]) .combat-fighter-art{
  animation:ark-cine-portrait-charge 1s ease-in-out both!important}
 .ark-reference-layout .combat-battlefield[data-cine-beat="contact"] .combat-struck:not([data-3d-visible="true"]) .combat-fighter-art{
