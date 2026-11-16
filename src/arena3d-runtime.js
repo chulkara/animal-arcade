@@ -119,7 +119,7 @@
       next.reset();next.enabled=true;next.setEffectiveWeight(1);
       const oneShot=!['idle','run','breathing','jump','victory','angry'].includes(name);
       next.setLoop(oneShot?THREE.LoopOnce:THREE.LoopRepeat,oneShot?1:Infinity);
-      next.clampWhenFinished=name==='knockout';
+      next.clampWhenFinished=name==='knockout'||name==='roar';
       next.fadeIn(.15).play();
       actor.current=next;actor.currentKey=name;
     };
@@ -212,14 +212,15 @@
         openMorphs.push({mesh:node,index,base:node.morphTargetInfluences[index]||0});
       }
     });
-    actor.howlCapabilities=Object.freeze({jaw:!!jawBone,morphs:openMorphs.length});
+    actor.howlCapabilities=Object.freeze({jaw:!!jawBone,morphs:openMorphs.length,
+      nativeRoar:Boolean(asset.clips.roar)});
     actor.resetHowlFace=()=>{
       for(const entry of openMorphs)entry.mesh.morphTargetInfluences[entry.index]=entry.base;
     };
     // Add subtle original gesture accents to the native upright victory
     // loop. They are deliberately small so the source FBX still owns the
     // Bear's anatomy and foot planting. Missing optional joints are skipped.
-    actor.victoryGesture=(elapsed)=>{
+    actor.victoryGesture=(elapsed,nativeRoar=false)=>{
       if(id!=='bear'||!Number.isFinite(elapsed)||elapsed<0)return;
       const t=Math.max(0,elapsed);
       const pulse=(start,end)=>{
@@ -232,30 +233,43 @@
         if(!actor.additive.has(bone))actor.additive.set(bone,bone.quaternion.clone());
         bone.quaternion.multiply(new THREE.Quaternion().setFromAxisAngle(axis,angle));
       };
-      const X=new THREE.Vector3(1,0,0),Y=new THREE.Vector3(0,1,0),Z=new THREE.Vector3(0,0,1);
-      const front=pulse(0,950),reverse=pulse(950,1930),overhead=pulse(1930,2900);
-      set('RigHead',X,.055*front-.035*overhead);
-      set('RigHead',Y,.095*reverse-.065*overhead);
-      set('RigNeck',X,.042*front);
-      set('RigSpine1',Z,.032*reverse-.024*overhead);
-      set('RigLFLeg1',X,-.075*reverse);
-      set('RigRFLeg1',X,-.065*overhead);
-      // On the fourth camera cut, Bear finally raises its head and howls.
-      // Keep the neck/chest/forepaws involved so it reads as a real animal
-      // expression instead of only moving the camera toward a static face.
+      const X=new THREE.Vector3(1,0,0),Y=new THREE.Vector3(0,1,0),
+        Z=new THREE.Vector3(0,0,1);
+      // Shot one gives the Bear a proud rise, the reverse shot turns its
+      // face toward camera, and the high shot gathers breath.
+      const front=pulse(0,900),reverse=pulse(900,1820),
+        overhead=pulse(1820,2700);
+      set('RigHead',X,.075*front);
+      set('RigHead',Y,.11*reverse);
+      set('RigNeck',X,.055*front);
+      set('RigSpine1',Z,.046*reverse);
+      set('RigLFLeg1',X,-.085*reverse);
+      set('RigRFLeg1',X,-.095*overhead);
       const howl=cinematics.bearHowl(t);
-      if(howl.active){
-        set('RigHead',X,howl.headPitch);
-        set('RigNeck',X,howl.neckPitch);
-        set('RigSpine1',X,howl.chestPitch);
-        set('RigChest',X,howl.chestPitch*.6);
-        set('RigLFLeg1',X,howl.forePaw);
-        set('RigRFLeg1',X,howl.forePaw*.85);
-        if(jawBone)set(jawBone.name,X,.36*howl.jawOpen);
-        for(const morph of openMorphs)
-          morph.mesh.morphTargetInfluences[morph.index]=
-            morph.base+(1-morph.base)*howl.jawOpen;
-      }else actor.resetHowlFace();
+      if(!howl.active){
+        actor.resetHowlFace();
+        return;
+      }
+      // Native roar FBX is authoritative if selected locally. If none is
+      // available, a more pronounced authored multi-bone choreography is
+      // the fallback. We never fake facial joint support.
+      const strength=nativeRoar?.32:1;
+      set('RigHead',X,howl.headPitch*strength);
+      set('RigHead',Y,howl.headYaw*strength);
+      set('RigNeck',X,howl.neckPitch*strength);
+      set('RigSpine1',X,howl.chestPitch*strength);
+      set('RigChest',X,howl.chestPitch*.65*strength);
+      set('RigLFLeg1',X,howl.forePaw*strength);
+      set('RigRFLeg1',X,howl.forePaw*.85*strength);
+      // This body-weight shift is bounded and assigned, not accumulated:
+      // it must read clearly without skating or tipping the standing Bear.
+      orientation.rotation.x=howl.bodyLean*.50*strength;
+      orientation.rotation.z=howl.bodyLean*.27*strength;
+      pivot.position.y=howl.bodyDrop*.55*strength;
+      if(jawBone&&!nativeRoar)set(jawBone.name,X,.58*howl.jawOpen);
+      for(const morph of openMorphs)
+        morph.mesh.morphTargetInfluences[morph.index]=
+          morph.base+(1-morph.base)*howl.jawOpen;
     };
     actor.tick=(delta)=>{
       resetApplied(actor);
@@ -682,7 +696,7 @@
   }
   function beginEvent(event){
     sequence={event,elapsed:0,contact:false,finished:false,attackStarted:false,
-      victoryRearAt:null,victoryPlayed:false};
+      victoryRearAt:null,victoryPlayed:false,roarPlayed:false};
     const attacker=actors[event.attacker];
     if(attacker?.asset?.clips?.angry)attacker.native('angry');
   }
@@ -725,6 +739,15 @@
         attacker.native('victory');
         sequence.victoryPlayed=true;
       }
+    }
+    // Play a real animated roar clip from the user's private pack only
+    // when one is available. Otherwise the choreographed neck/head and
+    // optional rig jaw/morph handle the victory without fake guarantees.
+    if(sequence.finished&&event.finished&&!sequence.roarPlayed&&attacker?.id==='bear'&&
+       attacker.asset?.clips?.roar&&timing&&
+       sequence.elapsed>=timing.victoryStart+cinematics.VICTORY_HOWL_CUE_MS-160){
+      attacker.native('roar');
+      sequence.roarPlayed=true;
     }
   }
   // Blocking is separate from each native/model animation: a repeatable
@@ -878,7 +901,7 @@
     const winner=sequence?.event?.finished?actors[sequence.event.attacker]:null;
     if(winner?.id==='bear'&&sequence.finished){
       const start=cinematics.duration(sequence.event,nativeLength(sequence.event)).victoryStart;
-      winner.victoryGesture(sequence.elapsed-start);
+      winner.victoryGesture(sequence.elapsed-start,Boolean(sequence.roarPlayed));
     }
     applyBlocking();
     applyCamera(dt);
