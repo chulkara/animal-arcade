@@ -35,7 +35,10 @@
   const OPTIONAL=Object.freeze({
     bear:Object.freeze({
       rear:'Trans_Stand_to_StandHind.FBX',
-      angry:'StandAngry_Breathing_01.FBX'
+      angry:'StandAngry_Breathing_01.FBX',
+      // A native roar is optional. Local motion packs have different file
+      // names, so we also discover compatible roar/growl/howl FBXs below.
+      roar:'StandHind_Roar_01.FBX'
     }),
     moose:Object.freeze({})
   });
@@ -67,6 +70,16 @@
     for(const [key,name] of Object.entries(OPTIONAL[id]||{})){
       const file=byName.get(basename(name));
       if(file)clips[key]=file;
+    }
+    if(id==='bear'&&!clips.roar){
+      // Prefer upright roaring clips if a complete private Motion Lab pack
+      // has one. Never infer that an idle attack is a mouth animation.
+      const candidates=files.filter(file=>/\.fbx$/i.test(file.name)&&
+        /(?:roar|growl|howl|bellow|vocal)/i.test(basename(file.name)));
+      const priority=file=>/(?:standhind|hind|rear|upright)/i.test(file.name)?0:1;
+      candidates.sort((a,b)=>priority(a)-priority(b)||
+        basename(a.name).localeCompare(basename(b.name)));
+      if(candidates.length)clips.roar=candidates[0];
     }
     const textures=Object.fromEntries(Object.entries(config.textures).map(
       ([key,name])=>[key,byName.get(basename(name))||null]));
