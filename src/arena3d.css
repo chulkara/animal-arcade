@@ -172,3 +172,21 @@
  .ark-reference-layout .combat-footer{flex-direction:row;justify-content:center}
  .ark-reference-layout .combat-footer [data-bear-review-quick]{font-size:10px;min-height:44px}
 }
+
+
+/* A separate victory-only take is useful for private rig QA, but should not
+   obscure the battlefield or the winning animal at desktop/mobile sizes. */
+.ark-reference-layout .ark-bear-review-toolbar{
+ width:min(625px,94vw);
+}
+.ark-bear-review-toolbar [data-bear-review-howl]{
+ background:#315b4c;
+ color:#fff3ca;
+}
+@media(max-width:650px){
+ .ark-reference-layout .ark-bear-review-toolbar{flex-wrap:wrap}
+ .ark-reference-layout .ark-bear-review-toolbar .ark-bear-review-info{
+  flex:1 0 100%;align-items:center;text-align:center}
+ .ark-reference-layout .ark-bear-review-toolbar button{
+  flex:1 1 28%;font-size:9px;min-height:35px}
+}
