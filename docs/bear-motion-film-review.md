@@ -53,3 +53,22 @@ The user submitted `Screen Recording 2026-11-16 at 12.18.12 AM.mov` (26.32 secon
 **Corrected in the draft:** Consistent slot coordinates for both attacker positions; hero-following low/side/high/wide victory cameras; centered two-animal impact; modest zoom and decisive edits; stable imported FBX model-root X/Z anchoring; smaller top-anchored titles with safer animation origins; hidden non-scoring HP/name overlays in review; compact recording controls; tests covering left/right winners and centered contact.
 
 **Still open:** This fixes the identified camera math and scene composition, **not** the overall commercial-quality motion. The native private Bear V2 animations need another Mac film take to verify foot contact, strike silhouettes, genuine impact synchronization, rig geometry and shot proportions. A fully bespoke scene-specific action cutscene would require additional original rig/animation production.
+
+
+## November 16, 1:02 AM recording — follow-up 19-second review
+
+Source: `Screen Recording 2026-11-16 at 1.02.26 AM.mov`, 2624×1628, 60 FPS, ~18.98s, supplied directly by the user. Frame review at 0.8-second intervals.
+
+| Approximate time | Visible issue | Corrective work |
+| --- | --- | --- |
+| 0–3s, Guts/Feral Charge | At the opening, Bear appears to leap across/overlap Moose instead of establishing its starting position and then lunging. Between camera changes, the location of the characters is difficult to follow. | Begin Guts from a stable centered two-animal establishing shot; clamp imported root-bone horizontal displacement; move the stage pivot by a bounded charge curve. |
+| 3–7.5s, Technique/Low Swipe | Bear rears but the actual low paw-to-opponent contact is not a strong readable beat. The over-bright contact flash can wash out the opponent. | Give Technique a tighter low-angle preparation but a wide two-animal contact cut. Reduce flash opacity and duration. Stage a small, planted approach with short recoil rather than long sliding. |
+| ~8–11.5s, Power/High Paw Strike | Bear walks forward, rises, and Moose falls, but the actions feel disconnected, with a weak sense of weight before the hit. | Separate wind-up, accelerated committed approach, contact and slower return; preserve the private native strike clip but manage stage-level root position and small body weight cues. Keep actual contact in the frame. |
+| ~12–16s, victory | Several nominal camera cuts show nearly identical side-on profiles of Bear standing upright. There is no obvious front/reverse/high variation. | Four physically distinct orbit directions: **low front quarter** (toward Bear's face), **reverse quarter** (opposite flank), **high overhead**, **final wide** (winner plus defeated opponent); instantaneous camera cuts on shot changes. |
+| 16–19s, hold | Bear remains upright while Moose lies down; the scene stops moving and the victory lacks a composed ending. | Keep the native victory animation, use the final wide composition and explicit shot labels during review. A future original celebration animation and themed arena treatment are still needed for fully polished output. |
+
+### What changed and what remains genuinely unresolved
+
+**Implemented on the draft branch:** more distinct world-space camera orbit vectors, exact film cuts rather than interpolation between camera positions, stable Guts establishing shot, deterministic G/T/P attack staging with small anticipatory lean and body weight, separate defender recoil, root-bone X/Z normalization to counter source FBX translations, conservative Bear hind-foot elevation correction only in Idle/Victory, lower contact flash intensity, and an unobtrusive review toolbar identifying each of the four camera angles.
+
+**Not yet demonstrated or guaranteed:** These are code-level fixes and still require another local playback with Bear Motion Lab V2, because private FBX/PNG data isn't checked into the project. Real foot locking would require rig-aware IK and knowing which paw is planted on each frame. The current bounded hind-foot grounding is only a first safeguard, not a complete physical animation solver. We have not authored a bespoke low-swipe/keyframed power-strike replacement or recorded and validated the resulting footage. Those will be the next polish passes if the angle and timing changes read better.
