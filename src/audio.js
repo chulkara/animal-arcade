@@ -75,6 +75,18 @@
       case 'cinemaIntro':
         burst(.2,.10,1100);tone(235,.22,'sawtooth',.14);
         tone(370,.38,'triangle',.08,.12);break;
+      case 'cinemaFocus':
+        // The tension rises from a low rumble into a short harmonic swell.
+        tone(123,.44,'sawtooth',.09);
+        tone(185,.36,'triangle',.08,.08);
+        tone(247,.31,'sine',.09,.17);burst(.17,.06,420,.09);break;
+      case 'cinemaWin':
+        // Original four-note winner resolution, not arcade sampled audio.
+        tone(293.66,.32,'triangle',.14);
+        tone(440,.39,'triangle',.13,.13);
+        tone(587.33,.46,'triangle',.12,.28);
+        tone(880,.74,'sine',.09,.43);
+        burst(.28,.08,3200,.30);break;
       case 'cinemaMiracle':
         tone(330,.22,'sine',.09);tone(495,.30,'triangle',.10,.08);
         tone(660,.38,'sine',.09,.17);tone(990,.44,'sine',.07,.30);
