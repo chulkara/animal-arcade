@@ -72,7 +72,7 @@
         });
         node.material=Array.isArray(node.material)?material:material[0];
       });
-      const clips={};
+      const clips={},motionFiles={};
       for(const [name,file] of Object.entries(plan.clips)){
         const optional=Object.hasOwn(core.OPTIONAL?.[id]||{},name);
         try{
@@ -89,6 +89,7 @@
           });
           if(!usable.length)throw Error(id+' motion '+file.name+' does not bind to the model skeleton');
           clips[name]=clip;
+          motionFiles[name]=file.name;
         }catch(error){
           if(!optional)throw error;
           // A malformed *optional* animation must never break the user's
@@ -98,7 +99,7 @@
       }
       notify(id.toUpperCase()+' · '+bones+' bones, '+meshes+' skinned meshes, '+Object.keys(clips).length+' native clips ready.');
       return {
-        id,model,clips,materials:replacedMaterials,textures:textureObjects,
+        id,model,clips,motionFiles,materials:replacedMaterials,textures:textureObjects,
         urls:[...textureUrls.values()],bones,meshes,clone,THREE,
         dispose(){
           for(const material of replacedMaterials)material.dispose();
