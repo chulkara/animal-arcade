@@ -66,6 +66,8 @@
       // Audio still respects master/SFX/mute and starts only after a gesture.
       case 'slot':
         tone(580,.065,'square',.085);tone(870,.095,'sine',.07,.045);break;
+      case 'reelTick':
+        tone(290,.038,'square',.028);break;
       case 'arcadeStop':
         burst(.11,.16,3700);
         tone(620,.10,'square',.13);tone(990,.19,'sine',.09,.065);
