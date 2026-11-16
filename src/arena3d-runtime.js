@@ -749,9 +749,14 @@
     if(screen()!=='BATTLE_PLAY'||document.hidden||!renderer||!scene)return;
     const dt=lastFrame?Math.min(.05,Math.max(0,(time-lastFrame)/1000)):0;
     lastFrame=time;
-    for(const actor of actors)actor?.tick(dt);
+    // Start attack/reaction clips before evaluating the bones for this
+    // frame. At contact, freeze both rigs for 88ms while light/dust/audio
+    // continue. This produces weight without delaying the battle rules.
     advanceEvent(dt);
     advanceBearReview(dt);
+    const stopped=Boolean(sequence&&!reduced()&&cinematics.hitStop(
+      sequence.event,sequence.elapsed,nativeLength(sequence.event)));
+    for(const actor of actors)actor?.tick(stopped?0:dt);
     if(sequence?.attackStarted&&!sequence.finished){
       const {event}=sequence;
       const guide=cinematics.blocking(event,sequence.elapsed,nativeLength(event));
