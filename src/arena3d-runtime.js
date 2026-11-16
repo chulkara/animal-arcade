@@ -88,8 +88,22 @@
       if(/^RigRoot$/i.test(node.name)||(!node.parent?.isBone&&/^root$/i.test(node.name)))
         rootAnchors.push({bone:node,x:node.position.x,z:node.position.z});
     });
+    const hindFeet=['RigLBLeg3','RigRBLeg3','RigLBLegAnkle','RigRBLegAnkle']
+      .map(name=>joint.get(name)).filter(Boolean);
+    const footTemp=new THREE.Vector3();
+    const soleHeight=()=>{
+      if(!hindFeet.length)return null;
+      model.updateMatrixWorld(true);
+      let min=Infinity;
+      for(const bone of hindFeet){
+        bone.getWorldPosition(footTemp);
+        min=Math.min(min,footTemp.y);
+      }
+      return Number.isFinite(min)?min:null;
+    };
     const actor={id,slot,asset,model,pivot,orientation,mixer,joint,rootAnchors,additive:new Map(),
-      current:null,currentKey:null,proc:null,procElapsed:0,baseX:pivot.position.x};
+      current:null,currentKey:null,proc:null,procElapsed:0,baseX:pivot.position.x,
+      soleRest:null,soleHeight};
     actor.native=(key)=>{
       resetApplied(actor);actor.proc=null;actor.procElapsed=0;
       const name=asset.clips[key]?key:'idle',clip=asset.clips[name];
@@ -156,6 +170,20 @@
       for(const entry of rootAnchors){
         entry.bone.position.x=entry.x;
         entry.bone.position.z=entry.z;
+      }
+      // A conservative hind-foot grounding correction for standing/
+      // victory poses. It does not attempt IK on running or striking legs;
+      // those need a rig-specific polish pass with the private FBX.
+      if(id==='bear'&&['idle','victory'].includes(actor.currentKey)&&hindFeet.length){
+        const sole=soleHeight();
+        if(sole!==null){
+          if(actor.soleRest===null)actor.soleRest=sole;
+          else{
+            const fit=Math.max(.25,layout.scale.y||1);
+            const delta=(actor.soleRest-sole)/fit;
+            pivot.position.y+=Math.max(-.025,Math.min(.025,delta*.25));
+          }
+        }
       }
       if(actor.proc){
         actor.procElapsed+=reduced()?0:delta*1000;
@@ -489,8 +517,11 @@
     const wants=(!reduced()&&event&&cinematics)?
       cinematics.camera(event,time,nativeLength(event)):null;
     const fit=layout?.scale?.x??1;
-    const x=(wants?.x??0)*fit,y=wants?.y??3,z=wants?.z??12;
     const focusX=(wants?.targetX??0)*fit;
+    // Camera azimuth must survive portrait-stage scaling. Scaling the
+    // camera's orbit offset by .27 made all four angles indistinguishable.
+    const x=focusX+((wants?.x??0)-(wants?.targetX??0));
+    const y=wants?.y??3,z=wants?.z??12;
     const focusY=(wants?.targetY??1.18)*fit;
     const wanted=new THREE.Vector3(x,y,z);
     const focus=new THREE.Vector3(focusX,focusY,0);
