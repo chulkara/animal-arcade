@@ -235,6 +235,27 @@
       };
       const X=new THREE.Vector3(1,0,0),Y=new THREE.Vector3(0,1,0),
         Z=new THREE.Vector3(0,0,1);
+      // FBX local X is not a reliable "raise the muzzle" hinge. A bear
+      // stands facing across the stage (+X in left slot, -X in right slot).
+      // Convert that world-space pitch/yaw into each bone's local frame,
+      // so the movement stays anatomically legible on mirrored fighters.
+      const face=slot===0?1:-1;
+      const pitchWorld=new THREE.Vector3(0,0,face);
+      const yawWorld=new THREE.Vector3(0,1,0);
+      const localWorldAxis=(bone,axis)=>{
+        bone.updateWorldMatrix(true,false);
+        const q=new THREE.Quaternion();
+        bone.getWorldQuaternion(q);
+        return axis.clone().applyQuaternion(q.invert()).normalize();
+      };
+      const setWorld=(name,worldAxis,angle)=>{
+        const bone=joint.get(name);
+        if(!bone||!Number.isFinite(angle)||Math.abs(angle)<.0001)return;
+        if(!actor.additive.has(bone))actor.additive.set(bone,bone.quaternion.clone());
+        bone.quaternion.multiply(
+          new THREE.Quaternion().setFromAxisAngle(localWorldAxis(bone,worldAxis),angle));
+        bone.updateWorldMatrix(false,true);
+      };
       // Shot one gives the Bear a proud rise, the reverse shot turns its
       // face toward camera, and the high shot gathers breath.
       const front=pulse(0,900),reverse=pulse(900,1820),
@@ -254,19 +275,24 @@
       // available, a more pronounced authored multi-bone choreography is
       // the fallback. We never fake facial joint support.
       const strength=nativeRoar ? 0.32 : 1;
-      set('RigHead',X,howl.headPitch*strength);
-      set('RigHead',Y,howl.headYaw*strength);
-      set('RigNeck',X,howl.neckPitch*strength);
-      set('RigSpine1',X,howl.chestPitch*strength);
-      set('RigChest',X,howl.chestPitch*.65*strength);
-      set('RigLFLeg1',X,howl.forePaw*strength);
-      set('RigRFLeg1',X,howl.forePaw*.85*strength);
-      // This body-weight shift is bounded and assigned, not accumulated:
-      // it must read clearly without skating or tipping the standing Bear.
-      orientation.rotation.x=howl.bodyLean*.50*strength;
-      orientation.rotation.z=howl.bodyLean*.27*strength;
-      pivot.position.y=howl.bodyDrop*.55*strength;
-      if(jawBone&&!nativeRoar)set(jawBone.name,X,.58*howl.jawOpen);
+      // Curve defines negative pitch for a raised head. PitchWorld is a
+      // real left/right-mirrored sideways stage axis, not a guessed RigHead
+      // bone axis. This is the critical fix for a previously static-looking
+      // "howl" where bone rotations often read as twist instead of lift.
+      setWorld('RigHead',pitchWorld,-howl.headPitch*strength);
+      setWorld('RigHead',yawWorld,howl.headYaw*strength);
+      setWorld('RigNeck',pitchWorld,-howl.neckPitch*strength);
+      setWorld('RigSpine1',pitchWorld,-howl.chestPitch*strength);
+      setWorld('RigChest',pitchWorld,-howl.chestPitch*.65*strength);
+      setWorld('RigLFLeg1',pitchWorld,-howl.forePaw*.55*strength);
+      setWorld('RigRFLeg1',pitchWorld,-howl.forePaw*.47*strength);
+      // Keep the standing hind paws grounded. Lean in the animal's facing
+      // plane, not around orientation.rotation.x (that rolled the torso).
+      orientation.rotation.x=0;
+      orientation.rotation.z=-face*howl.bodyLean*.38*strength;
+      pivot.position.y=howl.bodyDrop*.50*strength;
+      if(jawBone&&!nativeRoar)
+        setWorld(jawBone.name,pitchWorld,-.58*howl.jawOpen);
       for(const morph of openMorphs)
         morph.mesh.morphTargetInfluences[morph.index]=
           morph.base+(1-morph.base)*howl.jawOpen;
