@@ -62,7 +62,8 @@ function duration(event,nativeMs){
   if(!ATTACKS[event?.attackerId]?.[event?.move])throw new RangeError('Invalid battle event');
   const attack=length(event,nativeMs);
   const contact=event.attackerId==='moose'?{G:830,T:680,P:1220,S:1330}[event.move]:
-    clamp(attack*.47,180,1400);
+    clamp(Math.round(attack*{G:.58,T:.68,P:.74,S:.69}[event.move]),
+      180,Math.min(attack+180,2400));
   const miracleLead=event.miracleName?850:0;
   // The reference takes time to prepare a signature move. Our previous
   // edit triggered the native FBX on frame one, so no strike had a buildup.
@@ -193,7 +194,7 @@ function blocking(event,elapsed,nativeMs){
   const recoil=ease(clamp(recoilMs/140,0,1))*
     (1-ease(clamp((recoilMs-120)/510,0,1)));
   return Object.freeze({
-    attackerTravel:offset,
+    attackerTravel:offset,windup:prep,strike,recoil,
     // These small rig-container adjustments give impact mass without
     // forcing every animal to use the same procedural leg animation.
     attackerLean:-.045*prep+.085*strike,
@@ -201,7 +202,7 @@ function blocking(event,elapsed,nativeMs){
       move==='G' ? -.025*prep+.018*strike : -.018*prep+.01*strike,
     defenderTravel:.28*recoil,
     defenderLean:-.060*recoil,
-    contact,ready:t>=contact,ended:t>=timing.finish-timing.miracleLead,
+    contact,ready:t>=contact,ended:t>=timing.finish-timing.actionLead,
     move
   });
 }
