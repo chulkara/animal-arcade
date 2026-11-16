@@ -253,7 +253,7 @@
       // Native roar FBX is authoritative if selected locally. If none is
       // available, a more pronounced authored multi-bone choreography is
       // the fallback. We never fake facial joint support.
-      const strength=nativeRoar?.32:1;
+      const strength=nativeRoar ? 0.32 : 1;
       set('RigHead',X,howl.headPitch*strength);
       set('RigHead',Y,howl.headYaw*strength);
       set('RigNeck',X,howl.neckPitch*strength);
@@ -582,6 +582,12 @@
   function reviewChange(){
     window.dispatchEvent(new CustomEvent('arkade:bearreviewchange'));
   }
+  function bearMouthStatus(){
+    const caps=actors.find(actor=>actor?.id==='bear')?.howlCapabilities;
+    if(caps?.nativeRoar)return 'NATIVE ROAR MOTION LOADED';
+    if(caps?.jaw||caps?.morphs)return 'MOUTH RIG AVAILABLE';
+    return 'BODY HOWL ONLY · NO MOUTH CONTROL';
+  }
   function updateReviewToolbar(){
     if(!bearReview||!reviewToolbar)return;
     const line=reviewToolbar.querySelector('[data-bear-review-step]');
@@ -599,7 +605,10 @@
         sideHero:'02 / 04 · REVERSE QUARTER',
         highHero:'03 / 04 · HIGH OVERHEAD',
         finale:'04 / 04 · WINNER CLOSE-UP'};
-      detail.textContent=angles[bearReview.cameraShot]||
+      detail.textContent=bearReview.cameraShot==='finale'&&
+        ['roar','hold'].includes(bearReview.howlStage)?
+        'BEAR HOWL · '+bearMouthStatus():
+        angles[bearReview.cameraShot]||
         'ATTACK '+(bearReview.index+1)+' OF 3 · MATCH UNCHANGED';
     }
   }
@@ -654,6 +663,7 @@
     if(!bearReview)return;
     bearReview.index=index;
     bearReview.cameraShot=null;
+    bearReview.howlStage=null;
     bearReview.event=bearReview.events[index];
     bearReview.countdown=0;
     bearReview.done=false;
@@ -677,8 +687,11 @@
     if(bearReview.event.finished){
       const current=cinematics.shot(bearReview.event,sequence.elapsed,length);
       const shot=current.beat==='VICTORY'?current.shot:null;
-      if(shot!==bearReview.cameraShot){
+      const howlStage=current.beat==='VICTORY'&&current.shot==='finale'?
+        cinematics.bearHowl(current.local).phase:null;
+      if(shot!==bearReview.cameraShot||howlStage!==bearReview.howlStage){
         bearReview.cameraShot=shot;
+        bearReview.howlStage=howlStage;
         updateReviewToolbar();
       }
     }
@@ -964,8 +977,12 @@
       old?.dispose();
       loaded[id]=result;
       await createScene();
+      const roarInfo=id==='bear'?
+        (result.clips.roar?' Native roar FBX detected.':
+        ' No native roar FBX detected; facial animation depends on the rig.'):
+        '';
       status(label(id)+' loaded with '+result.bones+' bones and '+Object.keys(result.clips).length+
-        ' native motions. Enter a duel to see 3D movement.');
+        ' native motions.'+roarInfo+' Enter a duel to see 3D movement.');
       if(panel){
         const el=panel.querySelector('[data-ark3d-loaded="'+id+'"]');
         if(el)el.textContent='3D MODEL + MOTIONS READY';
