@@ -125,7 +125,9 @@ function draw(time){
      beat==='FOCUS'?'A MOMENT OF STILLNESS BEFORE IMPACT':
      beat==='VICTORY'?'FOUR CAMERA ANGLES · NATIVE VICTORY CLIP':
      'SIGNATURE ATTACK · REPEATABLE MOVEMENT':panel.sub;
-   if(!reduce())cueForBeat(beat);
+   // A locally supplied Forestfall cutscene already owns its soundtrack.
+   // Don't play the generic 3D arena soundtrack on top of its audio.
+   if(!reduce()&&!window.NoahsForestfall?.getStatus?.().playing)cueForBeat(beat);
  }
  const p=api.shot(event,elapsed,length);
  overlay.dataset.shot=p.shot;
@@ -133,7 +135,8 @@ function draw(time){
  overlay.dataset.winner=event.attackerId;
  if(lastShot!==p.shot){
    lastShot=p.shot;
-   if(!reduce()&&p.beat==='ATTACK'&&(p.shot==='rush'||p.shot==='sweep'))
+   if(!reduce()&&!window.NoahsForestfall?.getStatus?.().playing&&
+      p.beat==='ATTACK'&&(p.shot==='rush'||p.shot==='sweep'))
      window.NoahsAudio?.cue('cinemaRush');
  }
  // A real animal vocal should start when the mouth opens, not at the
