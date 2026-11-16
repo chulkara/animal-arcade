@@ -150,3 +150,25 @@
    font-size:11px}
  .ark-reference-layout .ark-bear-review-toolbar button{font-size:9px;padding:5px}
 }
+
+
+/* Bear review launch: visible without scrolling past two importers. */
+.ark-fbx-dialog .ark-fbx-review{order:0;margin:8px 0 13px;
+ border:2px solid #e3b56e;background:linear-gradient(135deg,#284c3c,#152c35);
+ box-shadow:0 3px 16px #020f1b52}
+.ark-fbx-dialog .ark-fbx-review [data-bear-review-start]{
+ width:100%;font:800 clamp(11px,1.5vw,15px) Arial,sans-serif;
+ letter-spacing:.045em;text-align:center;min-height:48px}
+.ark-reference-layout .combat-footer{flex-wrap:wrap;max-width:calc(100% - 14px);gap:6px}
+.ark-reference-layout .combat-footer [data-bear-review-quick]{
+ background:linear-gradient(145deg,#836338,#b18a49)!important;
+ color:#fff8df!important;border:1px solid #f4d28e!important;
+ font-weight:800;letter-spacing:.055em;min-height:40px;
+ box-shadow:0 0 14px #e2b76a44}
+.ark-reference-layout .combat-footer [data-bear-review-quick]:focus-visible{
+ outline:3px solid #fff0bd;outline-offset:3px}
+@media(max-width:650px){
+ .ark-fbx-dialog .ark-fbx-review [data-bear-review-start]{font-size:11px;min-height:46px}
+ .ark-reference-layout .combat-footer{flex-direction:row;justify-content:center}
+ .ark-reference-layout .combat-footer [data-bear-review-quick]{font-size:10px;min-height:44px}
+}
