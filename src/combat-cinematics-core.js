@@ -14,6 +14,7 @@ const POSES=Object.freeze({
   hunter:Object.freeze({x:-1.65,y:2.0,z:8.2,targetY:1.25,zoom:1.23,angle:-.20}),
   ground:Object.freeze({x:-1.2,y:1.10,z:7.7,targetY:1.0,zoom:1.32,angle:-.33}),
   sweep:Object.freeze({x:0,y:3.05,z:8.5,targetY:1.45,zoom:1.27,angle:.19}),
+  rush:Object.freeze({x:0,y:1.35,z:8.9,targetY:1.18,zoom:1.09,angle:0}),
   rising:Object.freeze({x:0,y:2.0,z:8.3,targetY:2.08,zoom:1.40,angle:.34}),
   impact:Object.freeze({x:.1,y:1.8,z:8.8,targetY:1.23,zoom:1.15,angle:.06}),
   recoil:Object.freeze({x:1.45,y:2.3,z:8.0,targetY:1.17,zoom:1.33,angle:.12}),
@@ -99,8 +100,12 @@ function shot(event,elapsed,nativeMs){
   else if(attackTime<contact){stage=1;beat='ATTACK';}
   else if(attackTime<contact+150){stage=2;beat='CONTACT';}
   else {stage=3;beat='REACTION';}
-  const name=descriptor.shots[stage];
-  return Object.freeze({name,beat,shot:name,pose:POSES[name],local:attackTime,
+  // A very short fast-moving shot immediately before contact is why the
+  // arcade's signature moves feel choreographed. Bear T uses a paw-level
+  // sweep instead of the G/P charge tunnel.
+  const fast=beat==='ATTACK'&&attackTime/contact>.70;
+  const name=fast?(event.move==='T'?'sweep':'rush'):descriptor.shots[stage];
+  return Object.freeze({name,beat,shot:name,pose:POSES[name]||POSES.sweep,local:attackTime,
     progress:clamp(attackTime/timing.attack,0,1),timing,accent:descriptor.accent});
 }
 // World slots: player one is LEFT (-X), player two is RIGHT (+X).
@@ -146,6 +151,14 @@ function camera(event,elapsed,nativeMs){
     y=event.move==='P'?2.15:1.7;z=2.8;
     targetY=event.move==='P'?2.18:1.52;
     zoom=event.move==='P'?1.22:1.06;
+  }else if(beat.shot==='rush'){
+    // Compressed, low front-third shot, distinct from anticipation and the
+    // wide impact; the rapid edit is a signature action punctuation.
+    x=defenderX-facing*1.18;targetX=0;
+    y=1.22;z=9.1;targetY=1.16;zoom=1.06;
+  }else if(beat.shot==='sweep'){
+    x=attackerX+facing*.95;targetX=attackerX+facing*.48;
+    y=.85;z=8.8;targetY=.82;zoom=1.06;
   }else if(beat.beat==='MIRACLE'){
     x=0;targetX=0;y=3.1;z=12.3;zoom=.96;
   }else if(beat.beat==='INTRO'&&event.move==='G'){
@@ -237,7 +250,7 @@ function blocking(event,elapsed,nativeMs){
     attackerLean:-.045*prep+.085*strike,
     attackerLift:move==='P' ? -.035*prep+.035*strike :
       move==='G' ? -.025*prep+.018*strike : -.018*prep+.01*strike,
-    defenderTravel:.28*recoil,
+    defenderTravel:{G:.38,T:.24,P:.44,S:.52}[move]*recoil,
     defenderLean:-.060*recoil,
     contact,ready:t>=contact,ended:t>=timing.finish-timing.actionLead,
     move
