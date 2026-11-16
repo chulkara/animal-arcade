@@ -81,6 +81,7 @@ function draw(time){
  if(lastBeat!==beat){
    lastBeat=beat;
    overlay.dataset.beat=beat.toLowerCase();
+   stage.dataset.cineBeat=beat.toLowerCase();
    overlay.dataset.accent=panel.accent;
    overlay.dataset.miracle=panel.miracle||'';
    overlay.dataset.attacker=String(event.attacker);
