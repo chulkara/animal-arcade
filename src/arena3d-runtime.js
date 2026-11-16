@@ -212,8 +212,19 @@
         openMorphs.push({mesh:node,index,base:node.morphTargetInfluences[index]||0});
       }
     });
-    actor.howlCapabilities=Object.freeze({jaw:!!jawBone,morphs:openMorphs.length,
-      nativeRoar:Boolean(asset.clips.roar)});
+    // Report whether the optional vocal motion actually touches head/jaw
+    // articulation. "A roar FBX exists" alone doesn't prove a moving mouth.
+    const vocalTracks=asset.clips.roar?.tracks||[];
+    const jawTracks=vocalTracks.filter(track=>
+      /(?:lower)?jaw|mandible|mouth/i.test(track.name)).length;
+    const headTracks=vocalTracks.filter(track=>
+      /(?:rig)?head|(?:rig)?neck/i.test(track.name)).length;
+    actor.howlCapabilities=Object.freeze({
+      head:joint.has('RigHead'),neck:joint.has('RigNeck'),
+      jaw:!!jawBone,morphs:openMorphs.length,
+      nativeRoar:Boolean(asset.clips.roar),
+      roarHeadTracks:headTracks,roarJawTracks:jawTracks
+    });
     actor.resetHowlFace=()=>{
       for(const entry of openMorphs)entry.mesh.morphTargetInfluences[entry.index]=entry.base;
     };
@@ -614,7 +625,9 @@
   }
   function bearMouthStatus(){
     const caps=actors.find(actor=>actor?.id==='bear')?.howlCapabilities;
-    if(caps?.nativeRoar)return 'NATIVE ROAR MOTION LOADED';
+    if(!caps?.head)return 'HEAD BONE NOT FOUND · RIG CHECK NEEDED';
+    if(caps?.nativeRoar&&caps?.roarJawTracks)return 'NATIVE ROAR + JAW KEYS';
+    if(caps?.nativeRoar)return 'NATIVE ROAR LOADED · VERIFY MOUTH';
     if(caps?.jaw||caps?.morphs)return 'MOUTH RIG AVAILABLE';
     return 'BODY HOWL ONLY · NO MOUTH CONTROL';
   }
