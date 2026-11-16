@@ -12,13 +12,24 @@ const onBattle=()=>window.__arkade?.getScreen()==='BATTLE_PLAY';
 const battle=()=>window.NoahsCombat?.getState();
 function cleanup(){
  if(timer)cancelAnimationFrame(timer);
+ timer=0;
+ // Earlier cleanup dropped the JS references without removing the actual
+ // DOM node. Each new Bear review appended another .ark-cinema, leaving
+ // LOW SWIPE painted over Guts, Power and even the final victory.
+ if(stage)delete stage.dataset.cineBeat;
+ overlay?.remove();
+ ui.querySelectorAll('.combat-battlefield .ark-cinema').forEach(node=>node.remove());
  timer=0;lastBeat='';lastShot='';sequence=null;stage=null;overlay=null;
- ui.querySelector('.ark-reference-layout')?.classList.remove('ark-cinematic-active');
+ const root=ui.querySelector('.ark-reference-layout');
+ root?.classList.remove('ark-cinematic-active','ark-cinematic-done');
 }
 function createOverlay(){
  const battlefield=ui.querySelector('.combat-battlefield');
  if(!battlefield)return;
  stage=battlefield;
+ // A screenplay can replace its battlefield during state transitions.
+ // There must be exactly one active film overlay at all times.
+ battlefield.querySelectorAll('.ark-cinema').forEach(node=>node.remove());
  overlay=document.createElement('div');
  overlay.className='ark-cinema';
  overlay.setAttribute('aria-hidden','true');
@@ -57,6 +68,9 @@ function sync(){
    if(timer)cancelAnimationFrame(timer);
    sequence={event,started:performance.now(),elapsed:0,done:false,nativeLength:captureNativeLength(event)};
    lastBeat='';lastShot='';
+   // A fresh event should not inherit the previous overlay's move labels
+   // or decorative data attributes even if React/DOM reused the stage.
+   if(overlay){overlay.dataset.beat='';overlay.dataset.shot='';}
  }
  if(stage!==el||!overlay?.isConnected)createOverlay();
  const panel=ui.querySelector('.ark-reference-layout');
