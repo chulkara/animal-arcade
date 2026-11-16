@@ -3,12 +3,14 @@
 (function(){
   'use strict';
   const core=window.NoahsArena3DCore,loader=window.NoahsArena3DLoader;
+  const cinematics=window.NoahsCinematicCore;
   const game=document.getElementById('game'),ui=document.getElementById('ui');
   if(!core||!loader||!game||!ui)return;
   const selected={bear:null,moose:null},loaded={bear:null,moose:null};
   const yaw={bear:0,moose:0};
   let panel=null,stage=null,layer=null,THREE=null,renderer=null,scene=null,camera=null,layout=null;
   let actors=[null,null],running=0,lastFrame=0,shownEvent=null,sequence=null,loading=false;
+  let cameraLook=null;
   let message='Choose an extracted private Motion Lab folder. The files stay on this device.';
   const screen=()=>window.__arkade?.getScreen();
   const state=()=>window.NoahsCombat?.getState();
@@ -152,7 +154,8 @@
     THREE=deps.THREE;
     scene=new THREE.Scene();
     camera=new THREE.OrthographicCamera(-4,4,2.5,-2.5,.1,80);
-    camera.position.set(0,3,12);camera.lookAt(0,1.18,0);
+    camera.position.set(0,3,12);cameraLook=new THREE.Vector3(0,1.18,0);
+    camera.lookAt(cameraLook);
     layout=new THREE.Group();scene.add(layout);
     scene.add(new THREE.HemisphereLight(0xf6e4c0,0x344b4c,2.0));
     const sun=new THREE.DirectionalLight(0xffdeb0,3.4);
@@ -209,21 +212,33 @@
     if(running||!renderer||screen()!=='BATTLE_PLAY'||document.hidden)return;
     running=requestAnimationFrame(frame);
   }
+  function nativeLength(event){
+    const actor=actors[event?.attacker];
+    const seconds=actor?.asset?.clips?.[event?.move]?.duration;
+    return Number.isFinite(seconds)&&seconds>0?seconds*1000:undefined;
+  }
   function beginEvent(event){
-    sequence={event,elapsed:0,contact:false,finished:false};
-    actors[event.attacker]?.move(event.move);
+    sequence={event,elapsed:0,contact:false,finished:false,attackStarted:false};
   }
   function advanceEvent(delta){
     if(!sequence)return;
     sequence.elapsed+=delta*1000;
     const {event}=sequence,attacker=actors[event.attacker],defender=actors[event.defender];
-    const length=attacker?.current?.getClip()?.duration*1000;
+    const length=nativeLength(event);
+    const timing=cinematics?.duration(event,length);
+    const lead=timing?.miracleLead||0;
+    if(!sequence.attackStarted&&sequence.elapsed>=lead){
+      sequence.attackStarted=true;
+      attacker?.move(event.move);
+    }
+    const actionTime=sequence.elapsed-lead;
     const contact=core.contactMs(event.attackerId,event.move,length);
-    if(!sequence.contact&&sequence.elapsed>=contact){
+    if(sequence.attackStarted&&!sequence.contact&&actionTime>=contact){
       sequence.contact=true;
       defender?.native(event.knockout?'knockout':'hit');
     }
-    if(!sequence.finished&&sequence.elapsed>=core.settleMs(event.attackerId,event.move,length)){
+    const settle=core.settleMs(event.attackerId,event.move,length);
+    if(sequence.attackStarted&&!sequence.finished&&actionTime>=settle){
       sequence.finished=true;
       if(event.finished){
         attacker?.native('victory');
@@ -232,14 +247,62 @@
       }
     }
   }
+  // Blocking is separate from each native/model animation: a repeatable
+  // signature strike brings the attacker to the contact point, then lets the
+  // victim react on its own rig, whatever animal is defending.
+  function applyBlocking(){
+    if(!sequence?.attackStarted||reduced())return;
+    const {event}=sequence,attacker=actors[event.attacker],defender=actors[event.defender];
+    const length=nativeLength(event);
+    const lead=cinematics?.duration(event,length)?.miracleLead||0;
+    const t=Math.max(0,sequence.elapsed-lead);
+    const impact=core.contactMs(event.attackerId,event.move,length);
+    const progress=Math.min(1,t/Math.max(1,impact));
+    const release=Math.max(0,Math.min(1,1-(t-impact)/600));
+    const travel=event.move==='G'||event.move==='S'?.72:event.move==='P'?.37:.25;
+    const enter=progress*progress*(3-2*progress);
+    const offset=travel*enter*release;
+    if(attacker){
+      const direction=event.attacker===0?1:-1;
+      if(event.attackerId==='bear')attacker.pivot.position.x=attacker.baseX+direction*offset;
+      else attacker.pivot.position.x+=direction*offset*.28;
+    }
+    if(defender&&sequence.contact){
+      const reaction=Math.max(0,(t-impact)/220);
+      const recoil=Math.min(1,reaction)*Math.exp(-reaction*.65)*.27;
+      const direction=event.defender===0?-1:1;
+      defender.pivot.position.x=defender.baseX+direction*recoil;
+    }
+  }
+  function applyCamera(dt){
+    if(!camera||!THREE)return;
+    const live=window.NoahsCinematics?.getState();
+    const event=live?.event||sequence?.event;
+    const time=live?.elapsed??sequence?.elapsed??0;
+    const wants=(!reduced()&&event&&cinematics)?
+      cinematics.camera(event,time,nativeLength(event)):null;
+    const x=wants?.x??0,y=wants?.y??3,z=wants?.z??12;
+    const focusX=wants?.targetX??0,focusY=wants?.targetY??1.18;
+    const wanted=new THREE.Vector3(x,y,z);
+    const alpha=wants?.cut?.30:.16;
+    camera.position.lerp(wanted,alpha);
+    cameraLook.lerp(new THREE.Vector3(focusX,focusY,0),alpha);
+    camera.lookAt(cameraLook);
+    const zoom=wants?.zoom??1;
+    const nextZoom=camera.zoom+(zoom-camera.zoom)*alpha;
+    if(Math.abs(camera.zoom-nextZoom)>.00005){
+      camera.zoom=nextZoom;camera.updateProjectionMatrix();
+    }
+  }
   function frame(time){
     running=0;
     if(screen()!=='BATTLE_PLAY'||document.hidden||!renderer||!scene)return;
     const dt=lastFrame?Math.min(.05,Math.max(0,(time-lastFrame)/1000)):0;
     lastFrame=time;
     for(const actor of actors)actor?.tick(dt);
-    // Reduced motion freezes 3D bones but keeps fight results/KO cues current.
     advanceEvent(dt);
+    applyBlocking();
+    applyCamera(dt);
     renderer.render(scene,camera);
     startLoop();
   }
@@ -352,6 +415,7 @@
   },{once:true});
   window.NoahsArena3D=Object.freeze({
     openPanel,
+    getClipDuration:(index,move)=>nativeLength({attacker:index,move}),
     getStatus:()=>({bear:Boolean(loaded.bear),moose:Boolean(loaded.moose),
       sceneReady:Boolean(renderer),active:actors.filter(Boolean).length,
       panelOpen:Boolean(panel),loading})
