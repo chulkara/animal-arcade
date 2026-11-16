@@ -61,7 +61,12 @@
     // Derive the reel from elapsed time, not frame count. An overloaded
     // phone cannot silently make the power slot run at a different speed.
     const next=reelOffset+Math.floor(Math.max(0,time-reelStart)/REEL_STEP_MS);
-    if(next!==slotIndex){slotIndex=next;updateReel();}
+    if(next!==slotIndex){
+      slotIndex=next;updateReel();
+      // A gentle cabinet ratchet every third step, not an exhausting beep
+      // on every frame. Audio still respects the user's mute/SFX settings.
+      if(next%3===0)window.NoahsAudio?.cue('reelTick');
+    }
     interval=requestAnimationFrame(frame);
   }
   function syncTimer(){
