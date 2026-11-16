@@ -144,11 +144,16 @@ function draw(time){
  const root=ui.querySelector('.ark-reference-layout');
  if(elapsed>=timing.total){
    sequence.done=true;
+   // Keep the final winning Bear in view until the user presses Stop.
+   // 'done' previously stripped the victory stamp as soon as the review
+   // finished, exposing leftover move text instead of the triumphant end.
+   const holdWinner=rehearsal&&event.finished;
    if(root){
-     root.classList.remove('ark-cinematic-active');
-     root.classList.add('ark-cinematic-done');
+     root.classList.toggle('ark-cinematic-active',holdWinner);
+     root.classList.toggle('ark-cinematic-done',!holdWinner);
    }
-   overlay.dataset.beat='done';
+   overlay.dataset.beat=holdWinner?'victory':'done';
+   if(holdWinner)stage.dataset.cineBeat='victory';
  }else{
    if(root){root.classList.add('ark-cinematic-active');root.classList.remove('ark-cinematic-done');}
  }
