@@ -134,8 +134,10 @@ function camera(event,elapsed,nativeMs){
     }else{
       // The arcade reference closes on the winner's face, not on an
       // empty wide arena. Reserve the last cut for a real portrait.
-      x=attackerX+facing*8.2;y=2.42;z=1.5;
-      targetX=attackerX;targetY=2.23;zoom=1.63;
+      // A portrait near the muzzle: the prior 8.2-unit camera distance
+      // still showed the full upright bear and didn't sell the roar.
+      x=attackerX+facing*4.45;y=2.48;z=1.45;
+      targetX=attackerX;targetY=2.25;zoom=1.38;
     }
   }else if(beat.beat==='FOCUS'){
     // Unlike the other shots this view is almost head-on, along the
@@ -179,6 +181,27 @@ function camera(event,elapsed,nativeMs){
 // A sub-100ms impact freeze is a core part of the original arcade's
 // perceived force. It freezes both rigs for the first impact frames while
 // audio, sparks and the shot remain active; the battle clock never pauses.
+const VICTORY_HOWL_START_MS=2900;
+// End the four-angle victory on a vocal, head-raised Bear rather than a
+// motionless upright idle. Values are rig-independent normalized controls;
+// the FBX adapter handles specific head/neck/jaw bones or morph targets.
+function bearHowl(victoryElapsed){
+  const elapsed=Math.max(0,Number(victoryElapsed)||0);
+  const t=elapsed-VICTORY_HOWL_START_MS;
+  if(t<0)return Object.freeze({active:false,intensity:0,
+    headPitch:0,neckPitch:0,chestPitch:0,jawOpen:0,
+    forePaw:0,breath:0});
+  const intensity=ease(t/410);
+  const vocal=t>340?Math.sin((t-340)*.018):0;
+  // Hold the head-raised expression after the camera montage completes.
+  return Object.freeze({active:true,intensity,
+    headPitch:-.30*intensity+.012*vocal,
+    neckPitch:-.17*intensity,
+    chestPitch:-.075*intensity,
+    jawOpen:clamp((.82+.11*vocal)*intensity,0,1),
+    forePaw:-.075*intensity,
+    breath:(.78+.22*Math.abs(vocal))*intensity});
+}
 const HIT_STOP_MS=88;
 function hitStop(event,elapsed,nativeMs){
   if(!event||!Number.isFinite(elapsed))return false;
@@ -237,5 +260,6 @@ function panel(event,elapsed,nativeMs){
     attacker:event.attacker,defender:event.defender,finished:b.beat==='VICTORY',
     duration:b.timing.total});
 }
-return Object.freeze({ATTACKS,MIRACLES,POSES,HIT_STOP_MS,spec,miracle,duration,shot,camera,hitStop,blocking,panel});
+return Object.freeze({ATTACKS,MIRACLES,POSES,HIT_STOP_MS,VICTORY_HOWL_START_MS,
+  spec,miracle,duration,shot,camera,bearHowl,hitStop,blocking,panel});
 });
