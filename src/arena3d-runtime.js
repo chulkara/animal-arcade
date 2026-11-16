@@ -106,6 +106,7 @@
       current:null,currentKey:null,proc:null,procElapsed:0,baseX:pivot.position.x,
       soleRest:null,soleHeight};
     actor.native=(key)=>{
+      if(key!=='victory')actor.resetHowlFace?.();
       resetApplied(actor);actor.proc=null;actor.procElapsed=0;
       const name=asset.clips[key]?key:'idle',clip=asset.clips[name];
       if(!clip)return;
@@ -196,6 +197,23 @@
         set('RigRFLeg1',X,.07*windup-.075*strike);
       }
     };
+    // Discover actual facial articulation rather than assuming the FBX
+    // has a fixed jaw name. If it has either jaw bones or mouth-open morph
+    // targets, the howl visibly opens the mouth. All changes are reversible.
+    const jawBone=[...joint.entries()].find(([name])=>
+      /(?:^|rig)(?:lower)?jaw|mandible/i.test(name))?.[1]||null;
+    const openMorphs=[];
+    model.traverse(node=>{
+      if(!node.isMesh||!node.morphTargetDictionary||!node.morphTargetInfluences)return;
+      for(const [name,index] of Object.entries(node.morphTargetDictionary)){
+        if(!/(?:jaw|mouth).*(?:open|wide)|(?:open|wide).*(?:jaw|mouth)|roar/i.test(name))continue;
+        openMorphs.push({mesh:node,index,base:node.morphTargetInfluences[index]||0});
+      }
+    });
+    actor.howlCapabilities=Object.freeze({jaw:!!jawBone,morphs:openMorphs.length});
+    actor.resetHowlFace=()=>{
+      for(const entry of openMorphs)entry.mesh.morphTargetInfluences[entry.index]=entry.base;
+    };
     // Add subtle original gesture accents to the native upright victory
     // loop. They are deliberately small so the source FBX still owns the
     // Bear's anatomy and foot planting. Missing optional joints are skipped.
@@ -220,6 +238,22 @@
       set('RigSpine1',Z,.032*reverse-.024*overhead);
       set('RigLFLeg1',X,-.075*reverse);
       set('RigRFLeg1',X,-.065*overhead);
+      // On the fourth camera cut, Bear finally raises its head and howls.
+      // Keep the neck/chest/forepaws involved so it reads as a real animal
+      // expression instead of only moving the camera toward a static face.
+      const howl=cinematics.bearHowl(t);
+      if(howl.active){
+        set('RigHead',X,howl.headPitch);
+        set('RigNeck',X,howl.neckPitch);
+        set('RigSpine1',X,howl.chestPitch);
+        set('RigChest',X,howl.chestPitch*.6);
+        set('RigLFLeg1',X,howl.forePaw);
+        set('RigRFLeg1',X,howl.forePaw*.85);
+        if(jawBone)set(jawBone.name,X,.36*howl.jawOpen);
+        for(const morph of openMorphs)
+          morph.mesh.morphTargetInfluences[morph.index]=
+            morph.base+(1-morph.base)*howl.jawOpen;
+      }else actor.resetHowlFace();
     };
     actor.tick=(delta)=>{
       resetApplied(actor);
@@ -253,6 +287,7 @@
       }
     };
     actor.idle=()=>{
+      actor.resetHowlFace?.();
       resetApplied(actor);actor.proc=null;actor.procElapsed=0;
       pivot.position.set(actor.baseX,0,0);
       orientation.rotation.set(0,(slot===0?Math.PI/2:-Math.PI/2)+yaw[id],0);
