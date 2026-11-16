@@ -376,3 +376,12 @@ test('9:49 AM regression: film cleanup removes residual LOW SWIPE overlays',()=>
  assert.ok(!runtime.includes('scene.add(trunks,crowns)'));
  assert.ok(!runtime.includes('new THREE.DodecahedronGeometry'));
 });
+
+
+test('completed Bear review holds the correct winner title instead of reverting to stale move text',()=>{
+ const ui=readFileSync('src/combat-cinematics.js','utf8');
+ assert.ok(ui.includes('const holdWinner=rehearsal&&event.finished'));
+ assert.ok(ui.includes("overlay.dataset.beat=holdWinner?'victory':'done'"));
+ assert.ok(ui.includes("if(holdWinner)stage.dataset.cineBeat='victory'"));
+ assert.ok(ui.includes("event.attackerId.toUpperCase()+' WINS!'"));
+});
