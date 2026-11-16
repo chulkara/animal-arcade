@@ -107,20 +107,20 @@
     const actor={id,slot,asset,model,pivot,orientation,mixer,joint,rootAnchors,additive:new Map(),
       current:null,currentKey:null,proc:null,procElapsed:0,baseX:pivot.position.x,
       soleRest:null,soleHeight};
-    actor.native=(key)=>{
-      if(key!=='victory')actor.resetHowlFace?.();
+    actor.native=(key,fadeSeconds=.15)=>{
+      if(key!=='victory'&&key!=='roar')actor.resetHowlFace?.();
       resetApplied(actor);actor.proc=null;actor.procElapsed=0;
       const name=asset.clips[key]?key:'idle',clip=asset.clips[name];
       if(!clip)return;
       if(actor.currentKey===name&&actor.current?.isRunning())return;
       const next=mixer.clipAction(clip,model);
       const previous=actor.current;
-      if(previous&&previous!==next)previous.fadeOut(.15);
+      if(previous&&previous!==next)previous.fadeOut(fadeSeconds);
       next.reset();next.enabled=true;next.setEffectiveWeight(1);
-      const oneShot=!['idle','run','breathing','jump','victory','angry'].includes(name);
+      const oneShot=!['idle','run','walk','breathing','jump','victory','angry'].includes(name);
       next.setLoop(oneShot?THREE.LoopOnce:THREE.LoopRepeat,oneShot?1:Infinity);
       next.clampWhenFinished=name==='knockout'||name==='roar';
-      next.fadeIn(.15).play();
+      next.fadeIn(fadeSeconds).play();
       actor.current=next;actor.currentKey=name;
     };
     actor.move=(move)=>{
@@ -774,7 +774,9 @@
   }
   function beginEvent(event){
     sequence={event,elapsed:0,contact:false,finished:false,attackStarted:false,
-      victoryRearAt:null,victoryPlayed:false,roarPlayed:false};
+      victoryRearAt:null,victoryPlayed:false,roarPlayed:false,
+      victoryLowered:false,victoryMoved:false,victoryWalkStopped:false,
+      victoryPosition:'upright'};
     const attacker=actors[event.attacker];
     if(attacker?.asset?.clips?.angry)attacker.native('angry');
   }
@@ -818,14 +820,39 @@
         sequence.victoryPlayed=true;
       }
     }
-    // Play a real animated roar clip from the user's private pack only
-    // when one is available. Otherwise the choreographed neck/head and
-    // optional rig jaw/morph handle the victory without fake guarantees.
-    if(sequence.finished&&event.finished&&!sequence.roarPlayed&&attacker?.id==='bear'&&
-       attacker.asset?.clips?.roar&&timing&&
-       sequence.elapsed>=timing.victoryStart+cinematics.VICTORY_HOWL_CUE_MS-160){
-      attacker.native('roar');
-      sequence.roarPlayed=true;
+    if(sequence.finished&&event.finished&&attacker?.id==='bear'&&timing){
+      const v=sequence.elapsed-timing.victoryStart;
+      // The original victor lowers to four paws *before* walking into
+      // the camera-facing roar. Source motion wins when provided. If not,
+      // the required quad Stand_Idle_01 crossfades over a longer interval.
+      if(!sequence.victoryLowered&&v>=cinematics.VICTORY_LOWER_START_MS){
+        attacker.native(attacker.asset.clips.lower?'lower':'idle',
+          attacker.asset.clips.lower?.28:.68);
+        sequence.victoryLowered=true;
+        sequence.victoryPosition='lowering';
+      }
+      if(sequence.victoryLowered&&!sequence.victoryMoved&&
+         v>=cinematics.VICTORY_LOWER_READY_MS){
+        attacker.native(attacker.asset.clips.walk?'walk':'idle',.35);
+        sequence.victoryMoved=true;
+        sequence.victoryPosition='quadruped';
+      }
+      if(sequence.victoryMoved&&!sequence.victoryWalkStopped&&
+         v>=cinematics.VICTORY_APPROACH_END_MS){
+        attacker.native('idle',.26);
+        sequence.victoryWalkStopped=true;
+      }
+      // An upright StandHind_Roar clip would pull the character back
+      // onto two feet and undo the reference-matched four-paw celebration.
+      // Only use native vocals authored for a quadrupedal posture.
+      const source=attacker.asset.motionFiles?.roar||'';
+      const quadRoar=Boolean(attacker.asset.clips.roar)&&
+        !/(?:standhind|hindstand|rear|upright)/i.test(source);
+      if(!sequence.roarPlayed&&quadRoar&&sequence.victoryMoved&&
+         v>=cinematics.VICTORY_HOWL_CUE_MS-160){
+        attacker.native('roar',.26);
+        sequence.roarPlayed=true;
+      }
     }
   }
   // Blocking is separate from each native/model animation: a repeatable
