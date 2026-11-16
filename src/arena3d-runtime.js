@@ -11,7 +11,7 @@
   const yaw={bear:0,moose:0};
   let panel=null,stage=null,layer=null,THREE=null,renderer=null,scene=null,camera=null,layout=null;
   let actors=[null,null],running=0,lastFrame=0,shownEvent=null,sequence=null,loading=false;
-  let cameraLook=null,lastCameraShot=null,fxGroup=null,fxParticles=[],fxGeometry=null,fxMaterials=[];
+  let cameraLook=null,lastCameraShot=null,focusLight=null,fxGroup=null,fxParticles=[],fxGeometry=null,fxMaterials=[];
   let bearReview=null,reviewToolbar=null;
   let message='Choose an extracted private Motion Lab folder. The files stay on this device.';
   const screen=()=>window.__arkade?.getScreen();
@@ -114,7 +114,7 @@
       const previous=actor.current;
       if(previous&&previous!==next)previous.fadeOut(.15);
       next.reset();next.enabled=true;next.setEffectiveWeight(1);
-      const oneShot=!['idle','run','breathing','jump','victory'].includes(name);
+      const oneShot=!['idle','run','breathing','jump','victory','angry'].includes(name);
       next.setLoop(oneShot?THREE.LoopOnce:THREE.LoopRepeat,oneShot?1:Infinity);
       next.clampWhenFinished=name==='knockout';
       next.fadeIn(.15).play();
@@ -246,6 +246,9 @@
     scene.add(sun);
     const fill=new THREE.DirectionalLight(0xb9d7d6,1.4);
     fill.position.set(5,3,-4);scene.add(fill);
+    // Warm procedural key light for charged attacks and the winner.
+    focusLight=new THREE.PointLight(0xffbb72,0,10,1.7);
+    focusLight.position.set(0,2.0,2);scene.add(focusLight);
     const floor=new THREE.Mesh(new THREE.CircleGeometry(7,64),
       new THREE.ShadowMaterial({opacity:.18}));
     floor.rotation.x=-Math.PI/2;floor.receiveShadow=true;
@@ -491,7 +494,10 @@
     return Number.isFinite(seconds)&&seconds>0?seconds*1000:undefined;
   }
   function beginEvent(event){
-    sequence={event,elapsed:0,contact:false,finished:false,attackStarted:false};
+    sequence={event,elapsed:0,contact:false,finished:false,attackStarted:false,
+      victoryRearAt:null,victoryPlayed:false};
+    const attacker=actors[event.attacker];
+    if(attacker?.asset?.clips?.angry)attacker.native('angry');
   }
   function advanceEvent(delta){
     if(!sequence)return;
@@ -499,7 +505,7 @@
     const {event}=sequence,attacker=actors[event.attacker],defender=actors[event.defender];
     const length=nativeLength(event);
     const timing=cinematics?.duration(event,length);
-    const lead=timing?.miracleLead||0;
+    const lead=timing?.actionLead||0;
     if(!sequence.attackStarted&&sequence.elapsed>=lead){
       sequence.attackStarted=true;
       attacker?.move(event.move);
@@ -514,9 +520,23 @@
     if(sequence.attackStarted&&!sequence.finished&&actionTime>=settle){
       sequence.finished=true;
       if(event.finished){
-        attacker?.native('victory');
+        if(attacker?.asset?.clips?.rear){
+          attacker.native('rear');
+          sequence.victoryRearAt=sequence.elapsed;
+        }else{
+          attacker?.native('victory');
+          sequence.victoryPlayed=true;
+        }
       }else{
         attacker?.idle();defender?.idle();
+      }
+    }
+    if(sequence.finished&&event.finished&&!sequence.victoryPlayed&&attacker){
+      const seconds=attacker.asset?.clips?.rear?.duration||0;
+      const transition=Math.max(420,Math.min(950,seconds*1000));
+      if(sequence.elapsed>=sequence.victoryRearAt+transition){
+        attacker.native('victory');
+        sequence.victoryPlayed=true;
       }
     }
   }
@@ -524,9 +544,30 @@
   // signature strike brings the attacker to the contact point, then lets the
   // victim react on its own rig, whatever animal is defending.
   function applyBlocking(){
-    if(!sequence?.attackStarted||reduced())return;
+    if(!sequence||reduced())return;
     const {event}=sequence,attacker=actors[event.attacker],defender=actors[event.defender];
     const timing=cinematics.duration(event,nativeLength(event));
+    const actionElapsed=sequence.elapsed-timing.actionLead;
+    // Before a signature hit, hold weight low and settle into the pose.
+    if(actionElapsed<0){
+      const progress=Math.max(0,Math.min(1,
+        (sequence.elapsed-timing.miracleLead)/Math.max(1,timing.focusLead)));
+      if(attacker?.id==='bear'){
+        const direction=event.attacker===0?1:-1;
+        attacker.pivot.position.y=-.065*progress;
+        attacker.orientation.rotation.z=direction*-.048*progress;
+      }
+      return;
+    }
+    // Keep planted victory footing. Do not overwrite its root position
+    // after the native rear/victory clip has started.
+    if(sequence.finished&&event.finished&&sequence.elapsed>=timing.victoryStart){
+      if(attacker){
+        attacker.pivot.position.x=attacker.baseX;
+        attacker.pivot.position.z=0;
+      }
+      return;
+    }
     const choreo=cinematics.blocking(event,sequence.elapsed,nativeLength(event));
     const direction=event.attacker===0?1:-1;
     const opposite=event.defender===0?-1:1;
