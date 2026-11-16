@@ -301,6 +301,102 @@
     if(running||!renderer||screen()!=='BATTLE_PLAY'||document.hidden)return;
     running=requestAnimationFrame(frame);
   }
+  function reviewChange(){
+    window.dispatchEvent(new CustomEvent('arkade:bearreviewchange'));
+  }
+  function updateReviewToolbar(){
+    if(!bearReview||!reviewToolbar)return;
+    const line=reviewToolbar.querySelector('[data-bear-review-step]');
+    const detail=reviewToolbar.querySelector('[data-bear-review-detail]');
+    if(!line||!detail)return;
+    if(bearReview.countdown>0){
+      line.textContent='RECORDING COUNTDOWN · '+Math.ceil(bearReview.countdown/1000);
+      detail.textContent='GUTS → TECHNIQUE → POWER → VICTORY';
+    }else if(bearReview.done){
+      line.textContent='BEAR REVIEW COMPLETE';
+      detail.textContent='Replay or stop. The real match has not changed.';
+    }else{
+      line.textContent='BEAR · '+bearReviewCore.label(bearReview.index);
+      detail.textContent='SHOT '+(bearReview.index+1)+' OF 3 · ORIGINAL MATCH UNCHANGED';
+    }
+  }
+  function stopBearReview(sync=true){
+    if(!bearReview)return false;
+    bearReview=null;
+    reviewToolbar?.remove();
+    reviewToolbar=null;
+    ui.querySelector('.ark-reference-layout')?.classList.remove('ark-bear-reviewing');
+    sequence=null;
+    shownEvent=null;
+    actors.forEach(actor=>actor?.idle());
+    reviewChange();
+    if(sync&&screen()==='BATTLE_PLAY')syncScene(true);
+    return true;
+  }
+  function startBearReview(){
+    if(screen()!=='BATTLE_PLAY'){
+      status('Open a battle with Brown Bear selected to start its cinematic review.');
+      return false;
+    }
+    if(!loaded.bear||!renderer||!bearReviewCore){
+      status('Load the Brown Bear Motion Lab V2 3D files before starting Bear review.');
+      return false;
+    }
+    let events;
+    try{events=bearReviewCore.events(state());}
+    catch(error){status(error.message);return false;}
+    stopBearReview(false);
+    bearReview={active:true,events,index:-1,event:null,countdown:3000,done:false};
+    shownEvent=null;sequence=null;
+    actors.forEach(actor=>actor?.idle());
+    closePanel();
+    const root=ui.querySelector('.ark-reference-layout');
+    root?.classList.add('ark-bear-reviewing');
+    reviewToolbar=document.createElement('div');
+    reviewToolbar.className='ark-bear-review-toolbar';
+    reviewToolbar.setAttribute('role','group');
+    reviewToolbar.setAttribute('aria-label','Bear cinematic review');
+    reviewToolbar.innerHTML='<div class="ark-bear-review-info">'+
+      '<strong data-bear-review-step></strong>'+
+      '<span data-bear-review-detail></span></div>'+
+      '<button type="button" data-bear-review-replay>REPLAY FROM GUTS</button>'+
+      '<button type="button" data-bear-review-stop>STOP REVIEW</button>';
+    root?.append(reviewToolbar);
+    updateReviewToolbar();
+    reviewChange();
+    startLoop();
+    return true;
+  }
+  function startBearReviewStep(index){
+    if(!bearReview)return;
+    bearReview.index=index;
+    bearReview.event=bearReview.events[index];
+    bearReview.countdown=0;
+    bearReview.done=false;
+    actors.forEach(actor=>actor?.idle());
+    shownEvent=bearReview.event.key;
+    beginEvent(bearReview.event);
+    updateReviewToolbar();
+    reviewChange();
+  }
+  function advanceBearReview(delta){
+    if(!bearReview||document.hidden)return;
+    if(bearReview.countdown>0){
+      bearReview.countdown=Math.max(0,bearReview.countdown+(-delta*1000));
+      if(!bearReview.countdown)startBearReviewStep(0);
+      else updateReviewToolbar();
+      return;
+    }
+    if(bearReview.done||!bearReview.event||!sequence)return;
+    const length=nativeLength(bearReview.event);
+    const total=cinematics.duration(bearReview.event,length).total;
+    if(sequence.elapsed>=total+(bearReview.index===2?0:500)){
+      if(bearReview.index===2){
+        bearReview.done=true;
+        updateReviewToolbar();
+      }else startBearReviewStep(bearReview.index+1);
+    }
+  }
   function nativeLength(event){
     const actor=actors[event?.attacker];
     const seconds=actor?.asset?.clips?.[event?.move]?.duration;
@@ -395,6 +491,7 @@
     lastFrame=time;
     for(const actor of actors)actor?.tick(dt);
     advanceEvent(dt);
+    advanceBearReview(dt);
     applyBlocking();
     applyCamera(dt);
     paintEffects();
@@ -476,6 +573,8 @@
     status(label(id)+' 3D source cleared from this browser session.');
   }
   ui.addEventListener('click',event=>{
+    if(event.target.closest('[data-bear-review-replay]')){startBearReview();return;}
+    if(event.target.closest('[data-bear-review-stop]')){stopBearReview();return;}
     if(event.target.closest('[data-ark3d-open]'))openPanel();
   });
   game.addEventListener('click',event=>{
@@ -502,13 +601,14 @@
     status(label(id)+': '+selected[id].length+' files selected. Choose LOAD '+id.toUpperCase()+'.');
   });
   window.addEventListener('keydown',event=>{
-    if(!panel||event.key!=='Escape')return;
+    if(event.key!=='Escape'||!panel)return;
     event.preventDefault();event.stopImmediatePropagation();closePanel();
   },true);
   window.addEventListener('arkade:screenchange',()=>syncScene());
   window.addEventListener('resize',fitStage);
   document.addEventListener('visibilitychange',()=>{if(document.hidden)stopLoop();else startLoop();});
   window.addEventListener('pagehide',()=>{
+    stopBearReview(false);
     stopLoop();clearActors();for(const id of ['bear','moose'])loaded[id]?.dispose();
     fxGeometry?.dispose();fxMaterials.forEach(m=>m.dispose());fxMaterials=[];
     fxParticles=[];fxGroup=null;
