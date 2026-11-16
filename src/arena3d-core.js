@@ -35,6 +35,8 @@
   const OPTIONAL=Object.freeze({
     bear:Object.freeze({
       rear:'Trans_Stand_to_StandHind.FBX',
+      lower:'Trans_StandHind_to_Stand.FBX',
+      walk:'Loco_Walk.FBX',
       angry:'StandAngry_Breathing_01.FBX',
       // A native roar is optional. Local motion packs have different file
       // names, so we also discover compatible roar/growl/howl FBXs below.
@@ -70,6 +72,20 @@
     for(const [key,name] of Object.entries(OPTIONAL[id]||{})){
       const file=byName.get(basename(name));
       if(file)clips[key]=file;
+    }
+    if(id==='bear'&&!clips.lower){
+      const lowerNames=files.filter(file=>/\.fbx$/i.test(file.name)&&
+        /(?:standhind|hindstand|rear|upright).*(?:to|2|down).*(?:stand|idle|four)|(?:stand|idle).*(?:from|down).*(?:hind|upright|rear)/i.test(
+          basename(file.name)));
+      lowerNames.sort((a,b)=>basename(a.name).localeCompare(basename(b.name)));
+      if(lowerNames.length)clips.lower=lowerNames[0];
+    }
+    if(id==='bear'&&!clips.walk){
+      const walkNames=files.filter(file=>/\.fbx$/i.test(file.name)&&
+        /(?:loco|motion|cycle|quad|four).*(?:walk|amble)|^(?:walk|amble)/i.test(
+          basename(file.name)));
+      walkNames.sort((a,b)=>basename(a.name).localeCompare(basename(b.name)));
+      if(walkNames.length)clips.walk=walkNames[0];
     }
     if(id==='bear'&&!clips.roar){
       // Prefer upright roaring clips if a complete private Motion Lab pack
