@@ -282,6 +282,12 @@
       <div class="combat-footer">
         <span>KEYS: G = GREEN · Y = YELLOW · SPACE = STOP · ESC = BACK</span>
         <button type="button" data-bear-review-quick>BEAR CINEMATIC REVIEW</button>
+        <div class="ark-forestfall-import" aria-label="Forestfall special move video">
+          <button type="button" data-forestfall-choose>LOAD FORESTFALL VIDEO</button>
+          <input type="file" data-forestfall-file accept=".mp4,.webm,video/mp4,video/webm" hidden>
+          <button type="button" data-forestfall-preview disabled>PREVIEW FORESTFALL</button>
+          <small data-forestfall-status>Choose the 1080p Forestfall MP4. Stored only for this session.</small>
+        </div>
         <button type="button" data-ark3d-open>3D ARENA SETUP</button>
         <button type="button" data-combat-quit>← BACK TO ARENA</button>
       </div>
