@@ -162,6 +162,40 @@
       // this is still experimental, not full-body IK/foot locking.
       pivot.position.y=pose.lift*.5-Math.max(0,pose.lift)*pose.hindPlant*.16;
     };
+    // Distinct muscle accents sit on top of the native source FBX. These
+    // are small, reversible offsets; the imported source still determines
+    // the true move and limb anatomy. Opponents keep their own reactions.
+    actor.actionAccent=(move,windup,strike)=>{
+      if(id!=='bear'||!Number.isFinite(windup)||!Number.isFinite(strike))return;
+      const set=(name,axis,radians)=>{
+        const bone=joint.get(name);
+        if(!bone||Math.abs(radians)<.0001)return;
+        if(!actor.additive.has(bone))actor.additive.set(bone,bone.quaternion.clone());
+        bone.quaternion.multiply(new THREE.Quaternion().setFromAxisAngle(axis,radians));
+      };
+      const X=new THREE.Vector3(1,0,0),Y=new THREE.Vector3(0,1,0);
+      if(move==='G'){
+        // Charge: lower head/shoulders, then drive forward on contact.
+        set('RigHead',X,.09*windup-.06*strike);
+        set('RigNeck',X,.07*windup);
+        set('RigSpine1',X,.06*windup-.05*strike);
+      }else if(move==='T'){
+        // Low swipe: draw the lead paw back, then sweep across.
+        set('RigLFLeg1',X,.09*windup-.11*strike);
+        set('RigHead',Y,-.055*windup+.04*strike);
+        set('RigSpine1',X,.045*windup);
+      }else if(move==='P'){
+        // Power: chest and front paws load before a heavier downward blow.
+        set('RigSpine1',X,-.09*windup+.085*strike);
+        set('RigLFLeg1',X,.075*windup-.105*strike);
+        set('RigRFLeg1',X,.035*windup-.055*strike);
+        set('RigHead',X,-.065*windup+.055*strike);
+      }else if(move==='S'){
+        set('RigSpine1',X,-.10*windup+.10*strike);
+        set('RigLFLeg1',X,.09*windup-.11*strike);
+        set('RigRFLeg1',X,.07*windup-.075*strike);
+      }
+    };
     // Add subtle original gesture accents to the native upright victory
     // loop. They are deliberately small so the source FBX still owns the
     // Bear's anatomy and foot planting. Missing optional joints are skipped.
@@ -718,6 +752,11 @@
     for(const actor of actors)actor?.tick(dt);
     advanceEvent(dt);
     advanceBearReview(dt);
+    if(sequence?.attackStarted&&!sequence.finished){
+      const {event}=sequence;
+      const guide=cinematics.blocking(event,sequence.elapsed,nativeLength(event));
+      actors[event.attacker]?.actionAccent(event.move,guide.windup,guide.strike);
+    }
     const winner=sequence?.event?.finished?actors[sequence.event.attacker]:null;
     if(winner?.id==='bear'&&sequence.finished){
       const start=cinematics.duration(sequence.event,nativeLength(sequence.event)).victoryStart;
