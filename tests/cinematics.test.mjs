@@ -94,3 +94,50 @@ test('battle event carries equipped Miracle identity and damage into the univers
  assert.equal(e.damage,38);
  assert.equal(director.miracle(e.miracleName).type,'tide');
 });
+
+
+test('regression: Bear is framed as the winner, never the KO victim',()=>{
+ for(const attacker of [0,1]){
+   const defender=1-attacker;
+   const evt={...base,attacker,defender,attackerId:'bear',defenderId:'moose',
+     move:'P',finished:true,knockout:true};
+   const victoryStart=director.duration(evt,1200).victoryStart;
+   const heroWorldX=attacker===0?-2.02:2.02;
+   for(const delta of [100,1100,2300,3350]){
+     const cam=director.camera(evt,victoryStart+delta,1200);
+     assert.equal(cam.beat,'VICTORY');
+     assert.equal(cam.targetX,heroWorldX,
+       'All four victory cameras must look at the winning Bear');
+     assert.ok(Math.abs(cam.x-heroWorldX)<1.4,
+       'Camera origin must stay near the hero, not the KO victim');
+     assert.ok(cam.zoom<=1.10,'Do not crop the winning Bear with excessive zoom');
+     assert.ok(cam.cut,'The victory sequence should use decisive film cuts');
+   }
+ }
+});
+
+test('regression: Bear contact is a two-fighter shot, not a cropped victim closeup',()=>{
+ for(const attacker of [0,1]){
+   const evt={...base,attacker,defender:1-attacker,
+     attackerId:'bear',defenderId:'moose',move:'T'};
+   const at=director.duration(evt,1200).contact+55;
+   const cam=director.camera(evt,at,1200);
+   assert.equal(cam.beat,'CONTACT');
+   assert.equal(cam.targetX,0);
+   assert.ok(Math.abs(cam.x)<0.15);
+   assert.ok(cam.zoom<=1.08);
+   assert.ok(cam.z>=10.5);
+ }
+});
+
+test('cinematic footage UI protects Bear silhouette and hides stale review HUD',()=>{
+ const cinemaCss=readFileSync('src/combat-cinematics.css','utf8');
+ const reviewCss=readFileSync('src/arena3d.css','utf8');
+ const model=readFileSync('src/arena3d-runtime.js','utf8');
+ assert.match(cinemaCss,/ark-cine-contact-readable/);
+ assert.match(cinemaCss,/overflow-wrap:break-word/);
+ assert.match(reviewCss,/ark-bear-reviewing \.ark-arena-hud/);
+ assert.match(reviewCss,/ark-bear-reviewing \.combat-battlefield \.combat-animal-name/);
+ assert.match(model,/model\.position\.x=restX;model\.position\.z=restZ/);
+ assert.match(model,/wants\?\.cut \? \.88/);
+});
