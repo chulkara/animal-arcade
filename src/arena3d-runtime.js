@@ -33,6 +33,11 @@
     panel.innerHTML='<div class="ark-fbx-dialog-head"><h2 id="ark-fbx-title">BEAR + MOOSE · 3D ARENA</h2>'+
       '<button type="button" data-ark3d-close aria-label="Close 3D arena setup">✕</button></div>'+
       '<p>Import your <b>extracted, private Motion Lab V2</b> folders. The model, native motions, and brown-coat textures are read locally, not uploaded. The title painting remains unchanged.</p>'+
+      '<div class="ark-fbx-review"><strong>BEAR · CINEMATIC REVIEW</strong>'+
+      '<p>Replay Guts, Technique and Power, then four victory camera angles. This is a non-scoring test with a 3-second countdown so you can start a screen recording.</p>'+
+      '<button type="button" data-bear-review-start>START BEAR G/T/P + VICTORY REVIEW</button>'+
+      '<small>Requires Bear 3D loaded and Brown Bear selected in this battle; Moose 3D is optional for the victim reaction.</small></div>'+
+
       ['bear','moose'].map(id=>'<div class="ark-fbx-import" data-ark3d-species="'+id+'">'+
         '<strong>'+label(id)+'</strong><small data-ark3d-loaded="'+id+'">'+
         (loaded[id]?'3D assets loaded':'Waiting for private model + motion files')+'</small>'+
@@ -41,10 +46,6 @@
         '<div class="ark-fbx-import-actions"><button type="button" data-ark3d-load="'+id+'">LOAD '+id.toUpperCase()+'</button>'+
         '<button type="button" data-ark3d-turn="'+id+'">TURN '+id.toUpperCase()+' 90°</button>'+
         '<button type="button" data-ark3d-unload="'+id+'">REMOVE</button></div></div>').join('')+
-      '<div class="ark-fbx-review"><strong>BEAR · CINEMATIC REVIEW</strong>'+
-      '<p>Replay Guts, Technique and Power, then four victory camera angles. This is a non-scoring test with a 3-second countdown so you can start a screen recording.</p>'+
-      '<button type="button" data-bear-review-start>START BEAR G/T/P + VICTORY REVIEW</button>'+
-      '<small>Requires Bear 3D loaded and Brown Bear selected in this battle; Moose 3D is optional for the victim reaction.</small></div>'+
       '<p class="ark-fbx-status" data-ark3d-status role="status"></p>'+
       '<p class="ark-fbx-legal">Local preview only. The supplied models have unverified public/commercial redistribution rights and are not shipped by this site. Extract ZIPs before choosing a folder.</p>';
     game.append(panel);
@@ -682,6 +683,16 @@
     status(label(id)+' 3D source cleared from this browser session.');
   }
   ui.addEventListener('click',event=>{
+    if(event.target.closest('[data-bear-review-quick]')){
+      if(!loaded.bear){
+        openPanel();
+        status('Load Brown Bear Motion Lab V2 files first, then select START BEAR G/T/P + VICTORY REVIEW above.');
+        panel?.querySelector('[data-bear-review-start]')?.focus();
+      }else if(!startBearReview()){
+        openPanel();
+      }
+      return;
+    }
     if(event.target.closest('[data-bear-review-replay]')){startBearReview();return;}
     if(event.target.closest('[data-bear-review-stop]')){stopBearReview();return;}
     if(event.target.closest('[data-ark3d-open]'))openPanel();
