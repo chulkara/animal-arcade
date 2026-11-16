@@ -366,6 +366,43 @@
     }
     grass.instanceMatrix.needsUpdate=true;
     scene.add(grass);
+    // The reference uses detailed terrain to establish distance. Original
+    // low-poly trunks, crown silhouettes and small rocks break up our
+    // previously empty floor without any external protected game scenery.
+    const rocks=new THREE.InstancedMesh(
+      new THREE.DodecahedronGeometry(.21,0),
+      new THREE.MeshStandardMaterial({color:0x8a8870,roughness:1}),42);
+    const matrix=new THREE.Matrix4(),scaleVector=new THREE.Vector3();
+    const quaternion=new THREE.Quaternion();
+    for(let i=0;i<42;i++){
+      let x=(rand()-.5)*22,z=(rand()-.5)*16;
+      if(Math.abs(x)<3&&Math.abs(z)<2.2)z+=(z<0?-3:3);
+      const w=.3+rand()*.95;
+      scaleVector.set(w,.32+rand()*.32,w*1.45);
+      matrix.compose(new THREE.Vector3(x,-.005,z),quaternion,scaleVector);
+      rocks.setMatrixAt(i,matrix);
+    }
+    rocks.instanceMatrix.needsUpdate=true;
+    scene.add(rocks);
+    const count=14;
+    const trunks=new THREE.InstancedMesh(
+      new THREE.CylinderGeometry(.10,.19,1.75,5),
+      new THREE.MeshStandardMaterial({color:0x4e4d36,roughness:1}),count);
+    const crowns=new THREE.InstancedMesh(
+      new THREE.ConeGeometry(.92,2.65,7),
+      new THREE.MeshStandardMaterial({color:0x345b40,roughness:1}),count);
+    for(let i=0;i<count;i++){
+      const x=(rand()-.5)*38,z=-10-rand()*14;
+      const height=.7+rand()*.75;
+      scaleVector.set(height,height,height);
+      matrix.compose(new THREE.Vector3(x,.84*height,z),quaternion,scaleVector);
+      trunks.setMatrixAt(i,matrix);
+      matrix.compose(new THREE.Vector3(x,2.6*height,z),quaternion,scaleVector);
+      crowns.setMatrixAt(i,matrix);
+    }
+    trunks.instanceMatrix.needsUpdate=true;
+    crowns.instanceMatrix.needsUpdate=true;
+    scene.add(trunks,crowns);
     createEffects();
     renderer=new THREE.WebGLRenderer({alpha:true,antialias:true,powerPreference:'high-performance'});
     renderer.setClearColor(0x000000,0);
