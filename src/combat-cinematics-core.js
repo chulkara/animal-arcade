@@ -86,7 +86,7 @@ function shot(event,elapsed,nativeMs){
   }
   const attackTime=t-timing.miracleLead,contact=timing.contact;
   let stage,beat;
-  if(attackTime<Math.min(contact*.32,340)){stage=0;beat:'INTRO';}
+  if(attackTime<Math.min(contact*.32,340)){stage=0;beat='INTRO';}
   else if(attackTime<contact){stage=1;beat='ATTACK';}
   else if(attackTime<contact+150){stage=2;beat='CONTACT';}
   else {stage=3;beat='REACTION';}
