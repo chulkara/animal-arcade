@@ -244,7 +244,7 @@
  letter-spacing:.065em;color:#ffe0a3;
  -webkit-text-stroke:2px #281b1b;
  text-shadow:0 4px 1px #552817,0 9px 13px #081923d9,0 0 35px #efad5966}
-.ark-cinema[data-beat="victory"][data-shot="finale"] .ark-cinema-win-stamp{
+.ark-cinema[data-beat="victory"][data-shot="finale"][data-result="visible"] .ark-cinema-win-stamp{
  animation:ark-cine-win-stamp .75s cubic-bezier(.18,.85,.26,1) forwards}
 @keyframes ark-cine-win-stamp{
  0%{opacity:0;transform:translate(-50%,27px) scale(1.38)}
@@ -264,12 +264,12 @@
 }
 @media(prefers-reduced-motion:reduce){
  .ark-cinema[data-beat="focus"] .ark-cinema-charge{animation:none;opacity:.14}
- .ark-cinema[data-beat="victory"][data-shot="finale"] .ark-cinema-win-stamp{
+ .ark-cinema[data-beat="victory"][data-shot="finale"][data-result="visible"] .ark-cinema-win-stamp{
    animation:none;opacity:1;transform:translateX(-50%)}
 }
 .game.reduce-motion .ark-cinema[data-beat="focus"] .ark-cinema-charge{
  animation:none;opacity:.14}
-.game.reduce-motion .ark-cinema[data-beat="victory"][data-shot="finale"] .ark-cinema-win-stamp{
+.game.reduce-motion .ark-cinema[data-beat="victory"][data-shot="finale"][data-result="visible"] .ark-cinema-win-stamp{
  animation:none;opacity:1;transform:translateX(-50%)}
 
 
@@ -299,7 +299,7 @@
  * headline blocking the mouth, and then brings the winner stamp up below. */
 .ark-cinema[data-beat="victory"][data-shot="finale"] .ark-cinema-title{
  visibility:hidden}
-.ark-cinema[data-beat="victory"][data-shot="finale"] .ark-cinema-win-stamp{
+.ark-cinema[data-beat="victory"][data-shot="finale"][data-result="visible"] .ark-cinema-win-stamp{
  bottom:clamp(76px,12svh,130px);
  background:linear-gradient(90deg,#13293200,#13293288 20%,#13293288 80%,#13293200);
  text-align:center}
@@ -321,13 +321,13 @@
 .ark-cinema-howl-waves i{position:absolute;inset:0;border-radius:50%;
  border:2px solid #ffe5a8a3;box-shadow:0 0 15px #ffe6ad58;
  opacity:0;transform:scale(.4)}
-.ark-cinema[data-beat="victory"][data-shot="finale"][data-winner="bear"] .ark-cinema-howl-waves{
+.ark-cinema[data-beat="victory"][data-shot="finale"][data-winner="bear"][data-howl-phase="roar"] .ark-cinema-howl-waves{
  opacity:.55}
-.ark-cinema[data-beat="victory"][data-shot="finale"][data-winner="bear"] .ark-cinema-howl-waves i{
+.ark-cinema[data-beat="victory"][data-shot="finale"][data-winner="bear"][data-howl-phase="roar"] .ark-cinema-howl-waves i{
  animation:ark-bear-howl-wave 1.55s cubic-bezier(.18,.59,.23,1) 1 both}
-.ark-cinema[data-beat="victory"][data-shot="finale"][data-winner="bear"] .ark-cinema-howl-waves i:nth-child(2){
+.ark-cinema[data-beat="victory"][data-shot="finale"][data-winner="bear"][data-howl-phase="roar"] .ark-cinema-howl-waves i:nth-child(2){
  animation-delay:.20s}
-.ark-cinema[data-beat="victory"][data-shot="finale"][data-winner="bear"] .ark-cinema-howl-waves i:nth-child(3){
+.ark-cinema[data-beat="victory"][data-shot="finale"][data-winner="bear"][data-howl-phase="roar"] .ark-cinema-howl-waves i:nth-child(3){
  animation-delay:.40s}
 @keyframes ark-bear-howl-wave{
  0%{opacity:0;transform:scale(.4)}
@@ -338,3 +338,11 @@
  .ark-cinema-howl-waves{display:none!important}
 }
 .game.reduce-motion .ark-cinema-howl-waves{display:none!important}
+
+/* The original reference makes the animal vocal the focal point. Keep the
+   torso and muzzle unobstructed during inhale/throw and delay results. */
+.ark-cinema[data-beat="victory"][data-shot="finale"][data-result="hidden"] .ark-cinema-win-stamp{
+ opacity:0!important;animation:none!important}
+.ark-cinema[data-beat="victory"][data-shot="finale"][data-howl-phase="inhale"] .ark-cinema-tunnel,
+.ark-cinema[data-beat="victory"][data-shot="finale"][data-howl-phase="throw"] .ark-cinema-tunnel{
+ opacity:.06}
