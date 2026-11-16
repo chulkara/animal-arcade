@@ -422,6 +422,13 @@ await run('private-3d-dialog-mobile-390x844',{width:390,height:844},async page=>
   await page.locator('[data-ark3d-open]').click();
   assert.equal(await page.locator('.ark-fbx-dialog').count(),1);
   assert.equal(await page.locator('[data-ark3d-folder]').count(),2);
+  assert.equal(await page.locator('[data-bear-review-start]').count(),1);
+  const beforeReview=await page.evaluate(()=>JSON.stringify(window.NoahsCombat.getState()));
+  await page.locator('[data-bear-review-start]').click();
+  assert.match(await page.locator('[data-ark3d-status]').innerText(),/Load the Brown Bear Motion Lab V2/);
+  assert.equal(await page.evaluate(()=>JSON.stringify(window.NoahsCombat.getState())),beforeReview,
+    'An unavailable private model must never change battle HP or selections');
+  assert.equal(await page.locator('.ark-bear-review-toolbar').count(),0);
   await page.locator('[data-ark3d-load="moose"]').click();
   assert.match(await page.locator('[data-ark3d-status]').innerText(),/Choose an extracted moose folder/);
   await page.locator('[data-ark3d-close]').click();
