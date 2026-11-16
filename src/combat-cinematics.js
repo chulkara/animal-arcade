@@ -5,14 +5,14 @@
 const api=window.NoahsCinematicCore,arena=window.NoahsArena3DCore;
 const game=document.getElementById('game'),ui=document.getElementById('ui');
 if(!api||!arena||!ui)return;
-let stage=null,overlay=null,sequence=null,timer=0,lastBeat='',slotStamp=null,stampUntil=0;
+let stage=null,overlay=null,sequence=null,timer=0,lastBeat='',lastShot='',slotStamp=null,stampUntil=0;
 const reduce=()=>Boolean(window.__arkade?.getSettings()?.reducedMotion)||
   Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
 const onBattle=()=>window.__arkade?.getScreen()==='BATTLE_PLAY';
 const battle=()=>window.NoahsCombat?.getState();
 function cleanup(){
  if(timer)cancelAnimationFrame(timer);
- timer=0;lastBeat='';sequence=null;stage=null;overlay=null;
+ timer=0;lastBeat='';lastShot='';sequence=null;stage=null;overlay=null;
  ui.querySelector('.ark-reference-layout')?.classList.remove('ark-cinematic-active');
 }
 function createOverlay(){
@@ -29,6 +29,8 @@ function createOverlay(){
   '<div class="ark-cinema-flash"></div>'+
   '<div class="ark-cinema-title"><small data-ark-cinema-kicker>WILD DUEL</small>'+
   '<strong data-ark-cinema-title></strong><span data-ark-cinema-sub></span></div>'+
+  '<div class="ark-cinema-charge" aria-hidden="true"></div>'+
+  '<div class="ark-cinema-win-stamp" data-ark-cinema-winner></div>'+
   '<div class="ark-cinema-symbols">'+
   Array.from({length:14},(_,i)=>'<span style="--n:'+i+'"></span>').join('')+'</div>'+
   '<div class="ark-cinema-lock" data-ark-cinema-lock></div>'+
@@ -53,7 +55,7 @@ function sync(){
  if(!same){
    if(timer)cancelAnimationFrame(timer);
    sequence={event,started:performance.now(),elapsed:0,done:false,nativeLength:captureNativeLength(event)};
-   lastBeat='';
+   lastBeat='';lastShot='';
  }
  if(stage!==el||!overlay?.isConnected)createOverlay();
  const panel=ui.querySelector('.ark-reference-layout');
@@ -66,6 +68,7 @@ function cueForBeat(beat){
  else if(beat==='INTRO')window.NoahsAudio?.cue('cinemaIntro');
  else if(beat==='VICTORY')window.NoahsAudio?.cue('cinemaVictory');
  else if(beat==='REACTION')window.NoahsAudio?.cue('cinemaReaction');
+ else if(beat==='FOCUS')window.NoahsAudio?.cue('cinemaFocus');
 }
 function draw(time){
  timer=0;
@@ -94,6 +97,7 @@ function draw(time){
    const heading=overlay.querySelector('[data-ark-cinema-title]');
    const sub=overlay.querySelector('[data-ark-cinema-sub]');
    if(kicker)kicker.textContent=rehearsal?'BROWN BEAR · MOTION REVIEW':
+     beat==='FOCUS'?'THE SIGNATURE STRIKE':
      beat==='VICTORY'?'BOUT CONQUERED':
       beat==='MIRACLE'?'MIRACLE CARD ACTIVATED':
       beat==='CONTACT'?'THE IMPACT':beat==='REACTION'?'THE AFTERSHOCK':'SIGNATURE MOVE';
@@ -101,12 +105,21 @@ function draw(time){
    if(sub)sub.textContent=rehearsal?
      beat==='CONTACT'?'STAGED CONTACT · NO HP CHANGES':
      beat==='REACTION'?'OPPONENT HIT REACTION':
+     beat==='FOCUS'?'A MOMENT OF STILLNESS BEFORE IMPACT':
      beat==='VICTORY'?'FOUR CAMERA ANGLES · NATIVE VICTORY CLIP':
      'SIGNATURE ATTACK · REPEATABLE MOVEMENT':panel.sub;
    if(!reduce())cueForBeat(beat);
  }
  const p=api.shot(event,elapsed,length);
  overlay.dataset.shot=p.shot;
+ if(lastShot!==p.shot){
+   lastShot=p.shot;
+   if(p.beat==='VICTORY'&&p.shot==='finale'&&!reduce())
+     window.NoahsAudio?.cue('cinemaWin');
+ }
+ const winner=overlay.querySelector('[data-ark-cinema-winner]');
+ if(winner)winner.textContent=p.beat==='VICTORY'&&p.shot==='finale'?
+   event.attackerId.toUpperCase()+' WINS!':'';
  const root=ui.querySelector('.ark-reference-layout');
  if(elapsed>=timing.total){
    sequence.done=true;
