@@ -307,20 +307,8 @@
         entry.bone.position.x=entry.x;
         entry.bone.position.z=entry.z;
       }
-      // A conservative hind-foot grounding correction for standing/
-      // victory poses. It does not attempt IK on running or striking legs;
-      // those need a rig-specific polish pass with the private FBX.
-      if(id==='bear'&&['idle','victory'].includes(actor.currentKey)&&hindFeet.length){
-        const sole=soleHeight();
-        if(sole!==null){
-          if(actor.soleRest===null)actor.soleRest=sole;
-          else{
-            const fit=Math.max(.25,layout.scale.y||1);
-            const delta=(actor.soleRest-sole)/fit;
-            pivot.position.y+=Math.max(-.025,Math.min(.025,delta*.25));
-          }
-        }
-      }
+      // Hind-foot correction runs AFTER victoryGesture and applyBlocking
+      // so the animated roar's weight shift does not overwrite grounding.
       if(actor.proc){
         actor.procElapsed+=reduced()?0:delta*1000;
         const sample=window.NoahsMooseActionCore.sampleMove(actor.proc,
@@ -328,9 +316,20 @@
         actor.pose(sample.pose);
       }
     };
+    actor.groundHindFeet=()=>{
+      if(id!=='bear'||!hindFeet.length)return;
+      const sole=soleHeight();
+      if(sole===null)return;
+      if(actor.soleRest===null){actor.soleRest=sole;return;}
+      const delta=actor.soleRest-sole;
+      // We only compensate for small shifts; this isn't a substitute for
+      // full IK and must not haul the whole bear upward after a big pose.
+      pivot.position.y+=Math.max(-.055,Math.min(.055,delta*.55));
+    };
     actor.idle=()=>{
       actor.resetHowlFace?.();
       resetApplied(actor);actor.proc=null;actor.procElapsed=0;
+      actor.soleRest=null;
       pivot.position.set(actor.baseX,0,0);
       orientation.rotation.set(0,(slot===0?Math.PI/2:-Math.PI/2)+yaw[id],0);
       actor.native('idle');
@@ -943,6 +942,9 @@
       winner.victoryGesture(sequence.elapsed-start,Boolean(sequence.roarPlayed));
     }
     applyBlocking();
+    // The finishing actor has already received native FBX and additive
+    // howl joints at this point. Ground those final posed hind feet now.
+    if(winner?.id==='bear'&&sequence.finished)winner.groundHindFeet();
     applyCamera(dt);
     paintEffects();
     paintFocusLight();
