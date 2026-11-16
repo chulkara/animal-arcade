@@ -11,7 +11,7 @@
   const yaw={bear:0,moose:0};
   let panel=null,stage=null,layer=null,THREE=null,renderer=null,scene=null,camera=null,layout=null;
   let actors=[null,null],running=0,lastFrame=0,shownEvent=null,sequence=null,loading=false;
-  let cameraLook=null,fxGroup=null,fxParticles=[],fxGeometry=null,fxMaterials=[];
+  let cameraLook=null,lastCameraShot=null,fxGroup=null,fxParticles=[],fxGeometry=null,fxMaterials=[];
   let bearReview=null,reviewToolbar=null;
   let message='Choose an extracted private Motion Lab folder. The files stay on this device.';
   const screen=()=>window.__arkade?.getScreen();
@@ -78,8 +78,17 @@
     pivot.position.x=slot===0?-2.02:2.02;
     orientation.rotation.y=(slot===0?Math.PI/2:-Math.PI/2)+yaw[id];
     const mixer=new THREE.AnimationMixer(model),joint=new Map();
-    model.traverse(node=>{if(node.isBone)joint.set(node.name,node);});
-    const actor={id,slot,asset,model,pivot,orientation,mixer,joint,additive:new Map(),
+    const rootAnchors=[];
+    model.traverse(node=>{
+      if(!node.isBone)return;
+      joint.set(node.name,node);
+      // Keep the local-root baseline but preserve pelvis, shoulders, paws
+      // and vertical jump/root bobbing. Native root X/Z are often measured
+      // in source-FBX meters and can move the entire animal out of camera.
+      if(/^RigRoot$/i.test(node.name)||(!node.parent?.isBone&&/^root$/i.test(node.name)))
+        rootAnchors.push({bone:node,x:node.position.x,z:node.position.z});
+    });
+    const actor={id,slot,asset,model,pivot,orientation,mixer,joint,rootAnchors,additive:new Map(),
       current:null,currentKey:null,proc:null,procElapsed:0,baseX:pivot.position.x};
     actor.native=(key)=>{
       resetApplied(actor);actor.proc=null;actor.procElapsed=0;
@@ -144,6 +153,10 @@
       // Root travel is staged explicitly on pivot, not by imported FBX.
       // Preserve vertical lift and all bone articulation for the strike.
       model.position.x=restX;model.position.z=restZ;
+      for(const entry of rootAnchors){
+        entry.bone.position.x=entry.x;
+        entry.bone.position.z=entry.z;
+      }
       if(actor.proc){
         actor.procElapsed+=reduced()?0:delta*1000;
         const sample=window.NoahsMooseActionCore.sampleMove(actor.proc,
@@ -445,53 +458,65 @@
   function applyBlocking(){
     if(!sequence?.attackStarted||reduced())return;
     const {event}=sequence,attacker=actors[event.attacker],defender=actors[event.defender];
-    const length=nativeLength(event);
-    const lead=cinematics?.duration(event,length)?.miracleLead||0;
-    const t=Math.max(0,sequence.elapsed-lead);
-    const impact=core.contactMs(event.attackerId,event.move,length);
-    const progress=Math.min(1,t/Math.max(1,impact));
-    const release=Math.max(0,Math.min(1,1-(t-impact)/600));
-    const travel=(event.move==='G'||event.move==='S') ? 0.72 : (event.move==='P' ? 0.37 : 0.25);
-    const enter=progress*progress*(3-2*progress);
-    const offset=travel*enter*release;
+    const timing=cinematics.duration(event,nativeLength(event));
+    const choreo=cinematics.blocking(event,sequence.elapsed,nativeLength(event));
+    const direction=event.attacker===0?1:-1;
+    const opposite=event.defender===0?-1:1;
+    // Use a bounded offset from the beginning of each frame, never '+='.
+    // Accumulating frame-by-frame movement caused visible skating/teleports.
     if(attacker){
-      const direction=event.attacker===0?1:-1;
-      if(event.attackerId==='bear')attacker.pivot.position.x=attacker.baseX+direction*offset;
-      else attacker.pivot.position.x+=direction*offset*.28;
+      const source=attacker.id==='moose'&&attacker.proc?
+        attacker.pivot.position.x:attacker.baseX;
+      attacker.pivot.position.x=source+direction*choreo.attackerTravel*
+        (attacker.id==='moose'?.27:1);
+      if(attacker.id==='bear'){
+        attacker.pivot.position.y=choreo.attackerLift;
+        attacker.orientation.rotation.z=direction*choreo.attackerLean;
+      }
     }
     if(defender&&sequence.contact){
-      const reaction=Math.max(0,(t-impact)/220);
-      const recoil=Math.min(1,reaction)*Math.exp(-reaction*.65)*.27;
-      const direction=event.defender===0?-1:1;
-      defender.pivot.position.x=defender.baseX+direction*recoil;
+      defender.pivot.position.x=defender.baseX+opposite*choreo.defenderTravel;
+      // Native hit and knockout clips remain the primary reaction.
+      if(!event.knockout&&defender.id==='bear')
+        defender.orientation.rotation.z=opposite*choreo.defenderLean;
     }
   }
   function applyCamera(dt){
-    if(!camera||!THREE)return;
+    if(!camera||!THREE||!cameraLook)return;
     const live=window.NoahsCinematics?.getState();
     const event=live?.event||sequence?.event;
     const time=live?.elapsed??sequence?.elapsed??0;
     const wants=(!reduced()&&event&&cinematics)?
       cinematics.camera(event,time,nativeLength(event)):null;
-    // Camera targets live in the same reference coordinates as the rigs.
-    // Portrait stages scale both animals down, so scale the shot's x focus
-    // as well or the dramatic close-up would pan completely off either rig.
     const fit=layout?.scale?.x??1;
     const x=(wants?.x??0)*fit,y=wants?.y??3,z=wants?.z??12;
     const focusX=(wants?.targetX??0)*fit;
     const focusY=(wants?.targetY??1.18)*fit;
     const wanted=new THREE.Vector3(x,y,z);
-    // Film edits should land immediately. The earlier .30 eased halfway
-    // through some shots and visibly framed the wrong subject.
-    const alpha=wants?.cut ? .88 : 1-Math.exp(-Math.max(dt,1/120)*10);
-    camera.position.lerp(wanted,alpha);
-    cameraLook.lerp(new THREE.Vector3(focusX,focusY,0),alpha);
-    camera.lookAt(cameraLook);
-    const zoom=wants?.zoom??1;
-    const nextZoom=camera.zoom+(zoom-camera.zoom)*alpha;
-    if(Math.abs(camera.zoom-nextZoom)>.00005){
-      camera.zoom=nextZoom;camera.updateProjectionMatrix();
+    const focus=new THREE.Vector3(focusX,focusY,0);
+    const key=event?.key+':'+(wants?.shot||'wide');
+    if(key!==lastCameraShot){
+      // A real movie cut changes viewing direction in a single frame.
+      // Interpolating between the front/reverse/overhead camera positions
+      // made the 'four angles' read as the same continuous profile shot.
+      camera.position.copy(wanted);
+      cameraLook.copy(focus);
+      if(camera.zoom!==(wants?.zoom??1)){
+        camera.zoom=wants?.zoom??1;
+        camera.updateProjectionMatrix();
+      }
+      lastCameraShot=key;
+    }else{
+      const alpha=1-Math.exp(-Math.max(dt,1/120)*7);
+      camera.position.lerp(wanted,alpha);
+      cameraLook.lerp(focus,alpha);
+      const zoom=wants?.zoom??1;
+      if(Math.abs(camera.zoom-zoom)>.00005){
+        camera.zoom+=alpha*(zoom-camera.zoom);
+        camera.updateProjectionMatrix();
+      }
     }
+    camera.lookAt(cameraLook);
   }
   function frame(time){
     running=0;
