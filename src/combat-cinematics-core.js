@@ -98,48 +98,62 @@ function shot(event,elapsed,nativeMs){
 // Framing must never infer a side from the name of the animal: Bear may
 // occupy either slot and mirror matches have identical move choreography.
 function sideX(slot){return slot===0?-2.02:slot===1?2.02:NaN;}
+// Every cut is a genuinely different view direction around the winner.
+// The 2026-11-16 review exposed why four changes in zoom alone look like one
+// long profile shot. All locations remain centered on the correct slot.
 function camera(event,elapsed,nativeMs){
   const beat=shot(event,elapsed,nativeMs);
   const attackerX=sideX(event.attacker),defenderX=sideX(event.defender);
   if(!Number.isFinite(attackerX)||!Number.isFinite(defenderX)||
-     attackerX===defenderX)throw new RangeError('Cinematic slots must be distinct');
+      attackerX===defenderX)throw new RangeError('Cinematic slots must be distinct');
   const facing=event.attacker===0?1:-1;
-  let x=0,targetX=0,y=beat.pose.y,z=beat.pose.z,
-      targetY=beat.pose.targetY,zoom=beat.pose.zoom,cut=false;
+  let x=0,targetX=0,y=2.8,z=12.2,targetY=1.23,zoom=1;
   if(beat.beat==='VICTORY'){
-    // The winner is the only hero. Previous camera code reversed the
-    // attacker slot sign and showed the knocked-out opponent instead.
     targetX=attackerX;
     if(beat.shot==='lowHero'){
-      x=attackerX+facing*.45;y=1.15;z=9.2;targetY=1.44;zoom=1.08;
+      // A low front-quarter shot from the direction the Bear faces.
+      x=attackerX+facing*3.7;y=.78;z=6.6;
+      targetY=1.55;zoom=1.02;
     }else if(beat.shot==='sideHero'){
-      x=attackerX-facing*.85;y=2.05;z=9.5;targetY=1.47;zoom=1.06;
+      // Reverse angle: the viewer now sees the opposite flank.
+      x=attackerX-facing*3.5;y=2.2;z=7.2;
+      targetY=1.49;zoom=1.05;
     }else if(beat.shot==='highHero'){
-      x=attackerX+facing*.4;y=4.3;z=10.3;targetY=1.4;zoom=1.03;
+      // Clearly overhead, not another chest-height profile.
+      x=attackerX+facing*1.85;y=7.1;z=6.4;
+      targetY=1.20;zoom=.98;
     }else{
-      x=attackerX+facing*.28;y=2.55;z=11.8;targetY=1.35;zoom=.96;
+      // Final wide is a deliberate two-animal composition with Bear standing.
+      x=attackerX*.28;y=2.55;z=13.2;
+      targetX=attackerX*.28;targetY=1.33;zoom=.94;
     }
-    cut=true;
-  }else if(beat.beat==='MIRACLE'||beat.shot==='wide'){
-    x=0;targetX=0;y=3.15;z=12.5;targetY=1.22;zoom=.95;
+  }else if(beat.beat==='MIRACLE'){
+    x=0;targetX=0;y=3.1;z=12.3;zoom=.96;
+  }else if(beat.beat==='INTRO'&&event.move==='G'){
+    // Introduce where both animals are before the charge: previous hero
+    // closeup made Bear appear to teleport across the Moose.
+    x=0;targetX=0;y=2.8;z=12.8;zoom=.94;
   }else if(beat.beat==='CONTACT'){
-    // Two-body contact needs both participants in frame, not a dramatic
-    // close-up of the animal being hit while the attacker gets cropped.
-    x=0;targetX=0;y=2.28;z=11.2;targetY=1.25;zoom=1.04;cut=true;
+    // Impact is readable only if both combatants share the frame.
+    x=0;targetX=0;y=2.2;z=12.2;
+    targetY=1.28;zoom=1.02;
   }else if(beat.beat==='REACTION'){
-    x=defenderX-facing*.30;targetX=defenderX;
-    y=2.45;z=10.4;targetY=1.25;zoom=1.04;
-  }else{
-    // Signature anticipation follows the attacker's silhouette, but leaves
-    // space in its direction of travel so the strike remains readable.
+    x=defenderX-facing*.45;targetX=defenderX;
+    y=2.55;z=10.1;targetY=1.22;zoom=.98;
+  }else if(beat.beat==='INTRO'){
     targetX=attackerX+facing*.48;
-    x=attackerX-facing*.23;
-    y=beat.pose.y;z=Math.max(9.7,beat.pose.z);targetY=1.3;
-    zoom=beat.shot==='ground'?1.03:1.0;
+    x=attackerX+facing*.98;
+    y=event.move==='T'?1.32:1.85;
+    z=9.4;targetY=event.move==='P'?1.55:1.18;zoom=1.04;
+  }else{
+    // Attack travel shot leaves visible screen-space for the victim.
+    x=attackerX+facing*1.1;targetX=attackerX+facing*.72;
+    y=event.move==='P'?1.65:2.1;
+    z=10.8;targetY=1.3;zoom=1.00;
   }
-  const shake=beat.beat==='CONTACT'?Math.sin(beat.local*1.45)*.035:0;
+  const shake=beat.beat==='CONTACT'?Math.sin(beat.local*1.45)*.025:0;
   return Object.freeze({x:x+shake,y,z,targetX,targetY,zoom,angle:0,
-    beat:beat.beat,shot:beat.shot,cut});
+    beat:beat.beat,shot:beat.shot,cut:true});
 }
 function panel(event,elapsed,nativeMs){
   const b=shot(event,elapsed,nativeMs);
