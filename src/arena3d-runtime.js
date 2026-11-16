@@ -483,7 +483,7 @@
     const wanted=new THREE.Vector3(x,y,z);
     // Film edits should land immediately. The earlier .30 eased halfway
     // through some shots and visibly framed the wrong subject.
-    const alpha=wants?.cut?.88:1-Math.exp(-Math.max(dt,1/120)*10);
+    const alpha=wants?.cut ? .88 : 1-Math.exp(-Math.max(dt,1/120)*10);
     camera.position.lerp(wanted,alpha);
     cameraLook.lerp(new THREE.Vector3(focusX,focusY,0),alpha);
     camera.lookAt(cameraLook);
