@@ -83,3 +83,15 @@ test('the renderer actually activates a native roar and a physical fallback, not
  assert.ok(css.includes('[data-result="visible"]'));
  assert.ok(css.includes('[data-howl-phase="roar"]'));
 });
+
+
+test('film review distinguishes actual mouth animation from body-only fallback',()=>{
+ const runtime=readFileSync('src/arena3d-runtime.js','utf8');
+ assert.ok(runtime.includes('function bearMouthStatus()'));
+ assert.ok(runtime.includes('NATIVE ROAR MOTION LOADED'));
+ assert.ok(runtime.includes('MOUTH RIG AVAILABLE'));
+ assert.ok(runtime.includes('BODY HOWL ONLY · NO MOUTH CONTROL'));
+ assert.ok(runtime.includes('const howlStage=current.beat'));
+ assert.ok(runtime.includes('bearReview.howlStage=howlStage'));
+ assert.ok(runtime.includes('No native roar FBX detected'));
+});
