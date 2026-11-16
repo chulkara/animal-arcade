@@ -194,8 +194,8 @@ test('Guts uses a stable two-fighter setup before the attack cut',()=>{
 
 test('Bear victory is now four camera cuts plus small native-rig celebration accents',()=>{
  const source=readFileSync('src/arena3d-runtime.js','utf8');
- assert.ok(source.includes('actor.victoryGesture=(elapsed)=>'));
- assert.ok(source.includes("winner.victoryGesture(sequence.elapsed-start)"));
+ assert.ok(source.includes('actor.victoryGesture=(elapsed,nativeRoar=false)=>'));
+ assert.ok(source.includes("winner.victoryGesture(sequence.elapsed-start,Boolean(sequence.roarPlayed))"));
  for(const joint of ['RigHead','RigNeck','RigSpine1','RigLFLeg1','RigRFLeg1'])
    assert.ok(source.includes("set('"+joint+"'"),'Expected a restrained victory accent for '+joint);
  assert.ok(source.includes('camera.position.copy(wanted)'), '3D camera must cut on a new shot');
@@ -264,24 +264,28 @@ test('Bear source 3D hit contact matches cinematic timing for all native clip le
  }
 });
 
-test('bear final victory howls visibly and stays expressive in the held close-up',()=>{
+test('bear win has a visible inhale followed by a head-raised sustained cry',()=>{
  const none=director.bearHowl(1600);
  assert.equal(none.active,false);
  assert.equal(none.jawOpen,0);
- const near=director.bearHowl(director.VICTORY_HOWL_START_MS+220);
- assert.equal(near.active,true);
- assert.ok(near.headPitch<-.08,'Head needs a clear upward howl gesture');
- assert.ok(near.jawOpen>.25,'Jaw should open during the vocalization');
- const held=director.bearHowl(director.VICTORY_HOWL_START_MS+1600);
- assert.ok(held.jawOpen>.7,'The mouth must remain open at end of review');
- assert.ok(held.neckPitch<-.14,'Neck should extend, not stay level');
+ const inhale=director.bearHowl(2400);
+ assert.equal(inhale.phase,'inhale');
+ assert.ok(inhale.headPitch>.08,'First gather breath by lowering the head');
+ assert.ok(inhale.bodyDrop<-.02,'Shift weight before the cry');
+ const roaring=director.bearHowl(3380);
+ assert.equal(roaring.phase,'roar');
+ assert.ok(roaring.headPitch<-.42,'Then throw the head back visibly');
+ assert.ok(roaring.neckPitch<-.2);
+ assert.ok(roaring.jawOpen>.8);
+ const held=director.bearHowl(5200);
+ assert.ok(held.jawOpen>.6,'The expression survives the delayed banner');
  for(const attacker of [0,1]){
   const evt={...base,attacker,defender:1-attacker,attackerId:'bear',
    defenderId:'moose',move:'P',finished:true};
   const t=director.duration(evt,1600);
   const final=director.camera(evt,t.victoryStart+3350,1600);
   assert.equal(final.shot,'finale');
-  assert.ok(Math.abs(final.x-final.targetX)>=4,'Face-on winner shot');
+  assert.ok(Math.abs(final.x-final.targetX)>=8,'Keep final frame fitting');
  }
 });
 
