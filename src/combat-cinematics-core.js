@@ -250,7 +250,7 @@ function bearHowl(victoryElapsed){
     neckPitch:.08*inhale-.33*throwBack,
     chestPitch:.13*inhale-.24*throwBack,
     jawOpen:clamp((.93+.06*vocal)*open*(1-.22*fade),0,1),
-    forePaw:.12*inhale-.25*throwBack,
+    forePaw:.12*inhale-.30*throwBack,
     bodyLean:.11*inhale-.17*throwBack,
     bodyDrop:-.08*inhale+.075*throwBack,
     breath:(.68+.22*Math.abs(vocal))*open
