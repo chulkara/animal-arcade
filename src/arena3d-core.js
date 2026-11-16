@@ -30,6 +30,15 @@
       textures:Object.freeze({body:'Moose Body Warm.png',head:'Moose Head Warm.png',antlers:'Moose Horn.png'})
     })
   });
+  // Extra local clips enhance staging when the complete private pack is
+  // selected. They are NOT required for existing users or public builds.
+  const OPTIONAL=Object.freeze({
+    bear:Object.freeze({
+      rear:'Trans_Stand_to_StandHind.FBX',
+      angry:'StandAngry_Breathing_01.FBX'
+    }),
+    moose:Object.freeze({})
+  });
   function basename(path){
     return String(path||'').replace(/\\/g,'/').split('/').pop().trim().toLowerCase();
   }
@@ -55,6 +64,10 @@
     const model=byName.get(basename(config.base))||null;
     const clips=Object.fromEntries(Object.entries(config.motions).map(
       ([key,name])=>[key,byName.get(basename(name))||null]));
+    for(const [key,name] of Object.entries(OPTIONAL[id]||{})){
+      const file=byName.get(basename(name));
+      if(file)clips[key]=file;
+    }
     const textures=Object.fromEntries(Object.entries(config.textures).map(
       ([key,name])=>[key,byName.get(basename(name))||null]));
     const missing=[];
@@ -110,6 +123,6 @@
   function settleMs(id,move,nativeMs){
     return Math.max(contactMs(id,move,nativeMs)+400,actionDuration(id,move,nativeMs)+280);
   }
-  return Object.freeze({REQUIRED,MAX_FILE,MAX_TOTAL,basename,planFiles,motionKey,
+  return Object.freeze({REQUIRED,OPTIONAL,MAX_FILE,MAX_TOTAL,basename,planFiles,motionKey,
     battleEvent,contactMs,actionDuration,settleMs});
 });
