@@ -332,8 +332,9 @@ test('Guts, Technique, Power and Special have individually directed preparation 
    'Power and Guts must not share a generic muzzle closeup');
  const runtime=readFileSync('src/arena3d-runtime.js','utf8');
  assert.ok(runtime.includes('new THREE.InstancedMesh'),'Environment depth should be efficient');
- assert.ok(runtime.includes('scene.add(trunks,crowns)'),'Distant trees ground the scene');
- assert.ok(runtime.includes('new THREE.DodecahedronGeometry'),'Rocks make the stage less empty');
+ assert.ok(runtime.includes('ground.receiveShadow=true'),'Keep a genuine ground contact plane');
+ assert.ok(!runtime.includes('scene.add(trunks,crowns)'),
+   'Remove distracting geometry added after the better 9:13 AM footage');
 });
 
 test('the winning Bear howl is staged without hiding its muzzle',()=>{
