@@ -94,23 +94,52 @@ function shot(event,elapsed,nativeMs){
   return Object.freeze({name,beat,shot:name,pose:POSES[name],local:attackTime,
     progress:clamp(attackTime/timing.attack,0,1),timing,accent:descriptor.accent});
 }
+// World slots: player one is LEFT (-X), player two is RIGHT (+X).
+// Framing must never infer a side from the name of the animal: Bear may
+// occupy either slot and mirror matches have identical move choreography.
+function sideX(slot){return slot===0?-2.02:slot===1?2.02:NaN;}
 function camera(event,elapsed,nativeMs){
   const beat=shot(event,elapsed,nativeMs);
-  let {x,y,z,targetY,zoom,angle}=beat.pose;
-  const a=event.attacker===1?-1:1;
-  const d=event.defender===0?-1:1;
-  const focus=beat.beat==='CONTACT'||beat.beat==='REACTION'?d:a;
-  // Shots stay identical for a given attack; only defender framing/recoil
-  // is mirrored with the opponent. Mirror fights remain camera-safe.
-  x*=focus;
-  if(beat.shot==='impact'||beat.shot==='recoil')x=1.50*focus;
-  if(beat.shot==='wide'||beat.shot==='finale')x=beat.shot==='wide'?0:.8*a;
-  if(beat.beat==='VICTORY')x=(beat.shot==='finale'?.8:1.65)*a;
-  const shake=beat.beat==='CONTACT'?Math.sin(beat.local*1.45)*.07:0;
-  return Object.freeze({x:x+shake,y,z,targetX:beat.beat==='CONTACT'?1.45*d:
-    beat.beat==='REACTION'?1.45*d:beat.beat==='VICTORY'?1.65*a:beat.shot==='wide'?0:1.65*a,
-    targetY,zoom,angle,beat:beat.beat,shot:beat.shot,
-    cut:beat.shot==='impact'||beat.beat==='VICTORY'});
+  const attackerX=sideX(event.attacker),defenderX=sideX(event.defender);
+  if(!Number.isFinite(attackerX)||!Number.isFinite(defenderX)||
+     attackerX===defenderX)throw new RangeError('Cinematic slots must be distinct');
+  const facing=event.attacker===0?1:-1;
+  let x=0,targetX=0,y=beat.pose.y,z=beat.pose.z,
+      targetY=beat.pose.targetY,zoom=beat.pose.zoom,cut=false;
+  if(beat.beat==='VICTORY'){
+    // The winner is the only hero. Previous camera code reversed the
+    // attacker slot sign and showed the knocked-out opponent instead.
+    targetX=attackerX;
+    if(beat.shot==='lowHero'){
+      x=attackerX+facing*.45;y=1.15;z=9.2;targetY=1.44;zoom=1.08;
+    }else if(beat.shot==='sideHero'){
+      x=attackerX-facing*.85;y=2.05;z=9.5;targetY=1.47;zoom=1.06;
+    }else if(beat.shot==='highHero'){
+      x=attackerX+facing*.4;y=4.3;z=10.3;targetY=1.4;zoom=1.03;
+    }else{
+      x=attackerX+facing*.28;y=2.55;z=11.8;targetY=1.35;zoom=.96;
+    }
+    cut=true;
+  }else if(beat.beat==='MIRACLE'||beat.shot==='wide'){
+    x=0;targetX=0;y=3.15;z=12.5;targetY=1.22;zoom=.95;
+  }else if(beat.beat==='CONTACT'){
+    // Two-body contact needs both participants in frame, not a dramatic
+    // close-up of the animal being hit while the attacker gets cropped.
+    x=0;targetX=0;y=2.28;z=11.2;targetY=1.25;zoom=1.04;cut=true;
+  }else if(beat.beat==='REACTION'){
+    x=defenderX-facing*.30;targetX=defenderX;
+    y=2.45;z=10.4;targetY=1.25;zoom=1.04;
+  }else{
+    // Signature anticipation follows the attacker's silhouette, but leaves
+    // space in its direction of travel so the strike remains readable.
+    targetX=attackerX+facing*.48;
+    x=attackerX-facing*.23;
+    y=beat.pose.y;z=Math.max(9.7,beat.pose.z);targetY=1.3;
+    zoom=beat.shot==='ground'?1.03:1.0;
+  }
+  const shake=beat.beat==='CONTACT'?Math.sin(beat.local*1.45)*.035:0;
+  return Object.freeze({x:x+shake,y,z,targetX,targetY,zoom,angle:0,
+    beat:beat.beat,shot:beat.shot,cut});
 }
 function panel(event,elapsed,nativeMs){
   const b=shot(event,elapsed,nativeMs);
