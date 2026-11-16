@@ -210,3 +210,64 @@
  .ark-reference-layout .ark-cinema-title strong{font-size:clamp(19px,3vw,34px)}
  .ark-reference-layout.ark-bear-reviewing .ark-cinema-title{top:41px}
 }
+
+
+/* Focus and winning close-up are original stage graphics keyed to the
+   real cinematic timeline. All light/sparks are optional with reduced motion. */
+.ark-cinema[data-beat="focus"] .ark-cinema-letterbox{height:clamp(20px,4svh,45px)}
+.ark-cinema[data-beat="focus"] .ark-cinema-tunnel{
+ opacity:1;background:radial-gradient(ellipse at 50% 42%,
+ #e1b06310 0%,#fdc3761a 35%,#132230b8 87%)}
+.ark-cinema-charge{position:absolute;left:50%;top:45%;
+ width:min(56vw,570px);height:min(56vw,570px);border-radius:50%;
+ z-index:2;opacity:0;transform:translate(-50%,-50%) scale(.65);
+ background:radial-gradient(circle,#f4ba6d05 20%,#f6bb7050 33%,
+ transparent 45%,#edc48a14 54%,transparent 70%);
+ box-shadow:0 0 45px #fbd18a20;pointer-events:none}
+.ark-cinema[data-beat="focus"] .ark-cinema-charge{
+ opacity:.80;animation:ark-cine-focus-pulse .85s ease-out both}
+@keyframes ark-cine-focus-pulse{
+ 0%{opacity:0;transform:translate(-50%,-50%) scale(.60)}
+ 55%{opacity:.6;transform:translate(-50%,-50%) scale(.95)}
+ 100%{opacity:.18;transform:translate(-50%,-50%) scale(1.18)}
+}
+.ark-cinema[data-beat="focus"] .ark-cinema-title{
+ left:clamp(18px,3vw,42px);top:clamp(115px,13svh,165px);
+ width:min(440px,42vw);opacity:.84}
+.ark-cinema[data-beat="focus"] .ark-cinema-title strong{
+ font-size:clamp(20px,2.2vw,33px);text-transform:uppercase}
+.ark-cinema-win-stamp{position:absolute;left:50%;bottom:clamp(90px,15svh,180px);
+ transform:translate(-50%,25px) scale(.85);z-index:8;opacity:0;
+ width:max-content;max-width:94vw;pointer-events:none;
+ padding:.08em .28em;white-space:nowrap;
+ font:italic 900 clamp(40px,7vw,110px)/1 Impact,'Arial Black',sans-serif;
+ letter-spacing:.065em;color:#ffe0a3;
+ -webkit-text-stroke:2px #281b1b;
+ text-shadow:0 4px 1px #552817,0 9px 13px #081923d9,0 0 35px #efad5966}
+.ark-cinema[data-beat="victory"][data-shot="finale"] .ark-cinema-win-stamp{
+ animation:ark-cine-win-stamp .75s cubic-bezier(.18,.85,.26,1) forwards}
+@keyframes ark-cine-win-stamp{
+ 0%{opacity:0;transform:translate(-50%,27px) scale(1.38)}
+ 45%{opacity:1;transform:translate(-50%,-6px) scale(.98)}
+ 65%{opacity:1;transform:translate(-50%,0) scale(1.03)}
+ 100%{opacity:1;transform:translate(-50%,0) scale(1)}
+}
+.ark-cinema[data-beat="victory"][data-shot="finale"] .ark-cinema-title{
+ opacity:.14;transition:opacity .28s}
+.ark-cinema[data-beat="victory"][data-shot="finale"] .ark-cinema-frame{opacity:.55}
+@media(max-width:650px){
+ .ark-cinema[data-beat="focus"] .ark-cinema-title{
+  top:clamp(70px,12svh,115px);width:62vw}
+ .ark-cinema-win-stamp{
+  font-size:clamp(36px,9vw,58px);-webkit-text-stroke:1px #281b1b;
+  bottom:clamp(75px,13svh,125px)}
+}
+@media(prefers-reduced-motion:reduce){
+ .ark-cinema[data-beat="focus"] .ark-cinema-charge{animation:none;opacity:.14}
+ .ark-cinema[data-beat="victory"][data-shot="finale"] .ark-cinema-win-stamp{
+   animation:none;opacity:1;transform:translateX(-50%)}
+}
+.game.reduce-motion .ark-cinema[data-beat="focus"] .ark-cinema-charge{
+ animation:none;opacity:.14}
+.game.reduce-motion .ark-cinema[data-beat="victory"][data-shot="finale"] .ark-cinema-win-stamp{
+ animation:none;opacity:1;transform:translateX(-50%)}
