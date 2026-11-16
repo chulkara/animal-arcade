@@ -140,10 +140,10 @@ test('cinematic footage UI protects Bear silhouette and hides stale review HUD',
  assert.match(reviewCss,/ark-bear-reviewing \.ark-arena-hud/);
  assert.match(reviewCss,/ark-bear-reviewing \.combat-battlefield \.combat-animal-name/);
  assert.match(model,/model\.position\.x=restX;model\.position\.z=restZ/);
- assert.match(model,/camera\\.position\\.copy\\(wanted\\)/);
+ assert.ok(model.includes('camera.position.copy(wanted)'));
  assert.match(model,/lastCameraShot/);
  assert.match(model,/rootAnchors/);
- assert.match(model,/actor\\.soleRest/);
+ assert.ok(model.includes('actor.soleRest'));
 });
 
 test('Bear Guts, Technique and Power have separate bounded approach, impact and recovery',()=>{
