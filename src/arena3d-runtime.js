@@ -239,9 +239,13 @@
       // stands facing across the stage (+X in left slot, -X in right slot).
       // Convert that world-space pitch/yaw into each bone's local frame,
       // so the movement stays anatomically legible on mirrored fighters.
-      const face=slot===0?1:-1;
-      const pitchWorld=new THREE.Vector3(0,0,face);
       const yawWorld=new THREE.Vector3(0,1,0);
+      const baseYaw=(slot===0?Math.PI/2:-Math.PI/2)+yaw[id];
+      // Respect the optional TURN 90° control too: the correct head-up
+      // axis follows the animal's current facing, not merely its slot.
+      const facingWorld=new THREE.Vector3(0,0,1)
+        .applyAxisAngle(yawWorld,baseYaw);
+      const pitchWorld=facingWorld.clone().cross(yawWorld).normalize();
       const localWorldAxis=(bone,axis)=>{
         bone.updateWorldMatrix(true,false);
         const q=new THREE.Quaternion();
@@ -288,8 +292,9 @@
       setWorld('RigRFLeg1',pitchWorld,-howl.forePaw*.47*strength);
       // Keep the standing hind paws grounded. Lean in the animal's facing
       // plane, not around orientation.rotation.x (that rolled the torso).
-      orientation.rotation.x=0;
-      orientation.rotation.z=-face*howl.bodyLean*.38*strength;
+      orientation.rotation.set(0,baseYaw,0);
+      orientation.quaternion.premultiply(new THREE.Quaternion()
+        .setFromAxisAngle(pitchWorld,-howl.bodyLean*.38*strength));
       pivot.position.y=howl.bodyDrop*.50*strength;
       if(jawBone&&!nativeRoar)
         setWorld(jawBone.name,pitchWorld,-.58*howl.jawOpen);
