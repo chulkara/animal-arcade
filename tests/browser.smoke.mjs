@@ -308,7 +308,7 @@ await run('battle-feel-desktop-1440x900',{width:1440,height:900},async page=>{
     .evaluate(el=>getComputedStyle(el).animationName);
   assert.notEqual(an,'none','The original animal portrait should animate on attack');
   assert.equal(await page.locator('.ark-cinema').count(),1,'The new cinematic stage should be mounted');
-  assert.ok(['intro','attack','contact','reaction','miracle','victory','done']
+  assert.ok(['focus','intro','attack','contact','reaction','miracle','victory','done']
     .includes(await page.locator('.ark-cinema').getAttribute('data-beat')));
   await page.locator('.combat-message').waitFor({state:'visible',timeout:8000});
   assert.match(await page.locator('.combat-message').innerText(),/FERAL CHARGE|LOW SWIPE|HIGH PAW STRIKE|RAGING REAR|ANTLER CHARGE|CROSS-ANTLER SWEEP|TWO-HOOF STOMP|LEAPING ANTLER DRIVE/);
