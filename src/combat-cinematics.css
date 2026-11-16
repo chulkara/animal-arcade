@@ -271,3 +271,43 @@
  animation:none;opacity:.14}
 .game.reduce-motion .ark-cinema[data-beat="victory"][data-shot="finale"] .ark-cinema-win-stamp{
  animation:none;opacity:1;transform:translateX(-50%)}
+
+
+/* Original kinetic transition before the signature hit. It follows the
+ * native FBX attack without borrowing source-game frames or line artwork. */
+.ark-cinema[data-beat="attack"][data-shot="rush"] .ark-cinema-speed{
+ opacity:.78;mix-blend-mode:screen;
+ background:
+   repeating-linear-gradient(111deg,transparent 0 10px,
+      #c2f6e01e 11px 13px,transparent 13px 25px,
+      #ffe4a932 26px 29px,transparent 31px 43px),
+   radial-gradient(ellipse at 50% 45%,transparent 15%,#3f6c6332 78%);
+ animation:ark-cine-rush .38s cubic-bezier(.06,.88,.27,1) both}
+.ark-cinema[data-beat="attack"][data-shot="sweep"] .ark-cinema-speed{
+ opacity:.62;mix-blend-mode:screen;
+ background:repeating-conic-gradient(from -60deg at 48% 52%,
+    transparent 0deg 14deg,#c5ffe533 15deg 19deg,transparent 21deg 41deg);
+ animation:ark-cine-rush .35s ease-out both}
+.ark-cinema[data-beat="attack"][data-shot="rush"] .ark-cinema-tunnel{
+ opacity:.45}
+@keyframes ark-cine-rush{
+ 0%{transform:translateX(16%) scale(1.7);opacity:0}
+ 38%{opacity:.86}
+ 100%{transform:translateX(-7%) scale(1.05);opacity:.06}
+}
+/* Final victory gives the actor room to perform its howl without a large
+ * headline blocking the mouth, and then brings the winner stamp up below. */
+.ark-cinema[data-beat="victory"][data-shot="finale"] .ark-cinema-title{
+ visibility:hidden}
+.ark-cinema[data-beat="victory"][data-shot="finale"] .ark-cinema-win-stamp{
+ bottom:clamp(76px,12svh,130px);
+ background:linear-gradient(90deg,#13293200,#13293288 20%,#13293288 80%,#13293200);
+ text-align:center}
+@media(prefers-reduced-motion:reduce){
+ .ark-cinema[data-beat="attack"][data-shot="rush"] .ark-cinema-speed,
+ .ark-cinema[data-beat="attack"][data-shot="sweep"] .ark-cinema-speed{
+ animation:none;opacity:.04}
+}
+.game.reduce-motion .ark-cinema[data-beat="attack"][data-shot="rush"] .ark-cinema-speed,
+.game.reduce-motion .ark-cinema[data-beat="attack"][data-shot="sweep"] .ark-cinema-speed{
+ animation:none;opacity:.04}
