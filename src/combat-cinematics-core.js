@@ -73,7 +73,7 @@ function duration(event,nativeMs){
   const finish=actionLead+Math.max(attack+260,contact+580);
   const victoryStart=event.finished?finish+180:Infinity;
   return Object.freeze({attack,contact,miracleLead,focusLead,actionLead,finish,
-    victoryStart,total:event.finished?victoryStart+4000:finish+480});
+    victoryStart,total:event.finished?victoryStart+5500:finish+480});
 }
 function shot(event,elapsed,nativeMs){
   const timing=duration(event,nativeMs);
@@ -89,10 +89,10 @@ function shot(event,elapsed,nativeMs){
       timing,accent:descriptor.accent});
   if(event.finished&&t>=timing.victoryStart){
     const v=t-timing.victoryStart;
-    const stage=v<900?0:v<1850?1:v<2900?2:3;
+    const stage=v<900?0:v<1820?1:v<2700?2:3;
     const name=['lowHero','sideHero','highHero','finale'][stage];
     return Object.freeze({name,beat:'VICTORY',shot:name,pose:POSES[name],local:v,
-      progress:clamp(v/3800,0,1),timing,accent:descriptor.accent});
+      progress:clamp(v/5500,0,1),timing,accent:descriptor.accent});
   }
   const attackTime=t-timing.actionLead,contact=timing.contact;
   let stage,beat;
@@ -223,26 +223,38 @@ function camera(event,elapsed,nativeMs){
 // A sub-100ms impact freeze is a core part of the original arcade's
 // perceived force. It freezes both rigs for the first impact frames while
 // audio, sparks and the shot remain active; the battle clock never pauses.
-const VICTORY_HOWL_START_MS=2900;
-// End the four-angle victory on a vocal, head-raised Bear rather than a
-// motionless upright idle. Values are rig-independent normalized controls;
-// the FBX adapter handles specific head/neck/jaw bones or morph targets.
+// In the original-game victory, the animal earns its finish: it gathers
+// breath, lowers the muzzle, then throws its head back and cries. A motion
+// curve, not a camera zoom, drives this sequence on the user's local rig.
+const VICTORY_HOWL_START_MS=1940;
+const VICTORY_HOWL_CUE_MS=3000;
+const VICTORY_BANNER_MS=4340;
+const VICTORY_END_MS=5500;
 function bearHowl(victoryElapsed){
   const elapsed=Math.max(0,Number(victoryElapsed)||0);
-  const t=elapsed-VICTORY_HOWL_START_MS;
-  if(t<0)return Object.freeze({active:false,intensity:0,
-    headPitch:0,neckPitch:0,chestPitch:0,jawOpen:0,
-    forePaw:0,breath:0});
-  const intensity=ease(t/410);
-  const vocal=t>340?Math.sin((t-340)*.018):0;
-  // Hold the head-raised expression after the camera montage completes.
-  return Object.freeze({active:true,intensity,
-    headPitch:-.30*intensity+.012*vocal,
-    neckPitch:-.17*intensity,
-    chestPitch:-.075*intensity,
-    jawOpen:clamp((.82+.11*vocal)*intensity,0,1),
-    forePaw:-.075*intensity,
-    breath:(.78+.22*Math.abs(vocal))*intensity});
+  const zero=Object.freeze({active:false,phase:'stand',intensity:0,
+    headPitch:0,headYaw:0,neckPitch:0,chestPitch:0,jawOpen:0,
+    forePaw:0,bodyLean:0,bodyDrop:0,breath:0});
+  if(elapsed<VICTORY_HOWL_START_MS)return zero;
+  const inhale=ease((elapsed-VICTORY_HOWL_START_MS)/590);
+  const throwBack=ease((elapsed-2580)/500);
+  const open=ease((elapsed-2760)/360);
+  const fade=ease((elapsed-4680)/770);
+  const vocal=Math.sin((elapsed-3000)*.021);
+  return Object.freeze({
+    active:true,
+    phase:elapsed<2580?'inhale':elapsed<3160?'throw':elapsed<4680?'roar':'hold',
+    intensity:inhale*(1-.16*fade),
+    headPitch:.17*inhale-.70*throwBack+.018*vocal*open,
+    headYaw:.06*throwBack*Math.sin(elapsed*.0031),
+    neckPitch:.08*inhale-.33*throwBack,
+    chestPitch:.13*inhale-.24*throwBack,
+    jawOpen:clamp((.93+.06*vocal)*open*(1-.22*fade),0,1),
+    forePaw:.12*inhale-.25*throwBack,
+    bodyLean:.11*inhale-.17*throwBack,
+    bodyDrop:-.08*inhale+.075*throwBack,
+    breath:(.68+.22*Math.abs(vocal))*open
+  });
 }
 const HIT_STOP_MS=88;
 function hitStop(event,elapsed,nativeMs){
@@ -305,5 +317,6 @@ function panel(event,elapsed,nativeMs){
     duration:b.timing.total});
 }
 return Object.freeze({ATTACKS,MIRACLES,POSES,HIT_STOP_MS,VICTORY_HOWL_START_MS,
+  VICTORY_HOWL_CUE_MS,VICTORY_BANNER_MS,VICTORY_END_MS,
   spec,miracle,duration,shot,camera,bearHowl,hitStop,blocking,panel});
 });
