@@ -95,3 +95,39 @@ test('film review distinguishes actual mouth animation from body-only fallback',
  assert.ok(runtime.includes('bearReview.howlStage=howlStage'));
  assert.ok(runtime.includes('No native roar FBX detected'));
 });
+
+
+test('head lift uses world-space hinge axes, not accidental local FBX twist',()=>{
+ const runtime=readFileSync('src/arena3d-runtime.js','utf8');
+ assert.ok(runtime.includes('const pitchWorld=new THREE.Vector3(0,0,face)'));
+ assert.ok(runtime.includes('getWorldQuaternion(q)'));
+ assert.ok(runtime.includes('axis.clone().applyQuaternion(q.invert()).normalize()'));
+ assert.ok(runtime.includes("setWorld('RigHead',pitchWorld,-howl.headPitch*strength)"));
+ assert.ok(runtime.includes("setWorld('RigNeck',pitchWorld,-howl.neckPitch*strength)"));
+ assert.ok(runtime.includes('orientation.rotation.x=0'));
+ assert.ok(!runtime.includes("set('RigHead',X,howl.headPitch*strength)"));
+});
+
+test('final hind-foot support runs after applying all native and additive howl movement',()=>{
+ const runtime=readFileSync('src/arena3d-runtime.js','utf8');
+ const start=runtime.indexOf('function frame(time){');
+ const end=runtime.indexOf('function syncScene(',start);
+ const frame=runtime.slice(start,end);
+ assert.ok(frame.includes('winner.victoryGesture(sequence.elapsed-start,Boolean(sequence.roarPlayed))'));
+ assert.ok(frame.includes('winner.groundHindFeet()'));
+ assert.ok(frame.indexOf('winner.victoryGesture(')<frame.indexOf('winner.groundHindFeet()'));
+ assert.ok(frame.indexOf('applyBlocking()')<frame.indexOf('winner.groundHindFeet()'));
+ assert.ok(frame.indexOf('winner.groundHindFeet()')<frame.indexOf('applyCamera(dt)'));
+});
+
+test('victory-only replay starts from the winner pose without changing match results',()=>{
+ const runtime=readFileSync('src/arena3d-runtime.js','utf8');
+ const css=readFileSync('src/arena3d.css','utf8');
+ assert.ok(runtime.includes('data-bear-review-howl'));
+ assert.ok(runtime.includes('function replayBearHowl()'));
+ assert.ok(runtime.includes('sequence.elapsed=timeline.victoryStart'));
+ assert.ok(runtime.includes('sequence.finished=true;sequence.victoryPlayed=true'));
+ assert.ok(runtime.includes("actors[event.attacker]?.native('victory')"));
+ assert.ok(runtime.includes("actors[event.defender]?.native('knockout')"));
+ assert.ok(css.includes('[data-bear-review-howl]'));
+});
