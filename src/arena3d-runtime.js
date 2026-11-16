@@ -463,13 +463,14 @@
       const pulse=Math.sin((i*19.7+elapsed*.004))*0.5+0.5;
       let x=0,y=0,z=0,radius=.4,alpha=.5;
       if(kind==='charge'){
-        // Species-independent energy swirl, with an original amber tint.
-        // Both the center and the camera change as the build-up grows.
-        radius=.45+ring*.17+(1-t)*.32;
-        x=home+Math.cos(a+elapsed*.0045)*radius;
-        z=Math.sin(a+elapsed*.0045)*radius;
-        y=.24+((t*1.4+i*.16)%1)*2.7;
-        alpha=.22+.65*Math.sin(Math.PI*Math.min(1,t));
+        // Guts throws low dust, Technique draws a jade paw-level spiral,
+        // and Power carries embers upward. Same animator, different move.
+        radius=.30+ring*.14+(1-t)*.22;
+        x=home+Math.cos(a+elapsed*.0042)*radius;
+        z=Math.sin(a+elapsed*.0042)*radius;
+        const height=event.move==='G'?.65:event.move==='T'?1.12:2.75;
+        y=.12+((t*1.35+i*.16)%1)*height;
+        alpha=.15+.62*Math.sin(Math.PI*Math.min(1,t));
       }else if(kind==='starfall'){
         radius=.5+(i%5)*.15;
         x=home+Math.cos(a)*radius;
@@ -507,7 +508,9 @@
       point.position.set(x,y,z);
       if(kind!=='storm')point.scale.setScalar(kind==='dust'?(.6+t*1.2):
         kind==='triumph' ? .38+.36*pulse : .4+.42*pulse);
-      material.color.setHex(colors[kind]||colors.triumph);
+      const chargeColor=event.move==='G'?0xc4a077:
+        event.move==='T'?0x87efbd:event.move==='P'?0xffad71:0xffcd7d;
+      material.color.setHex(kind==='charge'?chargeColor:(colors[kind]||colors.triumph));
       material.opacity=cleanPortrait?0:Math.max(0,Math.min(.85,alpha));
     }
   }
@@ -518,8 +521,11 @@
     }
     const {event}=sequence;
     const beat=cinematics.shot(event,sequence.elapsed,nativeLength(event));
-    const target=beat.beat==='FOCUS'?3.5:
+    const target=beat.beat==='FOCUS'?
+      ({G:1.85,T:2.20,P:3.45,S:3.90}[event.move]||2.5):
       beat.beat==='VICTORY'?2.0:beat.beat==='CONTACT'?1.6:0;
+    const colors={G:0xe0c19b,T:0x9ff0d1,P:0xffaa70,S:0xffd680};
+    focusLight.color.setHex(colors[event.move]||0xffbb72);
     focusLight.intensity+=(target-focusLight.intensity)*.14;
     const actor=actors[event.attacker];
     const fit=layout?.scale?.x||1;
