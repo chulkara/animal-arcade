@@ -30,6 +30,7 @@ function createOverlay(){
   '<div class="ark-cinema-title"><small data-ark-cinema-kicker>WILD DUEL</small>'+
   '<strong data-ark-cinema-title></strong><span data-ark-cinema-sub></span></div>'+
   '<div class="ark-cinema-charge" aria-hidden="true"></div>'+
+  '<div class="ark-cinema-howl-waves" aria-hidden="true"><i></i><i></i><i></i></div>'+
   '<div class="ark-cinema-win-stamp" data-ark-cinema-winner></div>'+
   '<div class="ark-cinema-symbols">'+
   Array.from({length:14},(_,i)=>'<span style="--n:'+i+'"></span>').join('')+'</div>'+
@@ -113,6 +114,7 @@ function draw(time){
  const p=api.shot(event,elapsed,length);
  overlay.dataset.shot=p.shot;
  overlay.dataset.move=event.move;
+ overlay.dataset.winner=event.attackerId;
  if(lastShot!==p.shot){
    lastShot=p.shot;
    if(!reduce()&&p.beat==='ATTACK'&&(p.shot==='rush'||p.shot==='sweep'))
