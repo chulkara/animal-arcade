@@ -112,10 +112,15 @@ function draw(time){
  }
  const p=api.shot(event,elapsed,length);
  overlay.dataset.shot=p.shot;
+ overlay.dataset.move=event.move;
  if(lastShot!==p.shot){
    lastShot=p.shot;
-   if(p.beat==='VICTORY'&&p.shot==='finale'&&!reduce())
+   if(!reduce()&&p.beat==='ATTACK'&&(p.shot==='rush'||p.shot==='sweep'))
+     window.NoahsAudio?.cue('cinemaRush');
+   if(p.beat==='VICTORY'&&p.shot==='finale'&&!reduce()){
      window.NoahsAudio?.cue('cinemaWin');
+     if(event.attackerId==='bear')window.NoahsAudio?.cue('bearHowl');
+   }
  }
  const winner=overlay.querySelector('[data-ark-cinema-winner]');
  if(winner)winner.textContent=p.beat==='VICTORY'&&p.shot==='finale'?
