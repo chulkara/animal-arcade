@@ -292,9 +292,13 @@ await run('battle-feel-desktop-1440x900',{width:1440,height:900},async page=>{
   assert.equal(await page.locator('.battlefield-ridge').count(),2);
   assert.equal(await page.locator('.combat-reel-neighbor').count(),2);
   const first=await page.locator('[data-combat-current]').innerText();
-  await page.waitForTimeout(155);
-  const later=await page.locator('[data-combat-current]').innerText();
-  assert.notEqual(first,later,'Attack reel must advance with elapsed time');
+  // A three-symbol reel may randomly return to its initial symbol after
+  // 155ms. Poll continuously for an actual transition rather than making
+  // a probabilistic equality comparison at only two timestamps.
+  await page.waitForFunction(initial=>{
+    const el=document.querySelector('[data-combat-current]');
+    return Boolean(el)&&el.textContent.trim()!==initial;
+  },first,{timeout:3000});
   await page.keyboard.press('g');
   assert.equal(await page.locator('.combat-reel').getAttribute('data-reel-type'),'POWER');
   for(let i=0;i<20;i++){
