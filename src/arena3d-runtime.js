@@ -823,6 +823,38 @@
       const heroFactor=Math.min(1.75,1/fit);
       filmCamera.zoom=Math.min(2.2,(wants?.zoom??1)*heroFactor);
       filmCamera.updateProjectionMatrix();
+      if(wants?.beat==='VICTORY')fitVictoryInFrame(event,wants);
+    }
+  }
+  function fitVictoryInFrame(event,wants){
+    if(!event||wants?.beat!=='VICTORY'||!filmCamera||!THREE)return;
+    const winner=actors[event.attacker];
+    if(!winner?.joint?.size)return;
+    // The earlier 'portrait' put the camera right inside the skinned
+    // torso. Reframe against live bone positions, including the top of
+    // the animated head and the planted hind paws, not a guessed height.
+    const names=['RigHead','RigNeck','RigChest','RigPelvis',
+      'RigLFLeg3','RigRFLeg3','RigLBLeg3','RigRBLeg3',
+      'RigLBLegAnkle','RigRBLegAnkle'];
+    const points=names.map(name=>winner.joint.get(name)).filter(Boolean);
+    if(!points.length)return;
+    winner.model.updateMatrixWorld(true);
+    const v=new THREE.Vector3();
+    for(let pass=0;pass<5;pass++){
+      filmCamera.updateMatrixWorld(true);
+      let required=1;
+      for(const joint of points){
+        joint.getWorldPosition(v);
+        const projected=v.clone().project(filmCamera);
+        if(!Number.isFinite(projected.x)||!Number.isFinite(projected.y))continue;
+        required=Math.max(required,
+          Math.abs(projected.x)/.78,Math.abs(projected.y)/.76);
+      }
+      if(required<=1.0001)break;
+      // Keep the shot's low/reverse/high azimuth; only dolly outward.
+      const factor=Math.min(1.85,required*1.09);
+      filmCamera.position.sub(cameraLook).multiplyScalar(factor).add(cameraLook);
+      filmCamera.lookAt(cameraLook);
     }
   }
   function frame(time){
