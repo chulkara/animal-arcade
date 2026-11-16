@@ -416,6 +416,23 @@ await run('private-3d-dialog-mobile-390x844',{width:390,height:844},async page=>
   await page.locator('[data-prototype-fight]').click();
   assert.equal(await page.locator('#game').getAttribute('data-screen'),'BATTLE_PLAY');
   assert.ok(await page.locator('[data-ark3d-open]').isVisible());
+  assert.ok(await page.locator('[data-bear-review-quick]').isVisible(),
+    'Bear review must be discoverable directly from the battle footer');
+  await page.locator('[data-bear-review-quick]').click();
+  assert.equal(await page.locator('.ark-fbx-dialog').count(),1,
+    'Quick launch without Bear assets must open the setup panel');
+  assert.match(await page.locator('[data-ark3d-status]').innerText(),/Load Brown Bear Motion Lab V2 files first/);
+  const location=await page.locator('.ark-fbx-dialog').evaluate(el=>{
+    const button=el.querySelector('[data-bear-review-start]');
+    const firstImporter=el.querySelector('[data-ark3d-species="bear"]');
+    return {buttonTop:button.getBoundingClientRect().top,
+      importerTop:firstImporter.getBoundingClientRect().top,
+      panelBottom:el.getBoundingClientRect().bottom,
+      visible:button.getBoundingClientRect().bottom<=el.getBoundingClientRect().bottom};
+  });
+  assert.ok(location.buttonTop<location.importerTop,'Bear review launch must appear before the import forms');
+  assert.ok(location.visible,'Bear review launch must be within the initial modal viewport');
+  await page.locator('[data-ark3d-close]').click();
   const status=await page.evaluate(()=>window.NoahsArena3D.getStatus());
   assert.equal(status.bear,false);
   assert.equal(status.moose,false);
