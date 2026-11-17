@@ -56,3 +56,30 @@ A previous check confirmed that selecting and manually previewing the MP4 works.
 - The cutscene's audio is authoritative while playing; the base game's overlapping victory effects/fanfare are gated. Loading this optional video remains local to the current browser session, and no model/video bytes are uploaded or distributed.
 - Added a Chromium smoke test simulating a genuine Bear-special result from a scored-attack-shaped fixture. It checks automatic triggering, correct opponent art, impact timing, actual remaining HP, an unchanged real match and restored controls after Skip. The older preview test still checks both spinning reel phases.
 - Known unrelated branch blocker: earlier quadrupedal Bear victory tests remain red. Keep draft PR #12 unmerged and do not claim the whole game's visual rigging is finished.
+
+
+## November 17 — Real imported Bear + Moose FBX collision (draft)
+
+**What changed:** When both private Bear Motion Lab V2 and Moose Motion Lab V2 folders are loaded in a Bear-vs-Moose bout, the game now creates a short-lived, self-contained Three.js collision scene from **clones of the actual imported skinned 3D models**. This is a real skeleton-animation pass, not the SVG opponent-card overlay from the first integration.
+
+**Source-frame inspection revises the contact time:** In the owner's 14.93s Forestfall MP4, the Bear is still descending around 11.65s, its paws land approximately 11.82s, and the big dirt/debris burst follows around 12.06s. The old 11.27s damage cue was early. The deterministic timings live in `src/forestfall-collision-core.js`.
+
+The movie-to-live sequence:
+1. **0–11.53s:** the original user-supplied video plays its climb and falling attack.
+2. **11.53–11.82s:** match-cut to a forest-toned live Three.js camera containing the imported Bear and Moose. The Bear is posed/translated downward using deterministic root motion synchronized to the video's clock; the native Bear `S` clip is used for forelimb action.
+3. **At ~11.82s:** native Moose `Hit_Stand_L01.FBX` (or `Death_Stand_R01.FBX` on KO) plays on the real local Moose skeleton. Its root moves backward while the Bear lands in the same 3D coordinate space. The original combat engine already owns the HP loss; the overlay only *reads* that result. A brief ring/dust accent helps hide the cross-cut.
+4. **At ~13.22s:** return to the source video for the Bear's original end roar. After the MP4 ends, the app returns to the existing scored battle and its unchanged result.
+5. **Preview mode:** uses the same live actors and native Moose reaction without modifying HP. It labels all result text `PREVIEW · NO HP CHANGE`.
+
+**Fallback:** No local MP4 means the normal source FBX/procedural special. MP4 loaded but no suitable source Bear + Moose models, or WebGL unavailable, means the existing skippable video plus original non-scoring illustrated opponent reaction. Never invent a 3D collision when the required assets are absent. File bytes stay in the browser and are not committed or uploaded.
+
+**Manual acceptance test on Mac:**
+1. Update feature branch `bear-moose-playable-roster-20261115`, host `python3 -m http.server 4173`, open `http://localhost:4173` and hard-refresh.
+2. Pick Bear against Moose and open **3D ARENA SETUP**. Import the entire extracted Bear and Moose Motion Lab V2 folders separately. The battle screen should report `LIVE BEAR + MOOSE FBX CONTACT READY` once the Forestfall MP4 is also loaded.
+3. Press **PREVIEW FORESTFALL**. Inspect the approximately 11.53–13.22s transition. Verify both actual 3D models share a ground plane, Bear falls *onto* Moose rather than through it, Moose visibly reacts with its native animation at contact, and the video returns for the roar.
+4. During a real special, verify accurate hit/KO selection, correct damage value, zero duplicated HP changes, Skip and Escape cleanup, no screen overflow on desktop and phone landscape, and no lingering duplicate models/canvases on subsequent attacks.
+5. Record the source and actual 3D contact for a side-by-side critique. **Automated browser tests cannot validate the user-private FBX appearance, source texture assignment, interpenetration, exact bone pose or film-to-WebGL compositing fidelity.** Do not claim final arcade-quality visual acceptance solely from CI.
+
+**Architecture:** `src/forestfall-collision-core.js` is pure deterministic timing and capability validation; `src/arena3d-runtime.js` constructs a bounded second WebGL scene and clones local rigged assets for the contact shot; `src/forestfall-video.js` owns movie playback, 3D window switch, actual damage captions, and cleanup; `src/forestfall-video.css` controls the shared 16:9 frame. A forest-tone version of the battle ground is used during the short collision; matching the user's private animal poses, camera angle and perspective precisely to the rendered MP4 remains a manual art-directing task.
+
+**Release status:** Draft PR #12 only. User-approved menu pixel art and public `main` remain untouched. The prior Bear victory refactor is separately unfinished and has six failing unit tests.
