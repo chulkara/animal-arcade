@@ -145,7 +145,7 @@ function draw(time){
  const howl=p.beat==='VICTORY'&&event.attackerId==='bear'?
    api.bearHowl(p.local):null;
  overlay.dataset.howlPhase=howl?.phase||'none';
- if(p.beat==='VICTORY'&&!reduce()){
+ if(p.beat==='VICTORY'&&!reduce()&&!window.NoahsForestfall?.getStatus?.().playing){
    if(event.attackerId==='bear'&&p.local>=api.VICTORY_HOWL_CUE_MS&&!howlCued){
      window.NoahsAudio?.cue('bearHowl');
      howlCued=true;
