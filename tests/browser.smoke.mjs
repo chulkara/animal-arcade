@@ -300,6 +300,16 @@ await run('forestfall-preview-while-reels-spin',{width:1440,height:900},async pa
   await page.locator('[data-forestfall-preview]').click();
   await page.locator('.ark-forestfall').waitFor({state:'visible',timeout:3000});
   assert.match(await page.locator('.ark-forestfall-status').innerText(),/NO DAMAGE/);
+  assert.equal(await page.locator('.ark-forestfall-target-art').count(),1,
+    'Preview must show the actual opponent so cinematic impact can be reviewed');
+  await page.locator('.ark-forestfall video').evaluate(video=>{
+    Object.defineProperty(video,'duration',{configurable:true,get:()=>14.93});
+    Object.defineProperty(video,'currentTime',{configurable:true,get:()=>11.35});
+    video.dispatchEvent(new Event('timeupdate'));
+  });
+  await page.locator('.ark-forestfall-reaction').waitFor({state:'visible'});
+  assert.match(await page.locator('.ark-forestfall-hit-damage').textContent(),
+    /PREVIEW · NO HP CHANGE/);
   assert.equal((await page.evaluate(()=>window.NoahsCombat.getState().phase)),'ATTACK',
     'Viewing Forestfall must never stop the reel or change scored gameplay');
   await page.locator('.ark-forestfall-controls button').last().click();
