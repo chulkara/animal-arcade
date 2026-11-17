@@ -83,3 +83,11 @@ The movie-to-live sequence:
 **Architecture:** `src/forestfall-collision-core.js` is pure deterministic timing and capability validation; `src/arena3d-runtime.js` constructs a bounded second WebGL scene and clones local rigged assets for the contact shot; `src/forestfall-video.js` owns movie playback, 3D window switch, actual damage captions, and cleanup; `src/forestfall-video.css` controls the shared 16:9 frame. A forest-tone version of the battle ground is used during the short collision; matching the user's private animal poses, camera angle and perspective precisely to the rendered MP4 remains a manual art-directing task.
 
 **Release status:** Draft PR #12 only. User-approved menu pixel art and public `main` remain untouched. The prior Bear victory refactor is separately unfinished and has six failing unit tests.
+
+
+### Frame and resource guardrails (November 17 QA)
+- The live-FBX shot uses a widened perspective lens to keep the falling Bear's entire silhouette and the Moose's antlers inside its 16:9 stage. Final framing is subject to the user's private-model visual review.
+- Source video continues playing beneath the brief 3D match-cut to preserve its audio clock; the ordinary underlying battle's render draw is suspended while the fullscreen cutscene is open, but its state/animation timeline continues toward the finished pose.
+- The temporary secondary WebGL context and cloned actors are stopped and explicitly released on Skip, natural ending, navigation away, or page exit. Multiple preview sessions must not accumulate live renderers.
+- If source WebGL rendering throws or loses context, the 3D match-cut is disabled for that playback and the video with original illustrated defender reaction continues, without modifying the scored battle.
+- CI checks the video/match-cut state machine and fallback with synthetic browser fixtures; it cannot assert visual correctness of the user-private FBX meshes. The PR remains draft.
