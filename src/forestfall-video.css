@@ -72,3 +72,85 @@
 @media(prefers-reduced-motion:reduce){
  .ark-forestfall-impact .ark-forestfall-result{animation:none}
 }
+
+/* Forestfall opponent cut-in: a short real battle-state reaction, not an
+   invented third-party animation or a second health/damage calculation. */
+.ark-forestfall-reaction{
+ position:absolute;left:max(12px,calc(50vw - 515px));bottom:clamp(88px,14svh,148px);
+ display:flex;align-items:center;gap:12px;
+ width:min(400px,calc(100vw - 24px));min-height:112px;
+ padding:10px 14px;box-sizing:border-box;
+ border:2px solid #e4c37e;border-radius:8px;
+ background:linear-gradient(125deg,#112c3af5,#193f32f0);
+ box-shadow:0 7px 30px #000d;
+ opacity:0;transform:translateX(-22px) scale(.94);
+ pointer-events:none;visibility:hidden;
+}
+.ark-forestfall-reaction-visible .ark-forestfall-reaction{
+ visibility:visible;
+ animation:ark-forestfall-hit-in .28s cubic-bezier(.2,.8,.2,1) forwards;
+}
+.ark-forestfall-target-art{
+ width:115px;height:100px;object-fit:contain;flex-shrink:0;
+ filter:drop-shadow(0 7px 4px #0009);
+ transform-origin:50% 84%;
+}
+.ark-forestfall-reaction-visible .ark-forestfall-target-art{
+ animation:ark-forestfall-defender-hit .7s cubic-bezier(.16,.9,.22,1) both;
+}
+.ark-forestfall-target-copy{
+ display:flex;flex-direction:column;min-width:0;flex:1;gap:6px;
+ text-align:left;
+}
+.ark-forestfall-target-copy strong{
+ color:#f5ddb1;font:800 clamp(14px,2vw,22px) Impact,'Arial Black',sans-serif;
+ letter-spacing:.07em;
+}
+.ark-forestfall-hit-damage{
+ color:#fff1a9;font:italic 900 clamp(21px,4vw,35px) Impact,'Arial Black',sans-serif;
+ text-shadow:0 2px 3px #000b;
+}
+.ark-forestfall-target-health{
+ height:11px;background:#241f19;border:1px solid #dcc88b;padding:1px;
+}
+.ark-forestfall-target-health span{
+ display:block;height:100%;width:var(--hp-after);
+ background:linear-gradient(90deg,#66834b,#d6cf6e);
+}
+.ark-forestfall-reaction-visible .ark-forestfall-target-health span{
+ animation:ark-forestfall-hp .72s ease-out both;
+}
+.ark-forestfall-target-copy small{
+ color:#dfded1;font:700 11px Arial,sans-serif;
+}
+.ark-forestfall-open #game{pointer-events:none}
+@keyframes ark-forestfall-hit-in{
+ from{opacity:0;transform:translateX(-22px) scale(.94)}
+ to{opacity:1;transform:translateX(0) scale(1)}
+}
+@keyframes ark-forestfall-defender-hit{
+ 0%{transform:translateX(0) rotate(0)}
+ 38%{transform:translateX(16px) rotate(7deg)}
+ 100%{transform:translateX(8px) rotate(4deg)}
+}
+@keyframes ark-forestfall-hp{
+ from{width:var(--hp-before)}
+ to{width:var(--hp-after)}
+}
+@media(max-width:650px){
+ .ark-forestfall-reaction{
+  left:12px;bottom:clamp(89px,18svh,140px);
+  width:min(310px,calc(100vw - 24px));
+  min-height:82px;padding:6px 9px;gap:8px;
+ }
+ .ark-forestfall-target-art{width:74px;height:67px}
+ .ark-forestfall-target-copy{gap:3px}
+ .ark-forestfall-target-copy small{font-size:9px}
+}
+@media(prefers-reduced-motion:reduce){
+ .ark-forestfall-reaction-visible .ark-forestfall-reaction,
+ .ark-forestfall-reaction-visible .ark-forestfall-target-art,
+ .ark-forestfall-reaction-visible .ark-forestfall-target-health span{
+  animation:none;opacity:1;transform:none;
+ }
+}
