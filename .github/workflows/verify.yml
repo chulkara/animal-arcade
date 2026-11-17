@@ -33,6 +33,7 @@ jobs:
           node --check src/combat-cinematics-core.js
           node --check src/combat-cinematics.js
           node --check src/forestfall-video.js
+          node --check src/forestfall-collision-core.js
           node --check src/arena3d-loader.js
           node --check src/arena3d-runtime.js
           node --check src/bear-motion-core.js
