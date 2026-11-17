@@ -64,9 +64,18 @@
     if(!onBattle())return report('Open a battle to preview Forestfall.');
     if(window.NoahsArena3D?.getReviewState?.()?.active)
       return report('Stop the Bear cinematic review before opening Forestfall.');
-    // Preview is deliberately non-scoring. It must work even while the
-    // attack/power reel is spinning: the old silent phase guard made the
-    // enabled PREVIEW button appear completely broken.
+    // Preview is deliberately non-scoring. It must work while the reel
+    // spins and show the same opponent cut-in without pretending damage
+    // was dealt or modifying the real state.
+    const state=battle();
+    if(preview&&!event&&state?.animals?.length===2){
+      const bearIndex=state.animals.findIndex(animal=>animal.id==='bear');
+      if(bearIndex>=0){
+        const defender=1-bearIndex;
+        event={defender,defenderId:state.animals[defender].id,
+          damage:0,remainingHp:state.animals[defender].hp,preview:true};
+      }
+    }
     const node=document.createElement('section');
     node.className='ark-forestfall';
     node.setAttribute('role','dialog');
@@ -107,7 +116,8 @@
       name.textContent=target;
       const damage=document.createElement('span');
       damage.className='ark-forestfall-hit-damage';
-      damage.textContent='−'+fmt(event.damage)+' HP';
+      damage.textContent=preview?'PREVIEW · NO HP CHANGE':
+        '−'+fmt(event.damage)+' HP';
       const health=document.createElement('small');
       const fighter=battle()?.animals?.[event.defender];
       const max=fmt(fighter?.maxHp)||Math.max(1,fmt(event.remainingHp+event.damage));
@@ -152,7 +162,7 @@
       detail:{preview,eventKey:event?.key||null}}));
     let hitShown=false,reactionUntil=null;
     const showHit=()=>{
-      if(preview||hitShown||!event)return;
+      if(hitShown||!event)return;
       const duration=Number.isFinite(video.duration)&&video.duration>1?
         video.duration:14.93;
       // Source video: dust/ground contact appears around 11.2 seconds.
@@ -161,13 +171,16 @@
       const damage=Math.max(0,Number(event.damage)||0);
       const name=window.NoahsRoster?.ANIMALS?.[event.defenderId]?.label||
         event.defenderId.toUpperCase();
-      result.textContent=name.toUpperCase()+' · −'+damage+' HP';
+      result.textContent=preview?'PREVIEW · NO HP CHANGE':
+        name.toUpperCase()+' · −'+damage+' HP';
       node.classList.add('ark-forestfall-impact','ark-forestfall-reaction-visible');
       reactionUntil=video.currentTime+REACTION_MS/1000;
       // The MP4 shows a landing but no struck animal. This inset supplies
       // an actual defender reaction and recorded HP without pretending to
       // change the video, reapply damage, or access private FBX binaries.
-      status.textContent='SPECIAL CONNECTED · RESULT ALREADY RECORDED';
+      status.textContent=preview?
+        'LOCAL VIDEO PREVIEW · NO HP CHANGES':
+        'SPECIAL CONNECTED · RESULT ALREADY RECORDED';
     };
     const syncContact=()=>{
       if(!active||active.node!==node)return;
