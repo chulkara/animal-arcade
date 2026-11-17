@@ -304,7 +304,7 @@ await run('forestfall-preview-while-reels-spin',{width:1440,height:900},async pa
     'Preview must show the actual opponent so cinematic impact can be reviewed');
   await page.locator('.ark-forestfall video').evaluate(video=>{
     Object.defineProperty(video,'duration',{configurable:true,get:()=>14.93});
-    Object.defineProperty(video,'currentTime',{configurable:true,get:()=>11.35});
+    Object.defineProperty(video,'currentTime',{configurable:true,get:()=>11.95});
     video.dispatchEvent(new Event('timeupdate'));
   });
   await page.locator('.ark-forestfall-reaction').waitFor({state:'visible'});
@@ -367,7 +367,7 @@ await run('forestfall-scored-special-hit-bridge',{width:1440,height:900},async p
     .includes(testData.defenderId));
   await page.locator('.ark-forestfall video').evaluate(video=>{
     Object.defineProperty(video,'duration',{configurable:true,get:()=>14.93});
-    Object.defineProperty(video,'currentTime',{configurable:true,get:()=>11.35});
+    Object.defineProperty(video,'currentTime',{configurable:true,get:()=>11.95});
     video.dispatchEvent(new Event('timeupdate'));
   });
   await page.locator('.ark-forestfall-reaction').waitFor({state:'visible',timeout:3000});
@@ -384,6 +384,75 @@ await run('forestfall-scored-special-hit-bridge',{width:1440,height:900},async p
   assert.equal(await page.locator('.ark-forestfall').count(),0);
   assert.equal(await page.locator('#game').getAttribute('inert'),null,
     'Battle controls must unlock after the cinematic ends');
+}, {reducedMotion:'reduce'});
+
+await run('forestfall-video-to-native-fbx-match-cut',{width:1440,height:900},async page=>{
+  await page.locator('.painted-hotspots [data-art-action="PLAY"]').click();
+  await page.locator('[data-mode="SOLO_SELECT"]').click();
+  await page.locator('[data-animal="bear"]').click();
+  await page.locator('[data-prototype-intro]').click();
+  await page.locator('[data-prototype-fight]').click();
+  await page.evaluate(()=>{
+    // The CI repo intentionally has no licensed private FBX files.
+    // This mock verifies the actual film->WebGL bridge and lifecycle.
+    // Native skeleton/clip fidelity still needs the owner's local test.
+    window.__forestfallSpy={updates:[],stopped:0,started:0};
+    const original=window.NoahsArena3D;
+    window.NoahsArena3D={...original,
+      createForestfallCollision({host,event}){
+        window.__forestfallSpy.started++;
+        if(event.attackerId!=='bear'||event.defenderId!=='moose')return null;
+        const canvas=document.createElement('canvas');
+        canvas.dataset.forestfallFbx='mock';
+        host.append(canvas);
+        return {
+          mode:'native-bear-moose-fbx',
+          update(time,duration){
+            window.__forestfallSpy.updates.push({time,duration});
+            return true;
+          },
+          stop(){
+            window.__forestfallSpy.stopped++;
+            canvas.remove();
+          }
+        };
+      }
+    };
+  });
+  await page.locator('[data-forestfall-file]').setInputFiles({
+    name:'source-timing-test.mp4',mimeType:'video/mp4',
+    buffer:Buffer.from('fixture; no third-party video checked into CI')
+  });
+  const prior=await page.evaluate(()=>window.NoahsCombat.getState().animals.map(a=>a.hp));
+  await page.locator('[data-forestfall-preview]').click();
+  assert.equal(await page.locator('.ark-forestfall').getAttribute('data-collision'),'native-fbx');
+  const seek=async seconds=>page.locator('.ark-forestfall video').evaluate((video,sec)=>{
+    Object.defineProperty(video,'duration',{configurable:true,get:()=>14.93});
+    Object.defineProperty(video,'currentTime',{configurable:true,get:()=>sec});
+    video.dispatchEvent(new Event('timeupdate'));
+  },seconds);
+  await seek(11.3);
+  assert.equal(await page.locator('.ark-forestfall-3d-live').count(),0);
+  await seek(11.62);
+  assert.equal(await page.locator('.ark-forestfall-3d-live').count(),1);
+  assert.ok(await page.locator('.ark-forestfall-native-stage canvas').count()>0);
+  await seek(11.96);
+  assert.equal(await page.locator('.ark-forestfall-reaction-visible').count(),0,
+    'Once both source rigs are present, no cardboard opponent insert should appear');
+  assert.match(await page.locator('.ark-forestfall-result').textContent(),
+    /PREVIEW · NO HP CHANGE/);
+  await seek(13.35);
+  assert.equal(await page.locator('.ark-forestfall-3d-live').count(),0,
+    'The 3D match cut should hand back to the Bear video for its final roar');
+  const test=await page.evaluate(()=>window.__forestfallSpy);
+  assert.equal(test.started,1);
+  assert.ok(test.updates.length>=2);
+  await page.locator('.ark-forestfall-controls button').last().click();
+  assert.equal(await page.locator('.ark-forestfall').count(),0);
+  assert.equal((await page.evaluate(()=>window.__forestfallSpy)).stopped,1,
+    'Skip must dispose the temporary skinned scene/canvas');
+  assert.deepEqual(await page.evaluate(()=>window.NoahsCombat.getState().animals.map(a=>a.hp)),
+    prior,'A live 3D preview cannot apply or recalculate damage');
 }, {reducedMotion:'reduce'});
 
 await run('battle-feel-desktop-1440x900',{width:1440,height:900},async page=>{
