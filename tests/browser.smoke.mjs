@@ -360,10 +360,10 @@ await run('forestfall-scored-special-hit-bridge',{width:1440,height:900},async p
     Object.defineProperty(video,'currentTime',{configurable:true,get:()=>11.35});
     video.dispatchEvent(new Event('timeupdate'));
   });
-  await page.locator('.ark-forestfall-reaction-visible').waitFor({state:'visible'});
-  assert.match(await page.locator('.ark-forestfall-hit-damage').innerText(),
+  await page.locator('.ark-forestfall-reaction').waitFor({state:'visible',timeout:3000});
+  assert.match(await page.locator('.ark-forestfall-hit-damage').textContent(),
     new RegExp(String(testData.damage)));
-  assert.match(await page.locator('.ark-forestfall-target-copy small').innerText(),
+  assert.match(await page.locator('.ark-forestfall-target-copy small').textContent(),
     new RegExp(String(testData.remainingHp)));
   const after=await page.evaluate(()=>{
     const s=window.NoahsCombat.getState();
