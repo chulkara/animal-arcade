@@ -77,3 +77,18 @@ test('live scene uses user imported skinned models and actual Moose native Hit/K
  assert.ok(!video.includes('nextRound()'));
  assert.ok(!runtime.includes('Forestfall HP ='));
 });
+
+
+test('native scene releases its WebGL context and hidden battle is not rendered',()=>{
+ assert.ok(runtime.includes('impactRenderer?.forceContextLoss?.()'));
+ assert.ok(runtime.includes('if(!forestfallOverlayOpen)'));
+ assert.ok(runtime.includes("window.addEventListener('arkade:forestfallopen'"));
+ assert.ok(runtime.includes("window.addEventListener('arkade:forestfallclose'"));
+});
+test('WebGL exceptions restore the original movie and optional illustrated reaction',()=>{
+ assert.ok(video.includes("const failed=active.collision;active.collision=null"));
+ assert.ok(video.includes("node.dataset.collision='video-fallback'"));
+ assert.ok(video.includes("status.textContent='3D CONTACT UNAVAILABLE"));
+ assert.ok(video.includes("if(!live)node.classList.add('ark-forestfall-reaction-visible')"));
+ assert.ok(video.includes("try{failed.stop();}catch(_ignored){}"));
+});
