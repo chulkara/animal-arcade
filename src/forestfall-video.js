@@ -48,11 +48,19 @@
     return null;
   }
   function playVideo({event=null,preview=false}={}){
-    if(!objectUrl||active||!onBattle())return false;
-    if(window.NoahsArena3D?.getReviewState?.()?.active)return false;
-    const s=battle();
-    // Never start an informational preview while a timed reel is active.
-    if(preview&&['ATTACK','POWER'].includes(s?.phase))return false;
+    const report=message=>{
+      const label=ui.querySelector('[data-forestfall-status]');
+      if(label)label.textContent=message;
+      return false;
+    };
+    if(!objectUrl)return report('Load the Forestfall MP4 before previewing it.');
+    if(active)return false;
+    if(!onBattle())return report('Open a battle to preview Forestfall.');
+    if(window.NoahsArena3D?.getReviewState?.()?.active)
+      return report('Stop the Bear cinematic review before opening Forestfall.');
+    // Preview is deliberately non-scoring. It must work even while the
+    // attack/power reel is spinning: the old silent phase guard made the
+    // enabled PREVIEW button appear completely broken.
     const node=document.createElement('section');
     node.className='ark-forestfall';
     node.setAttribute('role','dialog');
@@ -139,6 +147,8 @@
     if(event.target.closest('[data-forestfall-choose]')){
       ui.querySelector('[data-forestfall-file]')?.click();
     }else if(event.target.closest('[data-forestfall-preview]')){
+      // Keep this synchronous with the user's click so browsers permit
+      // media playback when their autoplay policy requires a gesture.
       playVideo({preview:true});
     }
   });
