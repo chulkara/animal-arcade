@@ -408,6 +408,8 @@ await run('forestfall-video-to-native-fbx-match-cut',{width:1440,height:900},asy
         return {
           mode:'native-bear-moose-fbx',
           update(time,duration){
+            if(window.__forestfallSpy.failOnUpdate)
+              throw Error('mock WebGL context lost');
             window.__forestfallSpy.updates.push({time,duration});
             return true;
           },
@@ -453,6 +455,20 @@ await run('forestfall-video-to-native-fbx-match-cut',{width:1440,height:900},asy
     'Skip must dispose the temporary skinned scene/canvas');
   assert.deepEqual(await page.evaluate(()=>window.NoahsCombat.getState().animals.map(a=>a.hp)),
     prior,'A live 3D preview cannot apply or recalculate damage');
+  await page.evaluate(()=>{window.__forestfallSpy.failOnUpdate=true;});
+  await page.locator('[data-forestfall-preview]').click();
+  await seek(11.7);
+  assert.equal(await page.locator('.ark-forestfall').getAttribute('data-collision'),
+    'video-fallback','WebGL failure should return to original video rather than strand the match');
+  assert.match(await page.locator('.ark-forestfall-status').textContent(),/3D CONTACT UNAVAILABLE/);
+  await seek(11.95);
+  assert.equal(await page.locator('.ark-forestfall-reaction-visible').count(),1,
+    'After WebGL failure, the optional illustrated hit fallback remains available');
+  await page.locator('.ark-forestfall-controls button').last().click();
+  assert.equal((await page.evaluate(()=>window.__forestfallSpy)).stopped,2,
+    'Temporary WebGL clones must dispose both on Skip and renderer failure');
+  assert.deepEqual(await page.evaluate(()=>window.NoahsCombat.getState().animals.map(a=>a.hp)),
+    prior,'Renderer loss cannot alter the live scored HP');
 }, {reducedMotion:'reduce'});
 
 await run('battle-feel-desktop-1440x900',{width:1440,height:900},async page=>{
