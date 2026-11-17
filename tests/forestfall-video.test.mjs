@@ -70,3 +70,13 @@ test('the Forestfall cinematic respects volume, mute and reduced motion',()=>{
  assert.ok(script.includes('REDUCED MOTION ENABLED · PLAY VIDEO MANUALLY OR SKIP'));
  assert.ok(script.includes('video.play().catch('));
 });
+
+
+test('Forestfall preview is not silently blocked during either spinning reel',()=>{
+ assert.ok(!script.includes("if(preview&&['ATTACK','POWER'].includes(s?.phase))return false"),
+   'Reel-state guard prevented all previews until after a round ended');
+ assert.ok(script.includes('Preview is deliberately non-scoring'));
+ assert.ok(script.includes('Stop the Bear cinematic review before opening Forestfall.'));
+ assert.ok(script.includes('Load the Forestfall MP4 before previewing it.'));
+ assert.ok(script.includes("const node=document.createElement('section')"));
+});
