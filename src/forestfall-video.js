@@ -99,7 +99,8 @@
     skip.addEventListener('click',()=>close(true));
     resume.addEventListener('click',()=>{
       video.play().then(()=>{resume.hidden=true;}).catch(()=>{
-        status.textContent='Could not play this video. Use SKIP CINEMATIC.';
+        status.textContent=(preview?'LOCAL VIDEO PREVIEW · NO DAMAGE · ':'')+
+        'Could not play this video. Use SKIP CINEMATIC.';
       });
     });
     controls.append(resume,skip);
@@ -125,19 +126,22 @@
     video.addEventListener('ended',()=>close(true),{once:true});
     video.addEventListener('error',()=>{
       if(!active||active.node!==node)return;
-      status.textContent='Video playback failed. The battle result is safe.';
+      status.textContent=(preview?'LOCAL VIDEO PREVIEW · NO DAMAGE · ':'')+
+        'Video playback failed. The battle result is safe.';
       resume.hidden=true;
     });
     // A power-slot stop is a direct user gesture, so browsers may allow
     // audio. If autoplay is blocked, offer an explicit button instead.
     if(reduced){
       resume.hidden=false;
-      status.textContent='REDUCED MOTION ENABLED · PLAY VIDEO MANUALLY OR SKIP';
+      status.textContent=(preview?'LOCAL VIDEO PREVIEW · NO DAMAGE · ':'')+
+        'REDUCED MOTION ENABLED · PLAY VIDEO MANUALLY OR SKIP';
     }else{
       video.play().catch(()=>{
         if(!active||active.node!==node)return;
         resume.hidden=false;
-        status.textContent='SELECT PLAY FORESTFALL TO START THE CINEMATIC';
+        status.textContent=(preview?'LOCAL VIDEO PREVIEW · NO DAMAGE · ':'')+
+          'SELECT PLAY FORESTFALL TO START THE CINEMATIC';
       });
     }
     skip.focus();
