@@ -34,8 +34,9 @@ test('a real Bear special hit invokes Forestfall, not an ordinary G/T/P attack',
 test('Forestfall overlays the battle rather than mutating scoring or damage',()=>{
  assert.ok(script.includes('event.damage'));
  assert.ok(script.includes('video.currentTime<duration*CONTACT_RATIO'));
- assert.ok(script.includes('const CONTACT_RATIO=.755'));
- assert.ok(script.includes("node.classList.add('ark-forestfall-impact','ark-forestfall-reaction-visible')"));
+ assert.ok(script.includes('const CONTACT_RATIO=impactCore?.CONTACT/impactCore?.SOURCE_SECONDS'));
+ assert.ok(script.includes("node.classList.add('ark-forestfall-impact')"));
+ assert.ok(script.includes("if(!live)node.classList.add('ark-forestfall-reaction-visible')"));
  assert.ok(script.includes("video.addEventListener('ended',()=>close(true)"));
  assert.ok(script.includes("skip.addEventListener('click',()=>close(true))"));
  assert.ok(!script.includes('battle.stop('));
@@ -84,14 +85,15 @@ test('Forestfall preview is not silently blocked during either spinning reel',()
 
 
 test('a scored Forestfall hit stages the actual defender response at the landing',()=>{
- assert.ok(script.includes('const CONTACT_RATIO=.755'));
+ assert.ok(script.includes('const CONTACT_RATIO=impactCore?.CONTACT/impactCore?.SOURCE_SECONDS'));
  assert.ok(script.includes('const REACTION_MS=1120'));
  assert.ok(script.includes("species=event?.defenderId&&window.NoahsRoster?.ANIMALS?.[event.defenderId]"));
  assert.ok(script.includes("animal.src=species.art"));
  assert.ok(script.includes('remainingHp+event.damage'));
  assert.ok(script.includes('previous/max'));
  assert.ok(script.includes('remains/max'));
- assert.ok(script.includes("node.classList.add('ark-forestfall-impact','ark-forestfall-reaction-visible')"));
+ assert.ok(script.includes("node.classList.add('ark-forestfall-impact')"));
+ assert.ok(script.includes("if(!live)node.classList.add('ark-forestfall-reaction-visible')"));
  assert.ok(script.includes('video.currentTime<duration*CONTACT_RATIO'));
  assert.ok(css.includes('.ark-forestfall-target-art'));
  assert.ok(css.includes('.ark-forestfall-target-health'));
@@ -113,7 +115,7 @@ test('Forestfall blocks interactions but always returns control after skip/compl
 test('Preview rehearses the real opposing species without applying HP loss',()=>{
  assert.ok(script.includes("if(preview&&!event&&state?.animals?.length===2)"));
  assert.ok(script.includes("const bearIndex=state.animals.findIndex(animal=>animal.id==='bear')"));
- assert.ok(script.includes("damage:0,remainingHp:state.animals[defender].hp,preview:true"));
+ assert.ok(script.includes("damage:0,remainingHp:state.animals[defender].hp"));
  assert.ok(script.includes("damage.textContent=preview?'PREVIEW · NO HP CHANGE'"));
  assert.ok(script.includes("result.textContent=preview?'PREVIEW · NO HP CHANGE'"));
  assert.ok(script.includes("'LOCAL VIDEO PREVIEW · NO HP CHANGES'"));
