@@ -22,8 +22,16 @@
     const preview=ui.querySelector('[data-forestfall-preview]');
     if(preview)preview.disabled=!ready;
     const label=ui.querySelector('[data-forestfall-status]');
-    if(label)label.textContent=ready?'FORESTFALL READY · '+fileName:
-      'Choose the 1080p Forestfall MP4. Stored only for this session.';
+    if(label){
+      const assets=window.NoahsArena3D?.getStatus?.();
+      const match=battle();
+      const versusMoose=match?.animals?.some(animal=>animal.id==='moose');
+      const mode=assets?.bear&&assets?.moose&&versusMoose?
+        ' · LIVE BEAR + MOOSE FBX CONTACT READY':
+        ' · VIDEO MODE · LOAD BOTH 3D MODELS FOR PHYSICAL IMPACT';
+      label.textContent=ready?'FORESTFALL READY · '+fileName+mode:
+        'Choose the 1080p Forestfall MP4. Stored only for this session.';
+    }
   }
   function close(focus=false){
     if(!active)return;
@@ -293,6 +301,7 @@
     if(!onBattle())close();
     updateControls();
   });
+  window.addEventListener('arkade:forestfall-assetschange',updateControls);
   window.addEventListener('keydown',event=>{
     if(!active)return;
     if(event.key==='Escape'){
