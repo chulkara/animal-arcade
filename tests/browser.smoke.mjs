@@ -280,6 +280,41 @@ await run('card-reward-solo-1440x900',{width:1440,height:900},async page=>{
 });
 
 
+await run('forestfall-preview-while-reels-spin',{width:1440,height:900},async page=>{
+  await page.locator('.painted-hotspots [data-art-action="PLAY"]').click();
+  await page.locator('[data-mode="SOLO_SELECT"]').click();
+  await page.locator('[data-animal="bear"]').click();
+  await page.locator('[data-prototype-intro]').click();
+  await page.locator('[data-prototype-fight]').click();
+  assert.equal(await page.locator('#game').getAttribute('data-screen'),'BATTLE_PLAY');
+  assert.equal((await page.evaluate(()=>window.NoahsCombat.getState().phase)),'ATTACK');
+  assert.equal(await page.locator('[data-forestfall-preview]').isDisabled(),true);
+  // This tiny artificial file only tests the UI path; the user's original
+  // generated video never enters the repo or the test service.
+  await page.locator('[data-forestfall-file]').setInputFiles({
+    name:'forestfall-smoke.mp4',mimeType:'video/mp4',
+    buffer:Buffer.from('placeholder bytes for browser UI smoke test')
+  });
+  assert.equal(await page.locator('[data-forestfall-preview]').isDisabled(),false);
+  assert.match(await page.locator('[data-forestfall-status]').innerText(),/FORESTFALL READY/);
+  await page.locator('[data-forestfall-preview]').click();
+  await page.locator('.ark-forestfall').waitFor({state:'visible',timeout:3000});
+  assert.match(await page.locator('.ark-forestfall-status').innerText(),/NO DAMAGE/);
+  assert.equal((await page.evaluate(()=>window.NoahsCombat.getState().phase)),'ATTACK',
+    'Viewing Forestfall must never stop the reel or change scored gameplay');
+  await page.locator('.ark-forestfall-controls button').last().click();
+  assert.equal(await page.locator('.ark-forestfall').count(),0);
+  await page.keyboard.press('g');
+  assert.equal((await page.evaluate(()=>window.NoahsCombat.getState().phase)),'POWER');
+  assert.equal(await page.locator('[data-forestfall-preview]').isDisabled(),false,
+    'File stays selected across battle-screen rerenders');
+  await page.locator('[data-forestfall-preview]').click();
+  assert.equal(await page.locator('.ark-forestfall').count(),1,
+    'Preview must also open from the POWER reel, not silently do nothing');
+  await page.locator('.ark-forestfall-controls button').last().click();
+  assert.equal((await page.evaluate(()=>window.NoahsCombat.getState().phase)),'POWER');
+});
+
 await run('battle-feel-desktop-1440x900',{width:1440,height:900},async page=>{
   await page.emulateMedia({reducedMotion:'no-preference'});
   await page.locator('.painted-hotspots [data-art-action="PLAY"]').click();
