@@ -315,6 +315,67 @@ await run('forestfall-preview-while-reels-spin',{width:1440,height:900},async pa
   assert.equal((await page.evaluate(()=>window.NoahsCombat.getState().phase)),'POWER');
 });
 
+await run('forestfall-scored-special-hit-bridge',{width:1440,height:900},async page=>{
+  await page.locator('.painted-hotspots [data-art-action="PLAY"]').click();
+  await page.locator('[data-mode="SOLO_SELECT"]').click();
+  await page.locator('[data-animal="bear"]').click();
+  await page.locator('[data-prototype-intro]').click();
+  await page.locator('[data-prototype-fight]').click();
+  await page.locator('[data-forestfall-file]').setInputFiles({
+    name:'forestfall-impact-test.mp4',mimeType:'video/mp4',
+    buffer:Buffer.from('dummy video for cinematic event wiring only')
+  });
+  const baseline=await page.evaluate(()=>{
+    const s=window.NoahsCombat.getState();
+    return {phase:s.phase,bearHp:s.animals[0].hp,mooseHp:s.animals[1].hp};
+  });
+  assert.equal(baseline.phase,'ATTACK');
+  const testData=await page.evaluate(()=>{
+    const api=window.NoahsCombat;
+    const original=api.getState;
+    const current=original();
+    const attacker=current.animals.findIndex(a=>a.id==='bear');
+    const defender=1-attacker;
+    const maxHp=current.animals[defender].maxHp;
+    const prior=current.animals[defender].hp;
+    const damage=Math.min(prior,37);
+    const remainingHp=prior-damage;
+    const fake={...current,phase:'RESULT',round:401,
+      lastEvent:{kind:'HIT',attacker,defender,damage,remainingHp,
+        technique:'P',special:true,miracleBonus:0,miracleName:null}};
+    api.getState=()=>fake;
+    window.dispatchEvent(new CustomEvent('arkade:reelstop',{
+      detail:{phase:'POWER',value:'MARK',hit:true}}));
+    api.getState=original;
+    return {defenderId:current.animals[defender].id,damage,remainingHp,maxHp};
+  });
+  assert.equal(await page.locator('.ark-forestfall').count(),1,
+    'A real Bear special HIT event should open a fullscreen cutscene');
+  assert.equal(await page.locator('.ark-forestfall-reaction img').count(),1,
+    'The reaction inset identifies the real defender, not a generic enemy');
+  assert.ok((await page.locator('.ark-forestfall-target-art').getAttribute('src'))
+    .includes(testData.defenderId));
+  await page.locator('.ark-forestfall video').evaluate(video=>{
+    Object.defineProperty(video,'duration',{configurable:true,get:()=>14.93});
+    Object.defineProperty(video,'currentTime',{configurable:true,get:()=>11.35});
+    video.dispatchEvent(new Event('timeupdate'));
+  });
+  await page.locator('.ark-forestfall-reaction-visible').waitFor({state:'visible'});
+  assert.match(await page.locator('.ark-forestfall-hit-damage').innerText(),
+    new RegExp(String(testData.damage)));
+  assert.match(await page.locator('.ark-forestfall-target-copy small').innerText(),
+    new RegExp(String(testData.remainingHp)));
+  const after=await page.evaluate(()=>{
+    const s=window.NoahsCombat.getState();
+    return {phase:s.phase,bearHp:s.animals[0].hp,mooseHp:s.animals[1].hp};
+  });
+  assert.deepEqual(after,baseline,'Video collision must never change real HP or reel phase');
+  await page.locator('.ark-forestfall-controls button').last().click();
+  assert.equal(await page.locator('.ark-forestfall').count(),0);
+  assert.equal(await page.locator('#game').getAttribute('inert'),null,
+    'Battle controls must unlock after the cinematic ends');
+}, {reducedMotion:'reduce'});
+
 await run('battle-feel-desktop-1440x900',{width:1440,height:900},async page=>{
   await page.emulateMedia({reducedMotion:'no-preference'});
   await page.locator('.painted-hotspots [data-art-action="PLAY"]').click();
