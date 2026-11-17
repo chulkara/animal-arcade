@@ -186,7 +186,8 @@
       if(!active||active.node!==node)return;
       showHit();
       if(reactionUntil!==null&&video.currentTime>=reactionUntil){
-        node.classList.remove('ark-forestfall-reaction-visible');
+        node.classList.remove('ark-forestfall-reaction-visible','ark-forestfall-impact');
+        result.textContent='';
         reactionUntil=null;
       }
     };
