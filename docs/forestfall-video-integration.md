@@ -44,3 +44,15 @@
 - `src/combat-ui.js`: battle import and preview controls
 - `src/combat-cinematics.js`: suppress base attack sound when Forestfall video is playing
 - `tests/forestfall-video.test.mjs`: source wiring and no-double-damage guards
+
+
+## 2026-11-17: Scored hit and opponent reaction bridge
+
+A previous check confirmed that selecting and manually previewing the MP4 works. This iteration focuses on the real match transition.
+
+- On the actual Bear special `HIT`, the selected local movie runs fullscreen while the normal battle controls are inert (not rerolled or advanced). Escape, Skip, or the clip ending restores them.
+- At **75.5% of the video duration** (approximately 11.27s of the supplied 14.93s Forestfall), a short target reaction inset identifies the *actual opposing roster animal* and animates its original silhouette being knocked backward. The inset includes the precise already-calculated damage amount, remaining HP and a short bar transition from inferred previous HP to recorded remaining HP. This **does not** apply damage a second time. The target inset fades after about 1.12 seconds.
+- The inset is intentionally a **hybrid video/game cut-in**, not an invented rendered collision. The source Forestfall MP4 shows the forest/tree/dive/landing but **never includes Moose or any other defender**. The full production fix requires the original source 3D opponent, coordinated camera and source-compatible Bear climb/leap animation.
+- The cutscene's audio is authoritative while playing; the base game's overlapping victory effects/fanfare are gated. Loading this optional video remains local to the current browser session, and no model/video bytes are uploaded or distributed.
+- Added a Chromium smoke test simulating a genuine Bear-special result from a scored-attack-shaped fixture. It checks automatic triggering, correct opponent art, impact timing, actual remaining HP, an unchanged real match and restored controls after Skip. The older preview test still checks both spinning reel phases.
+- Known unrelated branch blocker: earlier quadrupedal Bear victory tests remain red. Keep draft PR #12 unmerged and do not claim the whole game's visual rigging is finished.
