@@ -33,7 +33,8 @@ test('a real Bear special hit invokes Forestfall, not an ordinary G/T/P attack',
 
 test('Forestfall overlays the battle rather than mutating scoring or damage',()=>{
  assert.ok(script.includes('event.damage'));
- assert.ok(script.includes('video.currentTime<duration*.755'));
+ assert.ok(script.includes('video.currentTime<duration*CONTACT_RATIO'));
+ assert.ok(script.includes('const CONTACT_RATIO=.755'));
  assert.ok(script.includes("node.classList.add('ark-forestfall-impact')"));
  assert.ok(script.includes("video.addEventListener('ended',()=>close(true)"));
  assert.ok(script.includes("skip.addEventListener('click',()=>close(true))"));
