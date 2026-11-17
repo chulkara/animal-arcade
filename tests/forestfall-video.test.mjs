@@ -108,3 +108,14 @@ test('Forestfall blocks interactions but always returns control after skip/compl
  assert.ok(!script.includes('battle.stop('));
  assert.ok(!script.includes('nextRound()'));
 });
+
+
+test('Preview rehearses the real opposing species without applying HP loss',()=>{
+ assert.ok(script.includes("if(preview&&!event&&state?.animals?.length===2)"));
+ assert.ok(script.includes("const bearIndex=state.animals.findIndex(animal=>animal.id==='bear')"));
+ assert.ok(script.includes("damage:0,remainingHp:state.animals[defender].hp,preview:true"));
+ assert.ok(script.includes("damage.textContent=preview?'PREVIEW · NO HP CHANGE'"));
+ assert.ok(script.includes("result.textContent=preview?'PREVIEW · NO HP CHANGE'"));
+ assert.ok(script.includes("'LOCAL VIDEO PREVIEW · NO HP CHANGES'"));
+ assert.ok(!script.includes('battle.stop('));
+});
