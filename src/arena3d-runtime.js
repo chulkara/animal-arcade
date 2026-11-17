@@ -1083,6 +1083,7 @@
         if(el)el.textContent='3D MODEL + MOTIONS READY';
       }
       shownEvent=null;syncScene(true);
+      window.dispatchEvent(new CustomEvent('arkade:forestfall-assetschange'));
     }catch(error){
       status('3D load failed: '+(error?.message||String(error))+
         '. Existing illustrated fighters remain available.');
@@ -1096,6 +1097,7 @@
     const el=panel?.querySelector('[data-ark3d-loaded="'+id+'"]');
     if(el)el.textContent='3D model removed';
     status(label(id)+' 3D source cleared from this browser session.');
+    window.dispatchEvent(new CustomEvent('arkade:forestfall-assetschange'));
   }
   ui.addEventListener('click',event=>{
     if(event.target.closest('[data-bear-review-quick]')){
