@@ -22,7 +22,7 @@ For a local network: use `python3 -m http.server 4173 --bind 0.0.0.0` only when 
 
 - When the original painting loads, the game opens directly on its illustrated menu; select **PLAY**, **MY CARDS**, **BINDER**, **SHOP**, or **SETTINGS**.
 - **MY CARDS** shows owned and undiscovered cards; **BINDER** lets you equip one Animal, one Strong and one Miracle for each local player. Complete a battle to earn a card. Export/import JSON to back up saves. The binder is local-only, not online-synced.
-- **PLAY** opens single-player, local two-player, Edit Binder, and How to Play. Selecting a mode opens animal selection; choose an original Tiger or Lion portrait, then see the two-animal battle-stage preview. In two-player mode, each person chooses in turn on the same device. Choose **BEGIN INTRO → START BATTLE** to play the prototype. Use the **green** button to stop the G/T/P attack slot, then **yellow** to stop the power slot. Higher power hits; ties reroll. Press **G**, **Y**, or **Space** as shortcuts. It is not a full historical recreation.
+- **PLAY** opens single-player, local two-player, Edit Binder, and How to Play. Selecting a mode opens animal selection; choose Bear or Moose from two original temporary silhouette portraits, then see the two-animal battle-stage preview. In two-player mode, each person chooses in turn on the same device. Choose **BEGIN INTRO → START BATTLE** to play the prototype. Use the **green** button to stop the G/T/P attack slot, then **yellow** to stop the power slot. Higher power hits; ties reroll. Press **G**, **Y**, or **Space** as shortcuts. It is not a full historical recreation.
 - If the approved painting cannot load, **Enter**, **Space**, or **PRESS START** opens the previous fallback menu.
 - Use **Up/Down** or **W/S** to select, **Enter/Space** to confirm, and **Escape/Backspace** to go back.
 - Mouse and touch can navigate the menu. All options are reversible.
@@ -53,3 +53,16 @@ See [Phase 3 mechanics](docs/phase3-combat.md) and [Phase 4 cards and binder](do
 ## GitHub Pages
 
 The `.github/workflows/pages.yml` workflow publishes the static website from `main`. The separate verification workflow runs Node tests and Chromium smoke tests on desktop, tablet, and phones. The original menu painting is never modified by Phase 2, Phase 3, Phase 4 or Phase 4.5.
+
+## Bear and Moose roster (draft PR only)
+
+Bear and Moose are the only battle-selectable animals on this development branch. The approved painted main-menu image is identical to the release version, and Tiger V4 remains preserved in its separate draft work. The default selector/battle use original temporary SVG silhouettes. A **3D ARENA SETUP** button now allows loading the user's own extracted Bear Motion Lab V2 and Moose Motion Lab V2 model, native animation and texture files **directly in the browser**, without uploading them. Three.js renders the rigged fighters over the arena, playing source-backed Bear attacks and native hits/KO, and Moose's original V2 G/T/P/Special choreography on its source skeleton. Existing local Tiger/Lion Animal cards migrate to Bear/Moose; wins and Strong/Miracle cards persist. **The actual asset-specific 3D rendering remains unverified until tested with the private files; public/commercial source redistribution rights are also unknown.** Keep this draft private-review-only and do not publish binaries or merge upstream Tiger/Bear/Moose experiments without acceptance. See `docs/bear-moose-playable-roster.md` for local setup and QA.
+
+
+## Cinematic battle direction (draft, November 15)
+
+The uploaded 23-second Noah's Arkade screen recording and 76-second arcade reference were studied to identify the difference between a static 3D arena and memorable action. This draft adds **original animal-specific camera storyboards** for Bear and Moose G/T/P and Special moves; separate defender-native hit/KO reactions; low/side/high/wide multi-angle victory edits; reusable five-Miracle card intros and matching real-time particle FX; a tactile green attack / yellow power reel cabinet; and original mechanical/audio impact cues. A cinematic timeline handles when each beat plays and keeps intrusive result cards out of the shot until the attack ends.
+
+The **same signature move direction** is reused for a given animal and technique, regardless of its opponent. The opposing animal contributes its own hit, recoil and knockout animations, which is how we can avoid reauthoring identical cutscenes for each matchup.
+
+This is not yet a full reproduction of the original game's signature environment setpieces, model rig polish or all Miracle strategy rules. The **real private FBX playback** still needs local camera/clip QA and licensing permission before any public release. See [the source-footage combat audit](docs/combat-fidelity-audit-20261115.md) for evidence, implemented systems and remaining acceptance gates.

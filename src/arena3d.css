@@ -1,0 +1,192 @@
+/* Draft 3D arena overlay: no changes to approved painted title image. */
+.ark-reference-layout .ark-fbx-layer{
+ position:absolute;inset:0;z-index:16;pointer-events:none;overflow:hidden;
+}
+.ark-reference-layout .ark-fbx-layer[hidden]{display:none!important}
+.ark-reference-layout .ark-fbx-layer canvas{display:block;width:100%;height:100%}
+.ark-reference-layout .combat-battlefield .combat-match{z-index:17}
+.ark-reference-layout .combat-fighter[data-3d-visible="true"] .combat-fighter-art{
+ opacity:0!important;animation:none!important;pointer-events:none;
+}
+.ark-reference-layout .combat-footer [data-ark3d-open]{
+ color:#f6e3b9;border-color:#e3bf7e;
+ background:#1d4a46e8;
+ min-height:40px;padding:8px 12px;
+ font:700 11px Arial,sans-serif;letter-spacing:.08em;
+}
+.ark-reference-layout .combat-footer [data-ark3d-open]:focus-visible{
+ outline:3px solid #ffe29b;outline-offset:3px;
+}
+.ark-fbx-dialog{
+ position:fixed;z-index:90;top:50%;left:50%;transform:translate(-50%,-50%);
+ width:min(680px,calc(100vw - 18px));max-height:min(89svh,800px);
+ overflow:auto;overscroll-behavior:contain;box-sizing:border-box;
+ border:2px solid #cfae72;border-radius:10px;
+ background:linear-gradient(150deg,#102e3d,#163932 72%,#10272f);
+ box-shadow:0 24px 80px #000c,0 0 0 200vmax #0009;
+ padding:18px;color:#f3e7c8;font:14px/1.45 Georgia,serif;
+}
+.ark-fbx-dialog-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.ark-fbx-dialog h2{font:700 clamp(17px,3vw,23px) Impact,'Arial Black',sans-serif;
+ letter-spacing:.07em;margin:0;color:#ffe4a5}
+.ark-fbx-dialog p{margin:12px 0}
+.ark-fbx-dialog button{font:700 12px Arial,sans-serif;color:#fff1ca;
+ border:1px solid #c5a270;border-radius:5px;background:#285450;padding:10px 12px;
+ min-height:44px}
+.ark-fbx-dialog button:hover{background:#39685d}
+.ark-fbx-dialog button:focus-visible,.ark-fbx-dialog input:focus-visible{
+ outline:3px solid #ffdf94;outline-offset:2px}
+.ark-fbx-dialog button:disabled{opacity:.5;cursor:wait}
+.ark-fbx-dialog-head [data-ark3d-close]{font:22px Arial,sans-serif;min-width:44px}
+.ark-fbx-import{border:1px solid #c6ac765a;border-radius:8px;padding:12px;
+ background:#071e25a6;display:grid;gap:8px;margin:10px 0}
+.ark-fbx-import strong{color:#f8deaa;font:700 18px Impact,'Arial Black',sans-serif;letter-spacing:.08em}
+.ark-fbx-import small{font:12px Arial,sans-serif;color:#cdd8c9}
+.ark-fbx-import label{display:grid;gap:4px;color:#e5d0a6;
+ font:700 10px Arial,sans-serif;letter-spacing:.09em}
+.ark-fbx-import input{box-sizing:border-box;width:100%;min-height:36px;
+ color:#e9e2d1;border:1px solid #9eac9b79;border-radius:5px;
+ background:#1a3034;padding:6px;font:12px Arial,sans-serif}
+.ark-fbx-import-actions{display:flex;gap:7px;flex-wrap:wrap}
+.ark-fbx-import-actions [data-ark3d-load]{background:#437050;border-color:#e9cf95}
+.ark-fbx-import-actions [data-ark3d-unload]{background:#493c3b}
+.ark-fbx-status{border-left:3px solid #e9c78b;background:#061c25bd;
+ padding:10px 12px;min-height:22px;overflow-wrap:anywhere}
+.ark-fbx-legal{font:12px/1.5 Arial,sans-serif;color:#cccfbe}
+@media(max-width:650px){
+ .ark-fbx-dialog{padding:12px;max-height:90svh}
+ .ark-fbx-import{padding:9px}
+ .ark-reference-layout .combat-footer [data-ark3d-open]{font-size:10px;min-height:44px}
+}
+@media(prefers-reduced-motion:reduce){
+ .ark-reference-layout .ark-fbx-layer{transition:none}
+}
+
+/* Private Bear G/T/P motion review. This UI is not part of the public menu. */
+.ark-fbx-review{display:grid;gap:7px;border:1px solid #efca845e;
+ background:#314a3aab;border-radius:8px;padding:12px;margin:8px 0}
+.ark-fbx-review strong{font:700 17px Impact,'Arial Black',sans-serif;
+ letter-spacing:.08em;color:#ffe1a7}
+.ark-fbx-review p{margin:0;color:#e7e9d9}
+.ark-fbx-review small{font:11px/1.45 Arial,sans-serif;color:#c7d5bf}
+.ark-fbx-review [data-bear-review-start]{font:800 12px Arial,sans-serif;
+ background:#b88a45;color:#0c2429;border-color:#f8db93;padding:11px}
+.ark-fbx-review [data-bear-review-start]:hover{background:#e4b76b}
+.ark-reference-layout.ark-bear-reviewing .combat-controls,
+.ark-reference-layout.ark-bear-reviewing .combat-message,
+.ark-reference-layout.ark-bear-reviewing .combat-ready,
+.ark-reference-layout.ark-bear-reviewing .combat-finish,
+.ark-reference-layout.ark-bear-reviewing .combat-footer{
+ visibility:hidden!important;pointer-events:none!important}
+.ark-reference-layout .ark-bear-review-toolbar{
+ position:absolute;z-index:65;bottom:clamp(8px,3svh,32px);left:50%;
+ transform:translateX(-50%);width:min(840px,94vw);
+ display:flex;align-items:center;justify-content:center;gap:10px;
+ padding:12px 15px;
+ border:2px ridge #e6bc79;border-radius:8px;
+ background:linear-gradient(145deg,#102a37f2,#173d3beb);
+ box-shadow:0 12px 35px #06121fbb,0 0 30px #f6d99835;
+ color:#f4e7c4;font:13px Arial,sans-serif}
+.ark-bear-review-info{display:flex;flex-direction:column;gap:5px;
+ min-width:0;flex:1;align-items:flex-start}
+.ark-bear-review-info strong{font:italic 900 clamp(13px,2vw,20px) Impact,'Arial Black',sans-serif;
+ letter-spacing:.06em;color:#ffe2a6}
+.ark-bear-review-info span{font:700 10px Arial,sans-serif;
+ letter-spacing:.07em;color:#dce7d6}
+.ark-bear-review-toolbar button{min-height:44px;border:1px solid #dfc080;
+ border-radius:6px;background:#244f4d;padding:10px 15px;
+ color:#fff3cc;font:800 11px Arial,sans-serif;letter-spacing:.055em}
+.ark-bear-review-toolbar [data-bear-review-replay]{background:#876c3f;color:#fff0c1}
+.ark-bear-review-toolbar button:hover{filter:brightness(1.14)}
+.ark-bear-review-toolbar button:focus-visible{outline:3px solid #fff1a9;outline-offset:3px}
+@media(max-width:650px){
+ .ark-reference-layout .ark-bear-review-toolbar{padding:8px;gap:5px}
+ .ark-bear-review-info strong{font-size:12px}
+ .ark-bear-review-info span{font-size:8px}
+ .ark-bear-review-toolbar button{font-size:9px;padding:6px;min-height:44px}
+}
+@media(max-height:550px){
+ .ark-reference-layout .ark-bear-review-toolbar{bottom:4px;padding:5px;gap:4px}
+ .ark-bear-review-info{gap:1px}
+ .ark-bear-review-toolbar button{min-height:37px}
+}
+
+/* Film review should look like a take, not a frozen match screen.
+   Hide stale 180/180 bars, floating name tags and slot labels. The
+   actual battle UI returns untouched when review exits. */
+.ark-reference-layout.ark-bear-reviewing .ark-arena-hud,
+.ark-reference-layout.ark-bear-reviewing .combat-heading,
+.ark-reference-layout.ark-bear-reviewing .combat-series,
+.ark-reference-layout.ark-bear-reviewing .combat-battlefield .combat-fighter-head,
+.ark-reference-layout.ark-bear-reviewing .combat-battlefield .combat-hp,
+.ark-reference-layout.ark-bear-reviewing .combat-battlefield .combat-animal-name,
+.ark-reference-layout.ark-bear-reviewing .combat-battlefield .combat-selections,
+.ark-reference-layout.ark-bear-reviewing .combat-battlefield .combat-card-loadout{
+ visibility:hidden!important;pointer-events:none!important;
+}
+.ark-reference-layout.ark-bear-reviewing .combat-battlefield{
+ box-shadow:inset 0 0 75px #071a2573!important;
+}
+.ark-reference-layout .ark-bear-review-toolbar{
+ left:auto;right:clamp(8px,1.7vw,24px);bottom:clamp(8px,1.4svh,16px);
+ transform:none;width:min(480px,92vw);
+ max-width:calc(100vw - 16px);
+ padding:8px 10px;gap:7px;
+ border-width:1px;border-radius:5px;
+ background:#0b2636dc;
+ box-shadow:0 5px 14px #03111999;
+}
+.ark-reference-layout .ark-bear-review-toolbar .ark-bear-review-info strong{
+ font-size:clamp(12px,1.2vw,15px);font-style:normal}
+.ark-reference-layout .ark-bear-review-toolbar .ark-bear-review-info span{
+ font-size:9px;letter-spacing:.01em}
+.ark-reference-layout .ark-bear-review-toolbar button{
+ font-size:10px;padding:7px 9px;border-width:1px}
+@media(max-width:650px){
+ .ark-reference-layout .ark-bear-review-toolbar{
+   left:50%;right:auto;transform:translateX(-50%);
+   width:calc(100% - 14px);padding:5px 7px;gap:5px}
+ .ark-reference-layout .ark-bear-review-toolbar .ark-bear-review-info strong{
+   font-size:11px}
+ .ark-reference-layout .ark-bear-review-toolbar button{font-size:9px;padding:5px}
+}
+
+
+/* Bear review launch: visible without scrolling past two importers. */
+.ark-fbx-dialog .ark-fbx-review{order:0;margin:8px 0 13px;
+ border:2px solid #e3b56e;background:linear-gradient(135deg,#284c3c,#152c35);
+ box-shadow:0 3px 16px #020f1b52}
+.ark-fbx-dialog .ark-fbx-review [data-bear-review-start]{
+ width:100%;font:800 clamp(11px,1.5vw,15px) Arial,sans-serif;
+ letter-spacing:.045em;text-align:center;min-height:48px}
+.ark-reference-layout .combat-footer{flex-wrap:wrap;max-width:calc(100% - 14px);gap:6px}
+.ark-reference-layout .combat-footer [data-bear-review-quick]{
+ background:linear-gradient(145deg,#836338,#b18a49)!important;
+ color:#fff8df!important;border:1px solid #f4d28e!important;
+ font-weight:800;letter-spacing:.055em;min-height:40px;
+ box-shadow:0 0 14px #e2b76a44}
+.ark-reference-layout .combat-footer [data-bear-review-quick]:focus-visible{
+ outline:3px solid #fff0bd;outline-offset:3px}
+@media(max-width:650px){
+ .ark-fbx-dialog .ark-fbx-review [data-bear-review-start]{font-size:11px;min-height:46px}
+ .ark-reference-layout .combat-footer{flex-direction:row;justify-content:center}
+ .ark-reference-layout .combat-footer [data-bear-review-quick]{font-size:10px;min-height:44px}
+}
+
+
+/* A separate victory-only take is useful for private rig QA, but should not
+   obscure the battlefield or the winning animal at desktop/mobile sizes. */
+.ark-reference-layout .ark-bear-review-toolbar{
+ width:min(625px,94vw);
+}
+.ark-bear-review-toolbar [data-bear-review-howl]{
+ background:#315b4c;
+ color:#fff3ca;
+}
+@media(max-width:650px){
+ .ark-reference-layout .ark-bear-review-toolbar{flex-wrap:wrap}
+ .ark-reference-layout .ark-bear-review-toolbar .ark-bear-review-info{
+  flex:1 0 100%;align-items:center;text-align:center}
+ .ark-reference-layout .ark-bear-review-toolbar button{
+  flex:1 1 28%;font-size:9px;min-height:35px}
+}

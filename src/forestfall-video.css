@@ -1,0 +1,211 @@
+/* Forestfall is a user-supplied video cutscene, never shipped with the
+ * public site. The live combat engine owns all HP and victory changes. */
+.ark-forestfall-import{
+ display:flex;align-items:center;justify-content:center;flex-wrap:wrap;
+ gap:5px;min-width:0;flex:1 1 220px;
+}
+.ark-reference-layout .ark-forestfall-import button{
+ color:#fff1c8;background:#1b5146;border:1px solid #ba9b69;
+ padding:8px 10px;min-height:38px;font:700 10px Arial,sans-serif;
+ letter-spacing:.03em;
+}
+.ark-reference-layout .ark-forestfall-import button:disabled{
+ opacity:.45;cursor:not-allowed;
+}
+.ark-forestfall-import small{
+ color:#d8c4a2;flex-basis:100%;font:10px/1.4 Arial,sans-serif;
+ text-align:center;overflow-wrap:anywhere;
+}
+.ark-forestfall{
+ position:fixed;inset:0;z-index:150;box-sizing:border-box;
+ display:flex;flex-direction:column;align-items:center;justify-content:center;
+ background:#040c10f5;color:#f9eac7;
+ font:700 12px Arial,sans-serif;overscroll-behavior:contain;
+}
+.ark-forestfall-video{
+ display:block;max-width:100vw;max-height:calc(100svh - 120px);
+ width:min(100vw,calc((100svh - 120px)*16/9));
+ height:auto;aspect-ratio:16/9;object-fit:contain;
+ background:#07110f;box-shadow:0 0 0 1px #d7bd7b4d,0 12px 44px #000d;
+}
+.ark-forestfall-title{
+ position:absolute;top:clamp(12px,5svh,44px);left:50%;
+ transform:translateX(-50%);white-space:nowrap;
+ color:#fce5a9;text-shadow:0 2px 4px #000;
+ font:italic 900 clamp(16px,3vw,30px) Impact,'Arial Black',sans-serif;
+ letter-spacing:.095em;
+}
+.ark-forestfall-result{
+ position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+ max-width:95vw;white-space:normal;text-align:center;
+ font:italic 900 clamp(21px,5vw,52px) Impact,'Arial Black',sans-serif;
+ color:#fff0b9;text-shadow:2px 3px 0 #3a3e33,0 6px 24px #000f;
+ pointer-events:none;
+}
+.ark-forestfall-impact .ark-forestfall-result{
+ animation:ark-forestfall-result .35s cubic-bezier(.13,.8,.2,1) both;
+}
+@keyframes ark-forestfall-result{
+ from{opacity:0;transform:translate(-50%,-38%) scale(1.22)}
+ to{opacity:1;transform:translate(-50%,-50%) scale(1)}
+}
+.ark-forestfall-status{
+ margin:11px 8px 7px;text-align:center;letter-spacing:.07em;
+ color:#dcd8c2;min-height:14px;
+}
+.ark-forestfall-controls{display:flex;justify-content:center;gap:9px;flex-wrap:wrap}
+.ark-forestfall-controls button{
+ cursor:pointer;border:1px solid #e1c182;border-radius:5px;
+ background:#1a5244;color:#fff1cb;
+ font:800 12px Arial,sans-serif;letter-spacing:.065em;
+ padding:12px 16px;min-height:43px;
+}
+.ark-forestfall-controls button[hidden]{display:none}
+.ark-forestfall-controls button:focus-visible{
+ outline:3px solid #fff2ac;outline-offset:3px;
+}
+@media(max-width:650px){
+ .ark-forestfall-video{max-height:calc(100svh - 160px);
+   width:100vw;aspect-ratio:16/9}
+ .ark-forestfall-title{top:12px}
+}
+@media(prefers-reduced-motion:reduce){
+ .ark-forestfall-impact .ark-forestfall-result{animation:none}
+}
+
+/* Forestfall opponent cut-in: a short real battle-state reaction, not an
+   invented third-party animation or a second health/damage calculation. */
+.ark-forestfall-reaction{
+ position:absolute;left:max(12px,calc(50vw - 515px));bottom:clamp(88px,14svh,148px);
+ display:flex;align-items:center;gap:12px;
+ width:min(400px,calc(100vw - 24px));min-height:112px;
+ padding:10px 14px;box-sizing:border-box;
+ border:2px solid #e4c37e;border-radius:8px;
+ background:linear-gradient(125deg,#112c3af5,#193f32f0);
+ box-shadow:0 7px 30px #000d;
+ opacity:0;transform:translateX(-22px) scale(.94);
+ pointer-events:none;visibility:hidden;
+}
+.ark-forestfall-reaction-visible .ark-forestfall-reaction{
+ visibility:visible;
+ animation:ark-forestfall-hit-in .28s cubic-bezier(.2,.8,.2,1) forwards;
+}
+.ark-forestfall-target-art{
+ width:115px;height:100px;object-fit:contain;flex-shrink:0;
+ filter:drop-shadow(0 7px 4px #0009);
+ transform-origin:50% 84%;
+}
+.ark-forestfall-reaction-visible .ark-forestfall-target-art{
+ animation:ark-forestfall-defender-hit .7s cubic-bezier(.16,.9,.22,1) both;
+}
+.ark-forestfall-target-copy{
+ display:flex;flex-direction:column;min-width:0;flex:1;gap:6px;
+ text-align:left;
+}
+.ark-forestfall-target-copy strong{
+ color:#f5ddb1;font:800 clamp(14px,2vw,22px) Impact,'Arial Black',sans-serif;
+ letter-spacing:.07em;
+}
+.ark-forestfall-hit-damage{
+ color:#fff1a9;font:italic 900 clamp(21px,4vw,35px) Impact,'Arial Black',sans-serif;
+ text-shadow:0 2px 3px #000b;
+}
+.ark-forestfall-target-health{
+ height:11px;background:#241f19;border:1px solid #dcc88b;padding:1px;
+}
+.ark-forestfall-target-health span{
+ display:block;height:100%;width:var(--hp-after);
+ background:linear-gradient(90deg,#66834b,#d6cf6e);
+}
+.ark-forestfall-reaction-visible .ark-forestfall-target-health span{
+ animation:ark-forestfall-hp .72s ease-out both;
+}
+.ark-forestfall-target-copy small{
+ color:#dfded1;font:700 11px Arial,sans-serif;
+}
+.ark-forestfall-open #game{pointer-events:none}
+@keyframes ark-forestfall-hit-in{
+ from{opacity:0;transform:translateX(-22px) scale(.94)}
+ to{opacity:1;transform:translateX(0) scale(1)}
+}
+@keyframes ark-forestfall-defender-hit{
+ 0%{transform:translateX(0) rotate(0)}
+ 38%{transform:translateX(16px) rotate(7deg)}
+ 100%{transform:translateX(8px) rotate(4deg)}
+}
+@keyframes ark-forestfall-hp{
+ from{width:var(--hp-before)}
+ to{width:var(--hp-after)}
+}
+@media(max-width:650px){
+ .ark-forestfall-reaction{
+  left:12px;bottom:clamp(89px,18svh,140px);
+  width:min(310px,calc(100vw - 24px));
+  min-height:82px;padding:6px 9px;gap:8px;
+ }
+ .ark-forestfall-target-art{width:74px;height:67px}
+ .ark-forestfall-target-copy{gap:3px}
+ .ark-forestfall-target-copy small{font-size:9px}
+}
+@media(prefers-reduced-motion:reduce){
+ .ark-forestfall-reaction-visible .ark-forestfall-reaction,
+ .ark-forestfall-reaction-visible .ark-forestfall-target-art,
+ .ark-forestfall-reaction-visible .ark-forestfall-target-health span{
+  animation:none;opacity:1;transform:none;
+ }
+}
+
+
+/* The live private FBX collision occupies exactly the movie's 16:9 frame.
+   It is a real separate skinned-mesh scene, not an image-card overlay.
+   The moving source movie is dimmed during the brief match-cut, providing
+   forest colors without duplicating a recognizable second Bear. */
+.ark-forestfall-media{
+ position:relative;
+ width:min(100vw,calc((100svh - 120px)*16/9));
+ max-height:calc(100svh - 120px);
+ aspect-ratio:16/9;
+ overflow:hidden;
+ background:#1d3228;
+ flex:none;
+}
+.ark-forestfall-media .ark-forestfall-video{
+ width:100%;height:100%;max-width:none;max-height:none;
+ object-fit:contain;
+}
+.ark-forestfall-native-stage{
+ position:absolute;inset:0;z-index:1;
+ visibility:hidden;opacity:0;pointer-events:none;
+ transition:opacity .10s ease;
+ overflow:hidden;
+}
+.ark-forestfall-native-stage canvas{
+ display:block;width:100%;height:100%;object-fit:contain;
+}
+.ark-forestfall-3d-live .ark-forestfall-native-stage{
+ visibility:visible;opacity:1;
+}
+.ark-forestfall-3d-live .ark-forestfall-video{
+ filter:blur(24px) brightness(.27) saturate(.7);
+ transform:scale(1.09);
+}
+.ark-forestfall-3d-live .ark-forestfall-reaction{
+ display:none!important;
+}
+.ark-forestfall-3d-live .ark-forestfall-result{
+ left:74%;top:35%;
+ font-size:clamp(16px,2.6vw,34px);
+ max-width:24vw;
+}
+@media(max-width:650px){
+ .ark-forestfall-media{
+  width:100vw;max-height:calc(100svh - 160px);
+ }
+ .ark-forestfall-3d-live .ark-forestfall-result{
+  left:70%;top:31%;font-size:clamp(12px,3vw,25px);
+  max-width:34vw;
+ }
+}
+@media(prefers-reduced-motion:reduce){
+ .ark-forestfall-native-stage{transition:none}
+}

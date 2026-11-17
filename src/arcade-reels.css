@@ -1,0 +1,178 @@
+/* Bespoke two-button arcade reel cabinet for Noah's Arkade.
+ * Casino-like tactile anticipation, with fully deterministic on-screen stops.
+ * Original styling, not scraped/duplicated artwork from another game. */
+.ark-reference-layout .combat-controls{
+ background:linear-gradient(180deg,#13293662 0%,#112d3bec 15%,#081c2ce9 100%);
+ border-top:5px ridge #e9c782;
+ box-shadow:0 -16px 44px #061721bd,0 -1px 0 1px #f8e2a660,inset 0 8px 21px #2d665c3a;
+}
+.ark-reference-layout .combat-controls:before{
+ content:'';position:absolute;top:4px;left:0;right:0;height:4px;
+ background:repeating-linear-gradient(90deg,#f4db9e 0 3px,#755f3d 3px 11px,transparent 11px 22px);
+ opacity:.38;pointer-events:none;
+}
+.ark-reference-layout .combat-reel{
+ position:relative;isolation:isolate;overflow:hidden;
+ perspective:700px;transform-style:preserve-3d;
+ border-width:5px!important;border-style:ridge!important;
+ border-color:#f6d796!important;border-radius:9px!important;
+ background:linear-gradient(180deg,#061721 0%,#102836 21%,#1f5251 45%,#122d3a 77%,#071d2a 100%)!important;
+ box-shadow:inset 0 12px 18px #000a,inset 0 -12px 18px #000a,
+  inset 0 0 4px #ffd5929e,0 8px 18px #0007,0 0 0 2px #273e48;
+}
+.ark-reference-layout .combat-reel:before{
+ content:'';position:absolute;inset:0;z-index:2;pointer-events:none;
+ background:linear-gradient(180deg,#fff7e333 0%,transparent 23%,transparent 68%,#04111c99 100%),
+  linear-gradient(90deg,#0009 0%,transparent 17%,transparent 83%,#0009 100%);
+}
+.ark-reference-layout .combat-reel:after{
+ content:'';position:absolute;z-index:5;left:50%;top:9%;bottom:9%;
+ width:3px;transform:translateX(-50%);pointer-events:none;opacity:.55;
+ background:linear-gradient(180deg,transparent,#ffe6ad 16%,transparent 50%,#ffe6ad 88%,transparent);
+ box-shadow:0 0 15px #eed9aa7a;
+}
+.ark-reference-layout .combat-reel-neighbor{
+ position:relative;z-index:1;flex:1 1 0;
+ color:#dfd4a5;font-family:Impact,'Arial Black',sans-serif;
+ font-style:italic;letter-spacing:-.02em;opacity:.58;
+ text-shadow:0 3px 0 #020e1c,0 0 11px #c7e3cc87;
+ transform:scale(.74) rotateY(18deg);
+ filter:blur(.65px);
+}
+.ark-reference-layout .combat-reel-neighbor:last-of-type{transform:scale(.74) rotateY(-18deg)}
+.ark-reference-layout .combat-reel [data-combat-current]{
+ position:relative;z-index:3;overflow:visible;
+ display:flex;align-items:center;justify-content:center;
+ min-height:clamp(56px,8svh,115px);
+ border:4px ridge #dfc07b;border-radius:11px;
+ background:radial-gradient(circle at 35% 24%,#fffde4 0%,#e7f2d6 24%,#abd4c0 48%,#245e66 100%);
+ box-shadow:inset 0 5px 0 #fff7e2d1,inset 0 -7px 14px #16382eaa,0 6px 0 #070f1a,
+  0 0 21px #80f9c27d;
+ font:italic 900 clamp(41px,6.3vw,80px)/1 Impact,'Arial Black',sans-serif!important;
+ color:#18393e;letter-spacing:-.045em;
+ text-shadow:1px 2px 0 #fffad7a8,1px 3px 2px #061c1f77;
+ transform:rotateX(0) translateY(0) scale(1);
+ will-change:transform;
+}
+.ark-reference-layout .combat-reel[data-reel-type="POWER"] [data-combat-current]{
+ background:radial-gradient(circle at 33% 22%,#fffef0 0%,#fff2b1 26%,#ffbb56 58%,#ac5533 100%);
+ border-color:#f7d08e;color:#723a1f;
+ box-shadow:inset 0 5px 0 #fff7e6db,inset 0 -7px 14px #863c16aa,
+  0 5px 0 #14101a,0 0 28px #ffd46b78;
+}
+.ark-reference-layout .combat-reel [data-combat-current].ark-reel-tick{
+ animation:ark-reel-cycle 114ms cubic-bezier(.12,.22,.16,1) both;
+}
+.ark-reference-layout .combat-reel[data-reel-type="POWER"] [data-combat-current][data-mark="true"]{
+ color:#fffaf0;text-shadow:0 2px 5px #642c08,0 0 18px #fff6d7;
+ animation:ark-reel-mark .28s ease-in-out infinite alternate;
+}
+.ark-reel-lamps{position:absolute;inset:0;pointer-events:none;z-index:4}
+.ark-reel-lamps i{position:absolute;width:7px;height:7px;border-radius:50%;
+ border:1px solid #e8d6a0;background:#d4b373;
+ box-shadow:0 0 7px #f6dfa5;top:8px;left:calc(6% + var(--lamp)*9.4%);
+ animation:ark-reel-chase .75s linear infinite;
+ animation-delay:calc(var(--lamp)*-.09s)}
+.ark-reel-lamps i:nth-child(even){top:auto;bottom:8px}
+.ark-reference-layout .combat-stop{
+ position:relative!important;isolation:isolate;overflow:hidden;
+ background:radial-gradient(circle at 37% 28%,#f5ffe8,#6fbc76 31%,#287454 67%,#173d3a 100%)!important;
+ box-shadow:inset 0 5px #fffee5b0,inset 0 -12px 18px #11302c85,
+  0 7px 0 #0b2832,0 0 0 4px #324b46,0 12px 25px #0009,0 0 23px #78ff9d77!important;
+ color:#fff9e3!important;text-shadow:0 2px 3px #0017;
+ transition:transform .07s,box-shadow .08s;
+}
+.ark-reference-layout .combat-stop.combat-yellow{
+ background:radial-gradient(circle at 37% 28%,#ffffe6,#ffe39b 29%,#ebae47 64%,#a45736 100%)!important;
+ box-shadow:inset 0 5px #fffadab0,inset 0 -12px 18px #6e432b9e,
+  0 7px 0 #222a2d,0 0 0 4px #554737,0 12px 25px #0009,0 0 27px #fff19091!important;
+ color:#312014!important;text-shadow:0 1px 1px #fff7;
+}
+.ark-reference-layout .combat-stop:before{
+ content:'';position:absolute;inset:3px;border-radius:50%;
+ border:2px dashed #fffad6a5;opacity:.8;animation:ark-reel-rim 12s linear infinite;pointer-events:none;
+}
+.ark-reference-layout .combat-stop:hover{transform:scale(1.04)}
+.ark-reference-layout .combat-stop:active{transform:translateY(5px) scale(.98);
+ box-shadow:inset 0 7px 24px #0005,0 2px 0 #0b2832,0 0 0 4px #324b46!important}
+.ark-reference-layout .combat-stop:focus-visible{outline:4px solid #faffed;outline-offset:5px}
+.ark-reference-layout .combat-stop .combat-light{
+ width:18px;height:18px;border:2px solid #fffbdf;
+ background:radial-gradient(circle,#fff 0,#fff7a6 45%,#f3be64 100%);
+ box-shadow:0 0 15px #fefcc6,0 0 32px #fff4b17c;
+ animation:ark-reel-heartbeat .8s ease-in-out infinite alternate;
+}
+.ark-reference-layout .ark-reel-opponent{
+ position:relative;isolation:isolate;overflow:hidden;
+ border:4px ridge #f1ce83;
+ background:radial-gradient(ellipse at 35% 14%,#42675f,#193a42 47%,#061b2a 100%);
+ box-shadow:inset 0 4px 14px #030f1be0,inset 0 0 0 3px #e8d2a229,
+  0 6px 19px #0008;
+}
+.ark-reference-layout .ark-reel-opponent:after{
+ content:'';position:absolute;left:10%;right:10%;top:50%;height:1px;
+ background:#f3d48c40;box-shadow:0 0 16px #f8dfa65c;pointer-events:none}
+.ark-reference-layout .ark-reel-opponent-value{
+ font-size:clamp(38px,5vw,68px);color:#ffe6a3;
+ text-shadow:0 4px 1px #071521,0 0 18px #e7c8769f;
+}
+.ark-reference-layout .combat-reel-label{
+ color:#ffefbb;text-shadow:0 0 8px #dda960a9,0 2px 2px #020812;
+ font-style:italic;letter-spacing:.1em;
+}
+@keyframes ark-reel-cycle{
+ 0%{transform:rotateX(-60deg) translateY(-31%) scale(.85);filter:brightness(.48) blur(2px)}
+ 55%{transform:rotateX(22deg) translateY(6%) scale(1.1);filter:brightness(1.25)}
+ 100%{transform:rotateX(0deg) translateY(0) scale(1);filter:none}
+}
+@keyframes ark-reel-chase{
+ 0%,100%{opacity:.2;transform:scale(.7)}
+ 42%{opacity:1;transform:scale(1.4)}
+}
+@keyframes ark-reel-heartbeat{0%{opacity:.65;transform:scale(.9)}
+ 100%{opacity:1;transform:scale(1.14)}}
+@keyframes ark-reel-rim{to{transform:rotate(360deg)}}
+@keyframes ark-reel-mark{to{filter:brightness(1.5) drop-shadow(0 0 7px #fff)}}
+@media(max-width:650px){
+ .ark-reference-layout .combat-reel{border-width:3px!important}
+ .ark-reference-layout .combat-reel [data-combat-current]{
+   font-size:clamp(32px,9vw,45px)!important;
+   min-height:53px;border-width:2px;border-radius:7px}
+ .ark-reference-layout .combat-reel-neighbor{font-size:15px;min-width:10px}
+ .ark-reference-layout .combat-stop:before{inset:1px}
+ .ark-reel-lamps i{width:4px;height:4px}
+}
+@media(max-height:550px){
+ .ark-reference-layout .combat-reel [data-combat-current]{min-height:48px}
+ .ark-reference-layout .combat-reel-label{font-size:11px}
+ .ark-reference-layout .combat-stop:before{display:none}
+}
+@media(prefers-reduced-motion:reduce){
+ .ark-reference-layout .combat-reel [data-combat-current],
+ .ark-reference-layout .combat-stop:before,
+ .ark-reference-layout .combat-stop .combat-light,
+ .ark-reel-lamps i{animation:none!important}
+}
+.game.reduce-motion .combat-reel [data-combat-current],
+.game.reduce-motion .combat-stop:before,
+.game.reduce-motion .combat-stop .combat-light,
+.game.reduce-motion .ark-reel-lamps i{animation:none!important}
+
+
+.ark-reel-snap{position:absolute;z-index:28;left:50%;top:clamp(115px,19svh,166px);
+ transform:translateX(-50%);border:3px ridge #edce8e;border-radius:6px;
+ background:linear-gradient(155deg,#0e2d3cef,#2b594add);color:#fff4cf;
+ font:italic 900 clamp(12px,2vw,23px) Impact,'Arial Black',sans-serif;
+ letter-spacing:.11em;white-space:nowrap;padding:8px 20px;
+ box-shadow:0 6px 22px #04111cae,0 0 22px #f5cf7580;
+ pointer-events:none;animation:ark-reel-snap .52s cubic-bezier(.24,.82,.3,1) both}
+.combat-controls>.ark-reel-snap{left:50%;top:auto;bottom:calc(100% + 11px)}
+@keyframes ark-reel-snap{
+ 0%{opacity:0;transform:translate(-50%,-25px) scale(1.35)}
+ 35%{opacity:1;transform:translate(-50%,0) scale(1)}
+ 75%{opacity:1}100%{opacity:0;transform:translate(-50%,9px) scale(.94)}
+}
+@media(prefers-reduced-motion:reduce){
+ .ark-reel-snap{animation:none;opacity:0}
+}
+.game.reduce-motion .ark-reel-snap{animation:none;opacity:0}

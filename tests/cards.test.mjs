@@ -25,15 +25,15 @@ test('starter collection is playable and independently editable for two players'
   const db=cards.createStore(storage());
   const s=db.getState();
   assert.equal(Object.values(s.inventory).filter(n=>n>0).length,6);
-  assert.equal(s.inventory['animal:tiger'],1);
-  assert.equal(s.inventory['animal:lion'],1);
+  assert.equal(s.inventory['animal:bear'],1);
+  assert.equal(s.inventory['animal:moose'],1);
   assert.equal(s.inventory['strong:wind'],0);
-  assert.equal(db.getDeck('p1').animal,'animal:tiger');
-  assert.equal(db.getDeck('p2').animal,'animal:lion');
+  assert.equal(db.getDeck('p1').animal,'animal:bear');
+  assert.equal(db.getDeck('p2').animal,'animal:moose');
   assert.equal(db.equip('p1','strong:wind'),false,'locked cards cannot be equipped');
-  assert.equal(db.equip('p1','animal:lion'),true);
-  assert.equal(db.getDeck('p1').animal,'animal:lion');
-  assert.equal(db.getDeck('p2').animal,'animal:lion','local player two deck is independent');
+  assert.equal(db.equip('p1','animal:moose'),true);
+  assert.equal(db.getDeck('p1').animal,'animal:moose');
+  assert.equal(db.getDeck('p2').animal,'animal:moose','local player two deck is independent');
   assert.equal(db.unequip('p1','animal'),false,'one Animal card required');
   assert.equal(db.unequip('p1','miracle'),true);
   assert.equal(db.getDeck('p1').miracle,null);
@@ -74,14 +74,14 @@ test('malformed, forged, and future-version saves cannot gain phantom cards or c
   assert.equal(db.importSave('garbage'),false);
   assert.equal(db.importSave('{"schema":5,"inventory":{},"decks":{}}'),false);
   assert.equal(db.getState().wins,0);
-  const forged={schema:1,inventory:{'animal:tiger':-5,'strong:wind':2000,
+  const forged={schema:1,inventory:{'animal:bear':-5,'strong:wind':2000,
     'strong:impossible':50},decks:{p1:{animal:'animal:impossible',strong:'strong:wind',
       miracle:'miracle:dawn'},p2:{strong:'strong:impossible'}},wins:-10,lastReward:'wrong'};
   assert.equal(db.importSave(JSON.stringify(forged)),true);
   const s=db.getState();
-  assert.equal(s.inventory['animal:tiger'],1,'starter cannot be lost');
+  assert.equal(s.inventory['animal:bear'],1,'starter cannot be lost');
   assert.equal(s.inventory['strong:wind'],0,'overflow inventory is discarded');
-  assert.equal(s.decks.p1.animal,'animal:tiger');
+  assert.equal(s.decks.p1.animal,'animal:bear');
   assert.equal(s.decks.p1.strong,'strong:fang');
   assert.equal(s.wins,0);
   assert.equal(s.lastReward,null);
@@ -97,12 +97,12 @@ test('read-only and unavailable browser storage keeps a session inventory',()=>{
 
 test('Strong card applies to its G/T/P feature, Miracle only to special mark',()=>{
   const store=cards.createStore(storage());
-  const m=store.getModifiers('p1','tiger');
+  const m=store.getModifiers('p1','bear');
   assert.equal(m.strongTechnique,'P');
   assert.equal(m.strongBonus,8);
   assert.equal(m.miracleBonus,14,'matching forest affinity +4 is a PROTOTYPE rule');
   const sameTechnique=(modifier,mark)=>{
-    const battle=combat.createBattle({mode:'DUEL',picks:['tiger','lion'],
+    const battle=combat.createBattle({mode:'DUEL',picks:['bear','moose'],
       modifiers:[modifier,{}]});
     battle.stop('P');battle.stop('G');
     battle.stop(mark? 'MARK':50);battle.stop(10);
@@ -117,11 +117,11 @@ test('Strong card applies to its G/T/P feature, Miracle only to special mark',()
   assert.equal(special.damage-specialBase.damage,8+14);
   assert.equal(special.strongBonus,8);
   assert.equal(special.miracleBonus,14);
-  const gBattle=combat.createBattle({mode:'DUEL',picks:['tiger','lion'],modifiers:[m,{}]});
+  const gBattle=combat.createBattle({mode:'DUEL',picks:['bear','moose'],modifiers:[m,{}]});
   gBattle.stop('G');gBattle.stop('P');gBattle.stop(50);gBattle.stop(10);
   assert.equal(gBattle.getState().lastEvent.strongBonus,0);
-  store.equip('p1','animal:lion');
-  assert.equal(store.getModifiers('p1','tiger').strongBonus,0,
+  store.equip('p1','animal:moose');
+  assert.equal(store.getModifiers('p1','bear').strongBonus,0,
     'stale loadouts cannot buff a different animal');
 });
 

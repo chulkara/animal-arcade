@@ -30,9 +30,9 @@
       miracleName:label(m?.miracleName)
     };
   }
-  function createBattle({mode='SOLO',picks=['tiger','lion'],rng=Math.random,modifiers=[],initialHp=[BASE_HP,BASE_HP]}={}){
+  function createBattle({mode='SOLO',picks=['bear','moose'],rng=Math.random,modifiers=[],initialHp=[BASE_HP,BASE_HP]}={}){
     assert(mode==='SOLO'||mode==='DUEL','Unsupported battle mode');
-    assert(Array.isArray(picks)&&picks.length===2&&picks.every(id=>id==='tiger'||id==='lion'),'Choose two valid animals');
+    assert(Array.isArray(picks)&&picks.length===2&&picks.every(id=>id==='bear'||id==='moose'),'Choose two valid animals');
     assert(typeof rng==='function','RNG must be a function');
     assert(Array.isArray(initialHp)&&initialHp.length===2&&
       initialHp.every(hp=>Number.isInteger(hp)&&hp>=1&&hp<=BASE_HP),'Invalid initial HP');

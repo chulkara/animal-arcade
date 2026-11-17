@@ -1,0 +1,348 @@
+/* Cinematic battle layer: original editorial wildlife-arena styling.
+ * Motion remains optional; accessibility/reduced-motion mode avoids flashes. */
+.ark-reference-layout .ark-cinema{
+ position:absolute;inset:0;z-index:22;overflow:hidden;pointer-events:none;
+ --cine-gold:#f4da9a;--cine-glow:#ffc36d;
+ opacity:1;isolation:isolate;
+}
+.ark-cinema[data-accent="jade"]{--cine-gold:#c7ffe1;--cine-glow:#71ebad}
+.ark-cinema[data-accent="ember"]{--cine-gold:#ffdf9a;--cine-glow:#ff9460}
+.ark-cinema[data-accent="earth"]{--cine-gold:#f1d7a7;--cine-glow:#dabb7c}
+.ark-cinema[data-accent="electric"]{--cine-gold:#dbe7ff;--cine-glow:#8caaff}
+.ark-cinema[data-accent="sea"]{--cine-gold:#b5f2f2;--cine-glow:#65d2ec}
+.ark-cinema[data-accent="violet"]{--cine-gold:#eddbff;--cine-glow:#bc8df6}
+.ark-cinema-letterbox{position:absolute;left:0;right:0;height:0;background:#071620e9;
+ transition:height .28s cubic-bezier(.2,.65,.22,1);z-index:4}
+.ark-cinema-top{top:0}.ark-cinema-bottom{bottom:0}
+.ark-cinema[data-beat="intro"] .ark-cinema-letterbox,
+.ark-cinema[data-beat="attack"] .ark-cinema-letterbox,
+.ark-cinema[data-beat="contact"] .ark-cinema-letterbox,
+.ark-cinema[data-beat="reaction"] .ark-cinema-letterbox,
+.ark-cinema[data-beat="miracle"] .ark-cinema-letterbox,
+.ark-cinema[data-beat="victory"] .ark-cinema-letterbox{height:clamp(18px,3.7svh,42px)}
+.ark-cinema-frame{position:absolute;inset:0 16px;z-index:6;display:flex;
+ align-items:flex-end;justify-content:space-between;gap:8px;
+ padding-bottom:clamp(25px,4.8svh,50px);color:#e2d7b48e;
+ font:bold 9px Arial,sans-serif;letter-spacing:.20em;text-shadow:0 2px 4px #001a}
+.ark-cinema-tunnel{position:absolute;inset:-22%;opacity:0;
+ background:radial-gradient(ellipse at center,transparent 26%,#071626bd 85%);
+ transition:opacity .25s;z-index:1}
+.ark-cinema[data-beat="intro"] .ark-cinema-tunnel,
+.ark-cinema[data-beat="attack"] .ark-cinema-tunnel,
+.ark-cinema[data-beat="miracle"] .ark-cinema-tunnel,
+.ark-cinema[data-beat="victory"] .ark-cinema-tunnel{opacity:1}
+.ark-cinema-speed{position:absolute;inset:-12%;z-index:1;opacity:0;
+ background:repeating-conic-gradient(from 0deg at 50% 46%,transparent 0deg 8deg,
+   #e5eac00c 9deg 10deg,transparent 11deg 17deg);
+ mix-blend-mode:screen;transform:scale(1.8)}
+.ark-cinema[data-beat="attack"] .ark-cinema-speed,
+.ark-cinema[data-beat="contact"] .ark-cinema-speed{opacity:.60;
+ animation:ark-cine-speed .6s cubic-bezier(.2,.8,.2,1) both}
+.ark-cinema-flash{position:absolute;inset:0;opacity:0;z-index:2;
+ background:radial-gradient(circle at 51% 46%,#f9f2d63b,transparent 64%)}
+.ark-cinema[data-beat="contact"] .ark-cinema-flash{
+ animation:ark-cine-impact .21s ease-out both}
+.ark-cinema-title{position:absolute;left:clamp(18px,5vw,76px);right:clamp(18px,5vw,76px);
+ bottom:clamp(205px,29svh,305px);z-index:5;max-width:900px;
+ display:flex;flex-direction:column;gap:5px;align-items:flex-start;
+ color:var(--cine-gold);text-shadow:0 2px 4px #041822,0 6px 18px #041822cc;
+ transform:translate3d(0,0,0)}
+.ark-cinema-title:before{content:'';width:72px;height:4px;background:var(--cine-glow);
+ box-shadow:0 0 13px var(--cine-glow);margin-bottom:9px}
+.ark-cinema-title small{font:800 clamp(10px,1.1vw,14px) Arial,sans-serif;
+ letter-spacing:.29em}
+.ark-cinema-title strong{display:block;max-width:90vw;
+ font:italic 900 clamp(28px,5.5vw,76px)/.94 Impact,'Arial Black',sans-serif;
+ letter-spacing:.035em;overflow-wrap:normal;hyphens:none;
+ -webkit-text-stroke:.7px #1a302e;filter:drop-shadow(2px 6px 0 #07172466)}
+.ark-cinema-title span{font:700 clamp(10px,1.1vw,14px) Arial,sans-serif;
+ color:#f6f4e5;letter-spacing:.12em}
+.ark-cinema[data-beat="intro"] .ark-cinema-title{animation:ark-cine-burst .34s cubic-bezier(.2,.8,.2,1) both}
+.ark-cinema[data-beat="attack"] .ark-cinema-title{opacity:.73;transform:scale(.69);
+ transform-origin:left bottom;transition:transform .25s,opacity .25s}
+.ark-cinema[data-beat="contact"] .ark-cinema-title{
+ animation:ark-cine-contact .4s ease-out both}
+.ark-cinema[data-beat="reaction"] .ark-cinema-title{opacity:0;
+ transition:opacity .15s}
+.ark-cinema[data-beat="victory"] .ark-cinema-title{
+ bottom:clamp(235px,33svh,350px);left:50%;right:auto;width:90%;
+ align-items:center;text-align:center;transform:translateX(-50%);
+ animation:ark-cine-victory .7s cubic-bezier(.16,.84,.26,1) both}
+.ark-cinema[data-beat="miracle"] .ark-cinema-title{left:50%;right:auto;width:90%;
+ transform:translateX(-50%);align-items:center;text-align:center;
+ animation:ark-cine-miracle .85s cubic-bezier(.15,.82,.25,1) both}
+.ark-cinema-symbols{position:absolute;inset:0;z-index:3;pointer-events:none;opacity:0}
+.ark-cinema-symbols span{position:absolute;left:calc(6% + var(--n)*6.5%);
+ top:calc(20% + (var(--n)*19%));width:6px;height:clamp(12px,2svh,26px);
+ border-radius:50%;background:var(--cine-glow);
+ box-shadow:0 0 16px 4px var(--cine-glow);opacity:0}
+.ark-cinema[data-beat="miracle"] .ark-cinema-symbols{opacity:1}
+.ark-cinema[data-beat="miracle"] .ark-cinema-symbols span{
+ animation:ark-cine-spark 1.45s ease-in-out infinite;
+ animation-delay:calc(var(--n)*-.11s)}
+.ark-cinema[data-miracle="storm"] .ark-cinema-symbols span{
+ width:2px;height:80px;transform:rotate(23deg)}
+.ark-cinema[data-miracle="tide"] .ark-cinema-symbols span{
+ width:38px;height:4px;transform:rotate(0deg)}
+.ark-cinema[data-miracle="eclipse"] .ark-cinema-tunnel{
+ background:radial-gradient(circle at center,#24213be0 0 20%,transparent 28%,#090d25df 80%);}
+.ark-cinema[data-miracle="dawn"] .ark-cinema-tunnel{
+ background:radial-gradient(circle at 50% 25%,#fbc26b7e,transparent 58%,#3220149e 85%)}
+.ark-cinema[data-beat="done"]{opacity:0;transition:opacity .25s;visibility:hidden}
+.ark-cinema-lock{position:absolute;z-index:7;top:clamp(132px,20svh,190px);
+ right:clamp(6px,3vw,38px);border:2px solid #f3d591;
+ background:#102b3af2;padding:9px 16px;color:#fff2bd;
+ box-shadow:0 0 20px #ffd68d50;text-shadow:0 2px #000;
+ font:800 14px Arial,sans-serif;letter-spacing:.09em;opacity:0;
+ transform:translateY(-13px) scale(.88);transition:opacity .14s,transform .14s}
+.ark-cinema-lock.ark-is-visible{opacity:1;transform:translateY(0) scale(1)}
+.ark-reference-layout.ark-cinematic-active .combat-message,
+.ark-reference-layout.ark-cinematic-active .combat-ready,
+.ark-reference-layout.ark-cinematic-active .combat-finish{
+ visibility:hidden!important;pointer-events:none!important}
+.ark-reference-layout.ark-cinematic-done .combat-message{
+ top:clamp(95px,15svh,145px);left:auto;right:clamp(10px,3vw,35px);
+ width:min(350px,57vw);padding:6px 10px;font-size:11px;opacity:.86}
+.ark-reference-layout.ark-cinematic-done .combat-message strong{font-size:12px}
+.ark-reference-layout.ark-cinematic-done .combat-message span{font-size:10px}
+/* Cinematics still read properly with the temporary SVG fighters. */
+/* Temporary illustrated fighters keep their existing reaction animations
+   until the 3D models are locally loaded. */
+.ark-reference-layout .combat-battlefield[data-cine-beat="attack"] .combat-striker:not([data-3d-visible="true"]) .combat-fighter-art{
+ animation:ark-cine-portrait-charge 1s ease-in-out both!important}
+.ark-reference-layout .combat-battlefield[data-cine-beat="contact"] .combat-struck:not([data-3d-visible="true"]) .combat-fighter-art{
+ animation:ark-cine-portrait-hit .45s ease-out both!important}
+@keyframes ark-cine-speed{0%{transform:scale(1.9) rotate(-4deg);opacity:0}
+ 40%{opacity:.7}100%{transform:scale(1) rotate(2deg);opacity:.25}}
+@keyframes ark-cine-impact{0%{opacity:.9}55%{opacity:.22}100%{opacity:0}}
+@keyframes ark-cine-burst{0%{opacity:0;transform:translateX(-30px) scale(1.17)}
+ 80%{opacity:1}100%{transform:none}}
+@keyframes ark-cine-contact{0%{transform:scale(1.35);opacity:1}
+ 100%{transform:scale(1);opacity:.15}}
+@keyframes ark-cine-victory{0%{opacity:0;transform:translate(-50%,25px) scale(1.32)}
+ 100%{opacity:1;transform:translate(-50%,0) scale(1)}}
+@keyframes ark-cine-miracle{0%{opacity:.2;transform:translate(-50%,25px) scale(.6)}
+ 85%{opacity:1;transform:translate(-50%,-4px) scale(1.05)}
+ 100%{opacity:1;transform:translateX(-50%) scale(1)}}
+@keyframes ark-cine-spark{0%{transform:translateY(65px) scale(.3);opacity:0}
+ 40%{opacity:.8}100%{transform:translateY(-120px) scale(.2);opacity:0}}
+@keyframes ark-cine-portrait-charge{0%{transform:translateX(0) scale(1)}
+ 65%{transform:translateX(12%) scale(1.09)}100%{transform:translateX(0) scale(1)}}
+@keyframes ark-cine-portrait-hit{0%{filter:brightness(2)}
+ 30%{transform:translateX(12%) rotate(3deg)}
+ 100%{transform:none;filter:none}}
+@media(max-width:650px){
+ .ark-cinema-title{left:15px;right:15px;bottom:clamp(195px,28svh,270px)}
+ .ark-cinema-title strong{font-size:clamp(28px,7vw,47px)}
+ .ark-cinema-title small{font-size:9px}
+ .ark-cinema-frame{font-size:7px;inset:0 8px}
+ .ark-reference-layout.ark-cinematic-done .combat-message{width:min(250px,65vw);
+   right:5px;top:clamp(98px,15svh,120px);padding:4px 6px}
+ .ark-cinema-lock{font-size:10px;top:22svh}
+}
+@media(max-height:550px){
+ .ark-cinema-title{bottom:clamp(130px,32svh,183px)}
+ .ark-cinema-title strong{font-size:clamp(27px,5vw,44px)}
+ .ark-cinema-title:before{margin-bottom:1px}
+ .ark-cinema-frame{padding-bottom:17px}
+ .ark-reference-layout.ark-cinematic-done .combat-message{top:65px}
+}
+@media(prefers-reduced-motion:reduce){
+ .ark-cinema *{animation:none!important;transition:none!important}
+ .ark-cinema[data-beat="done"]{visibility:hidden}
+}
+.game.reduce-motion .ark-cinema *{animation:none!important;transition:none!important}
+
+
+/* Footage audit 2026-11-16: the giant move titles obscured both models
+   and clipped during scale animations. Typography must never become the
+   subject of a shot; animals and readable impacts come first. */
+.ark-reference-layout .ark-cinema-title{
+ top:clamp(148px,17svh,210px);bottom:auto;
+ left:clamp(16px,3vw,44px);right:auto;
+ width:min(450px,43vw);max-width:43vw;
+ gap:4px;pointer-events:none;
+ transform-origin:left top;
+}
+.ark-reference-layout .ark-cinema-title:before{
+ width:38px;height:2px;margin-bottom:4px}
+.ark-reference-layout .ark-cinema-title small{
+ font-size:clamp(9px,.85vw,11px);letter-spacing:.16em}
+.ark-reference-layout .ark-cinema-title strong{
+ width:100%;max-width:100%;
+ font-size:clamp(24px,3.2vw,49px);
+ font-style:normal;line-height:1.02;letter-spacing:.015em;
+ white-space:normal;overflow-wrap:break-word;word-break:normal;
+ -webkit-text-stroke:0;
+}
+.ark-reference-layout .ark-cinema-title span{
+ font-size:clamp(9px,.9vw,12px);letter-spacing:.05em}
+.ark-reference-layout .ark-cinema[data-beat="attack"] .ark-cinema-title{
+ transform:scale(.88);transform-origin:left top;opacity:.76}
+.ark-reference-layout .ark-cinema[data-beat="contact"] .ark-cinema-title{
+ transform-origin:left top;
+ animation:ark-cine-contact-readable .3s ease-out both}
+@keyframes ark-cine-contact-readable{
+ 0%{transform:translateY(-2px) scale(1.04);opacity:.95}
+ 100%{transform:translateY(-3px) scale(1);opacity:.25}
+}
+.ark-reference-layout .ark-cinema[data-beat="victory"] .ark-cinema-title,
+.ark-reference-layout .ark-cinema[data-beat="miracle"] .ark-cinema-title{
+ top:clamp(116px,15svh,185px);bottom:auto;left:50%;right:auto;
+ width:min(510px,80vw);max-width:80vw;text-align:center;
+ align-items:center;transform-origin:center top}
+.ark-reference-layout.ark-bear-reviewing .ark-cinema-title{
+ top:clamp(48px,7svh,105px)}
+.ark-reference-layout.ark-bear-reviewing .ark-cinema[data-beat="victory"] .ark-cinema-title{
+ top:clamp(80px,11svh,155px)}
+@media(max-width:650px){
+ .ark-reference-layout .ark-cinema-title{
+  top:clamp(106px,15svh,145px);left:10px;right:auto;
+  width:min(270px,66vw);max-width:66vw}
+ .ark-reference-layout .ark-cinema-title strong{
+  font-size:clamp(22px,5.5vw,34px)}
+ .ark-reference-layout .ark-cinema-title small{font-size:9px}
+ .ark-reference-layout.ark-bear-reviewing .ark-cinema-title{top:54px}
+}
+@media(max-height:550px){
+ .ark-reference-layout .ark-cinema-title{
+  top:clamp(68px,19svh,100px);width:min(340px,42vw)}
+ .ark-reference-layout .ark-cinema-title strong{font-size:clamp(19px,3vw,34px)}
+ .ark-reference-layout.ark-bear-reviewing .ark-cinema-title{top:41px}
+}
+
+
+/* Focus and winning close-up are original stage graphics keyed to the
+   real cinematic timeline. All light/sparks are optional with reduced motion. */
+.ark-cinema[data-beat="focus"] .ark-cinema-letterbox{height:clamp(20px,4svh,45px)}
+.ark-cinema[data-beat="focus"] .ark-cinema-tunnel{
+ opacity:1;background:radial-gradient(ellipse at 50% 42%,
+ #e1b06310 0%,#fdc3761a 35%,#132230b8 87%)}
+.ark-cinema-charge{position:absolute;left:50%;top:45%;
+ width:min(56vw,570px);height:min(56vw,570px);border-radius:50%;
+ z-index:2;opacity:0;transform:translate(-50%,-50%) scale(.65);
+ background:radial-gradient(circle,#f4ba6d05 20%,#f6bb7050 33%,
+ transparent 45%,#edc48a14 54%,transparent 70%);
+ box-shadow:0 0 45px #fbd18a20;pointer-events:none}
+.ark-cinema[data-beat="focus"] .ark-cinema-charge{
+ opacity:.80;animation:ark-cine-focus-pulse .85s ease-out both}
+@keyframes ark-cine-focus-pulse{
+ 0%{opacity:0;transform:translate(-50%,-50%) scale(.60)}
+ 55%{opacity:.6;transform:translate(-50%,-50%) scale(.95)}
+ 100%{opacity:.18;transform:translate(-50%,-50%) scale(1.18)}
+}
+.ark-cinema[data-beat="focus"] .ark-cinema-title{
+ left:clamp(18px,3vw,42px);top:clamp(115px,13svh,165px);
+ width:min(440px,42vw);opacity:.84}
+.ark-cinema[data-beat="focus"] .ark-cinema-title strong{
+ font-size:clamp(20px,2.2vw,33px);text-transform:uppercase}
+.ark-cinema-win-stamp{position:absolute;left:50%;bottom:clamp(90px,15svh,180px);
+ transform:translate(-50%,25px) scale(.85);z-index:8;opacity:0;
+ width:max-content;max-width:94vw;pointer-events:none;
+ padding:.08em .28em;white-space:nowrap;
+ font:italic 900 clamp(40px,7vw,110px)/1 Impact,'Arial Black',sans-serif;
+ letter-spacing:.065em;color:#ffe0a3;
+ -webkit-text-stroke:2px #281b1b;
+ text-shadow:0 4px 1px #552817,0 9px 13px #081923d9,0 0 35px #efad5966}
+.ark-cinema[data-beat="victory"][data-shot="finale"][data-result="visible"] .ark-cinema-win-stamp{
+ animation:ark-cine-win-stamp .75s cubic-bezier(.18,.85,.26,1) forwards}
+@keyframes ark-cine-win-stamp{
+ 0%{opacity:0;transform:translate(-50%,27px) scale(1.38)}
+ 45%{opacity:1;transform:translate(-50%,-6px) scale(.98)}
+ 65%{opacity:1;transform:translate(-50%,0) scale(1.03)}
+ 100%{opacity:1;transform:translate(-50%,0) scale(1)}
+}
+.ark-cinema[data-beat="victory"][data-shot="finale"] .ark-cinema-title{
+ opacity:.14;transition:opacity .28s}
+.ark-cinema[data-beat="victory"][data-shot="finale"] .ark-cinema-frame{opacity:.55}
+@media(max-width:650px){
+ .ark-cinema[data-beat="focus"] .ark-cinema-title{
+  top:clamp(70px,12svh,115px);width:62vw}
+ .ark-cinema-win-stamp{
+  font-size:clamp(36px,9vw,58px);-webkit-text-stroke:1px #281b1b;
+  bottom:clamp(75px,13svh,125px)}
+}
+@media(prefers-reduced-motion:reduce){
+ .ark-cinema[data-beat="focus"] .ark-cinema-charge{animation:none;opacity:.14}
+ .ark-cinema[data-beat="victory"][data-shot="finale"][data-result="visible"] .ark-cinema-win-stamp{
+   animation:none;opacity:1;transform:translateX(-50%)}
+}
+.game.reduce-motion .ark-cinema[data-beat="focus"] .ark-cinema-charge{
+ animation:none;opacity:.14}
+.game.reduce-motion .ark-cinema[data-beat="victory"][data-shot="finale"][data-result="visible"] .ark-cinema-win-stamp{
+ animation:none;opacity:1;transform:translateX(-50%)}
+
+
+/* Original kinetic transition before the signature hit. It follows the
+ * native FBX attack without borrowing source-game frames or line artwork. */
+.ark-cinema[data-beat="attack"][data-shot="rush"] .ark-cinema-speed{
+ opacity:.78;mix-blend-mode:screen;
+ background:
+   repeating-linear-gradient(111deg,transparent 0 10px,
+      #c2f6e01e 11px 13px,transparent 13px 25px,
+      #ffe4a932 26px 29px,transparent 31px 43px),
+   radial-gradient(ellipse at 50% 45%,transparent 15%,#3f6c6332 78%);
+ animation:ark-cine-rush .38s cubic-bezier(.06,.88,.27,1) both}
+.ark-cinema[data-beat="attack"][data-shot="sweep"] .ark-cinema-speed{
+ opacity:.62;mix-blend-mode:screen;
+ background:repeating-conic-gradient(from -60deg at 48% 52%,
+    transparent 0deg 14deg,#c5ffe533 15deg 19deg,transparent 21deg 41deg);
+ animation:ark-cine-rush .35s ease-out both}
+.ark-cinema[data-beat="attack"][data-shot="rush"] .ark-cinema-tunnel{
+ opacity:.45}
+@keyframes ark-cine-rush{
+ 0%{transform:translateX(16%) scale(1.7);opacity:0}
+ 38%{opacity:.86}
+ 100%{transform:translateX(-7%) scale(1.05);opacity:.06}
+}
+/* Final victory gives the actor room to perform its howl without a large
+ * headline blocking the mouth, and then brings the winner stamp up below. */
+.ark-cinema[data-beat="victory"][data-shot="finale"] .ark-cinema-title{
+ visibility:hidden}
+.ark-cinema[data-beat="victory"][data-shot="finale"][data-result="visible"] .ark-cinema-win-stamp{
+ bottom:clamp(76px,12svh,130px);
+ background:linear-gradient(90deg,#13293200,#13293288 20%,#13293288 80%,#13293200);
+ text-align:center}
+@media(prefers-reduced-motion:reduce){
+ .ark-cinema[data-beat="attack"][data-shot="rush"] .ark-cinema-speed,
+ .ark-cinema[data-beat="attack"][data-shot="sweep"] .ark-cinema-speed{
+ animation:none;opacity:.04}
+}
+.game.reduce-motion .ark-cinema[data-beat="attack"][data-shot="rush"] .ark-cinema-speed,
+.game.reduce-motion .ark-cinema[data-beat="attack"][data-shot="sweep"] .ark-cinema-speed{
+ animation:none;opacity:.04}
+
+
+/* Bear's final howl sends a restrained vibration through the scene.
+   These concentric rings sit behind the face and never block the mouth. */
+.ark-cinema-howl-waves{position:absolute;z-index:2;left:50%;top:31%;
+ width:clamp(120px,21vw,360px);height:clamp(120px,21vw,360px);
+ pointer-events:none;transform:translate(-50%,-50%);opacity:0}
+.ark-cinema-howl-waves i{position:absolute;inset:0;border-radius:50%;
+ border:2px solid #ffe5a8a3;box-shadow:0 0 15px #ffe6ad58;
+ opacity:0;transform:scale(.4)}
+.ark-cinema[data-beat="victory"][data-shot="finale"][data-winner="bear"][data-howl-phase="roar"] .ark-cinema-howl-waves{
+ opacity:.55}
+.ark-cinema[data-beat="victory"][data-shot="finale"][data-winner="bear"][data-howl-phase="roar"] .ark-cinema-howl-waves i{
+ animation:ark-bear-howl-wave 1.55s cubic-bezier(.18,.59,.23,1) 1 both}
+.ark-cinema[data-beat="victory"][data-shot="finale"][data-winner="bear"][data-howl-phase="roar"] .ark-cinema-howl-waves i:nth-child(2){
+ animation-delay:.20s}
+.ark-cinema[data-beat="victory"][data-shot="finale"][data-winner="bear"][data-howl-phase="roar"] .ark-cinema-howl-waves i:nth-child(3){
+ animation-delay:.40s}
+@keyframes ark-bear-howl-wave{
+ 0%{opacity:0;transform:scale(.4)}
+ 24%{opacity:.68}
+ 100%{opacity:0;transform:scale(1.9)}
+}
+@media(prefers-reduced-motion:reduce){
+ .ark-cinema-howl-waves{display:none!important}
+}
+.game.reduce-motion .ark-cinema-howl-waves{display:none!important}
+
+/* The original reference makes the animal vocal the focal point. Keep the
+   torso and muzzle unobstructed during inhale/throw and delay results. */
+.ark-cinema[data-beat="victory"][data-shot="finale"][data-result="hidden"] .ark-cinema-win-stamp{
+ opacity:0!important;animation:none!important}
+.ark-cinema[data-beat="victory"][data-shot="finale"][data-howl-phase="inhale"] .ark-cinema-tunnel,
+.ark-cinema[data-beat="victory"][data-shot="finale"][data-howl-phase="throw"] .ark-cinema-tunnel{
+ opacity:.06}

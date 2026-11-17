@@ -8,15 +8,10 @@
   if(!api||!matchApi||!ui)return;
   let battle=null,slotIndex=0,interval=null,matchReward=null,rewardClaimed=false;
   let reelStart=0,reelOffset=0;
-  const REEL_STEP_MS=115;
-  const MOVES=Object.freeze({
-    tiger:{G:'SHADOW RESOLVE',T:'MOONSTEP',P:'AMBER FANG'},
-    lion:{G:'GOLDEN HEART',T:'SUNWARD FEINT',P:'SOVEREIGN ROAR'}
-  });
-  const animal={
-    tiger:{label:'BLUE TIGER',art:'./assets/tiger-illustration.webp'},
-    lion:{label:'GOLDEN LION',art:'./assets/lion-illustration.webp'}
-  };
+  const REEL_STEP_MS=96;
+  const animal=window.NoahsRoster.ANIMALS;
+  const MOVES=Object.freeze(Object.fromEntries(window.NoahsRoster.ids.map(
+    id=>[id,animal[id].moves])));
   function current(){return battle?.getState()||null;}
   function screen(){return window.__arkade?.getScreen();}
   function open(){window.__arkade?.openScreen('BATTLE_PLAY');}
@@ -46,7 +41,16 @@
     const node=ui.querySelector('[data-combat-current]');
     const prev=ui.querySelector('[data-combat-prev]');
     const next=ui.querySelector('[data-combat-next-value]');
-    if(node)node.textContent=token(values[index]);
+    if(node){
+      node.textContent=token(values[index]);
+      node.dataset.mark=values[index]==='MARK'?'true':'false';
+      node.classList.remove('ark-reel-tick');
+      if(!window.__arkade?.getSettings()?.reducedMotion &&
+         !window.matchMedia('(prefers-reduced-motion: reduce)').matches){
+        void node.offsetWidth;
+        node.classList.add('ark-reel-tick');
+      }
+    }
     if(prev)prev.textContent=token(values[(index+values.length-1)%values.length]);
     if(next)next.textContent=token(values[(index+1)%values.length]);
   }
@@ -57,7 +61,12 @@
     // Derive the reel from elapsed time, not frame count. An overloaded
     // phone cannot silently make the power slot run at a different speed.
     const next=reelOffset+Math.floor(Math.max(0,time-reelStart)/REEL_STEP_MS);
-    if(next!==slotIndex){slotIndex=next;updateReel();}
+    if(next!==slotIndex){
+      slotIndex=next;updateReel();
+      // A gentle cabinet ratchet every third step, not an exhausting beep
+      // on every frame. Audio still respects the user's mute/SFX settings.
+      if(next%3===0)window.NoahsAudio?.cue('reelTick');
+    }
     interval=requestAnimationFrame(frame);
   }
   function syncTimer(){
@@ -71,6 +80,8 @@
     interval=requestAnimationFrame(frame);
   }
   function stopSlot(){
+    // Film rehearsal is intentionally separate from the scored slot battle.
+    if(window.NoahsArena3D?.getReviewState?.()?.active)return;
     const s=current();
     if(!s||screen()!=='BATTLE_PLAY'||!['ATTACK','POWER'].includes(s.phase))return;
     const value=valueNow();
@@ -81,10 +92,21 @@
     const event=result.lastEvent;
     const newHit=event?.kind==='HIT'&&
       (before==='POWER'&&result.phase!=='POWER');
-    if(newHit)window.NoahsAudio?.cue(result.phase==='FINISHED'?'ko':event.special?'special':'impact');
+    if(newHit)window.NoahsAudio?.cue('cinemaIntro');
     else if(before==='POWER'&&event?.kind==='TIE')window.NoahsAudio?.cue('tie');
-    else window.NoahsAudio?.cue('slot');
+    else window.NoahsAudio?.cue('arcadeStop');
     open();
+    window.dispatchEvent(new CustomEvent('arkade:reelstop',{
+      detail:{phase:before,value,actor:s.actor,round:s.round,hit:newHit}
+    }));
+    const snap=ui.querySelector('.combat-controls')||ui.querySelector('.combat-battlefield');
+    if(snap){
+      const flash=document.createElement('div');
+      flash.className='ark-reel-snap';
+      flash.textContent=(before==='ATTACK'?'ATTACK':'POWER')+'  '+token(value)+'  LOCKED';
+      flash.setAttribute('aria-hidden','true');snap.append(flash);
+      window.setTimeout(()=>flash.remove(),520);
+    }
   }
   function next(){
     if(current()?.phase!=='RESULT')return;
@@ -140,7 +162,13 @@
     const hit=s.lastEvent?.kind==='HIT'&&['RESULT','FINISHED'].includes(s.phase)?
       s.lastEvent:null;
     const feedback=hit?(hit.attacker===i?'combat-striker':'combat-struck'):'';
-    return `<div class="combat-fighter ${feedback}" data-tiger-slot="${i}" data-tiger-id="${f.id}">
+    const motion=window.NoahsRoster.motionFor(f.id,
+      !hit?{reaction:'idle'}:hit.attacker===i?
+        {technique:hit.technique,special:hit.special}:
+        {reaction:f.hp===0?'knockout':'hit'});
+    return `<div class="combat-fighter ${feedback}" data-animal-id="${f.id}"
+      data-motion="${motion.id}" data-motion-kind="${motion.kind}"
+      data-motion-source="${motion.file||motion.move}">
       <div class="combat-fighter-head"><span>${actorName(s,i)}</span><strong>${f.hp} / ${f.maxHp}</strong></div>
       <div class="combat-hp" role="progressbar" aria-label="${a.label} health" aria-valuemin="0" aria-valuemax="${f.maxHp}" aria-valuenow="${f.hp}">
         <span style="width:${Math.round(100*f.hp/f.maxHp)}%"></span>
@@ -159,7 +187,7 @@
     if(!e)return '';
     if(e.kind==='TIE')return `<div class="combat-message" role="status"><strong>POWER TIE</strong>
       <span>Reroll the yellow power slot. Tiebreak charge +${e.charge}; no health lost.</span></div>`;
-    const move=MOVES[s.animals[e.attacker].id]?.[e.technique]||e.attackName;
+    const move=MOVES[s.animals[e.attacker].id]?.[e.special?'S':e.technique]||e.attackName;
     return `<div class="combat-message" role="status">
       <strong>${actorName(s,e.attacker)} — ${move}${e.special?' ✦ SPECIAL':''}</strong>
       <span>${e.damage} damage dealt to ${actorName(s,e.defender)} · ${e.remainingHp} HP remains
@@ -201,6 +229,7 @@
         <span class="combat-reel-neighbor" data-combat-prev aria-hidden="true">—</span>
         <span data-combat-current aria-live="off">${token(valueNow())}</span>
         <span class="combat-reel-neighbor" data-combat-next-value aria-hidden="true">—</span>
+        <div class="ark-reel-lamps" aria-hidden="true">${Array.from({length:10},(_,i)=>'<i style="--lamp:'+i+'"></i>').join('')}</div>
       </div>
       <button type="button" data-combat-stop data-initial-focus class="combat-stop ${isAttack?'combat-green':'combat-yellow'}">
       <span aria-hidden="true" class="combat-light"></span>${action} — ${label}</button>
@@ -249,10 +278,17 @@
       </div>
       ${results(s)}
       ${controls(s)}
-      <p class="combat-disclaimer">Original prototype balance. Strong cards boost matching attacks; Miracle cards boost winning ✦ rolls. Exact historical damage values remain under research.</p>
+      <p class="combat-disclaimer">Original prototype combat tuning. Private FBX creatures render only after local import; battles remain playable with the illustrated fallback.</p>
       <div class="combat-footer">
         <span>KEYS: G = GREEN · Y = YELLOW · SPACE = STOP · ESC = BACK</span>
-        <button type="button" data-tiger-lab-toggle aria-label="Open experimental 3D tiger motion lab">3D TIGER LAB</button>
+        <button type="button" data-bear-review-quick>BEAR CINEMATIC REVIEW</button>
+        <div class="ark-forestfall-import" aria-label="Forestfall special move video">
+          <button type="button" data-forestfall-choose>LOAD FORESTFALL VIDEO</button>
+          <input type="file" data-forestfall-file accept=".mp4,.webm,video/mp4,video/webm" hidden>
+          <button type="button" data-forestfall-preview disabled>PREVIEW FORESTFALL</button>
+          <small data-forestfall-status>Choose the 1080p Forestfall MP4. Stored only for this session.</small>
+        </div>
+        <button type="button" data-ark3d-open>3D ARENA SETUP</button>
         <button type="button" data-combat-quit>← BACK TO ARENA</button>
       </div>
     </section>`;
@@ -269,7 +305,8 @@
     if(target.closest('[data-combat-quit]')){stopTimer();window.__arkade?.openScreen('BATTLE_STAGE');}
   });
   window.addEventListener('keydown',event=>{
-    if(screen()!=='BATTLE_PLAY'||event.altKey||event.metaKey||event.ctrlKey)return;
+    if(screen()!=='BATTLE_PLAY'||event.altKey||event.metaKey||event.ctrlKey||
+      window.NoahsArena3D?.getReviewState?.()?.active)return;
     const tag=event.target?.tagName;
     if(tag==='INPUT'||tag==='TEXTAREA')return;
     const state=current();

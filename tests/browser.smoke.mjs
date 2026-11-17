@@ -49,7 +49,7 @@ await run('desktop-1440x900',{width:1440,height:900},async page=>{
   assert.equal(await page.locator('#game').getAttribute('data-screen'),'MODE_MENU');
   await page.locator('[data-mode="SOLO_SELECT"]').click();
   assert.equal(await page.locator('#game').getAttribute('data-screen'),'ANIMAL_SELECT');
-  assert.match(await page.locator('.prototype-note').innerText(),/Prototype roster/);
+  assert.match(await page.locator('.prototype-note').innerText(),/Active roster: Bear and Moose/);
   await page.locator('[data-prototype-mode]').click();
   assert.equal(await page.locator('#game').getAttribute('data-screen'),'MODE_MENU');
   await page.locator('[data-back]').click();
@@ -108,10 +108,10 @@ await run('solo-prototype-1440x900',{width:1440,height:900},async page=>{
   await page.locator('[data-mode="SOLO_SELECT"]').click();
   assert.equal(await page.locator('#game').getAttribute('data-screen'),'ANIMAL_SELECT');
   assert.equal(await page.locator('[data-animal]').count(),2);
-  await page.locator('[data-animal="tiger"]').click();
+  await page.locator('[data-animal="bear"]').click();
   assert.equal(await page.locator('#game').getAttribute('data-screen'),'BATTLE_STAGE');
-  assert.match(await page.locator('.arena').innerText(),/BLUE TIGER/);
-  assert.match(await page.locator('.arena').innerText(),/GOLDEN LION/);
+  assert.match(await page.locator('.arena').innerText(),/BROWN BEAR/);
+  assert.match(await page.locator('.arena').innerText(),/MOUNTAIN MOOSE/);
   assert.match(await page.locator('.prototype-note').innerText(),/Exact historical damage formulas/);
   await page.locator('[data-prototype-intro]').click();
   assert.match(await page.locator('.prototype-announcer').innerText(),/STAGE IS SET/);
@@ -127,9 +127,9 @@ await run('duel-prototype-390x844',{width:390,height:844},async page=>{
   await page.locator('[data-mode="DUEL_SELECT"]').click();
   assert.equal(await page.locator('#game').getAttribute('data-screen'),'ANIMAL_SELECT');
   assert.match(await page.locator('.prototype-status').innerText(),/PLAYER 1 SELECTS/);
-  await page.locator('[data-animal="lion"]').click();
+  await page.locator('[data-animal="moose"]').click();
   assert.match(await page.locator('.prototype-status').innerText(),/PLAYER 2 SELECTS/);
-  await page.locator('[data-animal="tiger"]').click();
+  await page.locator('[data-animal="bear"]').click();
   assert.equal(await page.locator('#game').getAttribute('data-screen'),'BATTLE_STAGE');
   assert.match(await page.locator('.arena').innerText(),/PLAYER 2/);
   await page.locator('[data-prototype-menu]').click();
@@ -141,21 +141,14 @@ await run('duel-prototype-390x844',{width:390,height:844},async page=>{
 await run('combat-solo-1440x900',{width:1440,height:900},async page=>{
   await page.locator('.painted-hotspots [data-art-action="PLAY"]').click();
   await page.locator('[data-mode="SOLO_SELECT"]').click();
-  await page.locator('[data-animal="tiger"]').click();
+  await page.locator('[data-animal="bear"]').click();
   await page.locator('[data-prototype-intro]').click();
   await page.locator('[data-prototype-fight]').click();
   assert.equal(await page.locator('#game').getAttribute('data-screen'),'BATTLE_PLAY');
-  assert.equal(await page.locator('[data-tiger-lab-toggle]').count(),1);
-  await page.locator('[data-tiger-lab-toggle]').click();
-  assert.equal(await page.locator('[data-tiger-hero]').count(),1);
-  assert.equal(await page.locator('[data-tiger-run]').count(),1);
-  assert.equal(await page.locator('[data-tiger-action]').count(),7);
-  assert.ok(await page.evaluate(()=>typeof window.NoahsTigerActionCore?.sampleAction==='function'));
-  await page.locator('[data-tiger-action="ko"]').click();
-  assert.match(await page.locator('[data-tiger-status]').innerText(),/Load both GLBs first/);
-  await page.keyboard.press('Escape');
-  assert.equal(await page.locator('.ark-tiger-lab').count(),0);
-  assert.equal(await page.locator('#game').getAttribute('data-screen'),'BATTLE_PLAY');
+  assert.equal(await page.locator('[data-tiger-lab-toggle]').count(),0,'Paused Tiger lab stays hidden');
+  assert.deepEqual(await page.locator('[data-animal-id]').evaluateAll(
+    nodes=>nodes.map(node=>node.dataset.animalId)),['bear','moose']);
+  assert.ok(await page.evaluate(()=>typeof window.NoahsRoster?.motionFor==='function'));
   assert.equal(await page.locator('.combat-hp').count(),2);
   assert.match(await page.locator('.combat-reel-label').innerText(),/PLAYER 1/);
   await page.keyboard.press('g');
@@ -176,8 +169,8 @@ await run('combat-solo-1440x900',{width:1440,height:900},async page=>{
 await run('combat-duel-390x844',{width:390,height:844},async page=>{
   await page.locator('.painted-mobile-nav [data-art-action="PLAY"]').click();
   await page.locator('[data-mode="DUEL_SELECT"]').click();
-  await page.locator('[data-animal="lion"]').click();
-  await page.locator('[data-animal="tiger"]').click();
+  await page.locator('[data-animal="moose"]').click();
+  await page.locator('[data-animal="bear"]').click();
   await page.locator('[data-prototype-intro]').click();
   await page.locator('[data-prototype-fight]').click();
   assert.equal(await page.locator('#game').getAttribute('data-screen'),'BATTLE_PLAY');
@@ -254,7 +247,7 @@ await run('binder-mobile-390x844',{width:390,height:844},async page=>{
 await run('card-reward-solo-1440x900',{width:1440,height:900},async page=>{
   await page.locator('.painted-hotspots [data-art-action="PLAY"]').click();
   await page.locator('[data-mode="SOLO_SELECT"]').click();
-  await page.locator('[data-animal="tiger"]').click();
+  await page.locator('[data-animal="bear"]').click();
   await page.locator('[data-prototype-intro]').click();
   await page.locator('[data-prototype-fight]').click();
   const result=await page.evaluate(()=>{
@@ -287,11 +280,202 @@ await run('card-reward-solo-1440x900',{width:1440,height:900},async page=>{
 });
 
 
+await run('forestfall-preview-while-reels-spin',{width:1440,height:900},async page=>{
+  await page.locator('.painted-hotspots [data-art-action="PLAY"]').click();
+  await page.locator('[data-mode="SOLO_SELECT"]').click();
+  await page.locator('[data-animal="bear"]').click();
+  await page.locator('[data-prototype-intro]').click();
+  await page.locator('[data-prototype-fight]').click();
+  assert.equal(await page.locator('#game').getAttribute('data-screen'),'BATTLE_PLAY');
+  assert.equal((await page.evaluate(()=>window.NoahsCombat.getState().phase)),'ATTACK');
+  assert.equal(await page.locator('[data-forestfall-preview]').isDisabled(),true);
+  // This tiny artificial file only tests the UI path; the user's original
+  // generated video never enters the repo or the test service.
+  await page.locator('[data-forestfall-file]').setInputFiles({
+    name:'forestfall-smoke.mp4',mimeType:'video/mp4',
+    buffer:Buffer.from('placeholder bytes for browser UI smoke test')
+  });
+  assert.equal(await page.locator('[data-forestfall-preview]').isDisabled(),false);
+  assert.match(await page.locator('[data-forestfall-status]').innerText(),/FORESTFALL READY/);
+  await page.locator('[data-forestfall-preview]').click();
+  await page.locator('.ark-forestfall').waitFor({state:'visible',timeout:3000});
+  assert.match(await page.locator('.ark-forestfall-status').innerText(),/NO DAMAGE/);
+  assert.equal(await page.locator('.ark-forestfall-target-art').count(),1,
+    'Preview must show the actual opponent so cinematic impact can be reviewed');
+  await page.locator('.ark-forestfall video').evaluate(video=>{
+    Object.defineProperty(video,'duration',{configurable:true,get:()=>14.93});
+    Object.defineProperty(video,'currentTime',{configurable:true,get:()=>11.95});
+    video.dispatchEvent(new Event('timeupdate'));
+  });
+  await page.locator('.ark-forestfall-reaction').waitFor({state:'visible'});
+  assert.match(await page.locator('.ark-forestfall-hit-damage').textContent(),
+    /PREVIEW · NO HP CHANGE/);
+  assert.equal((await page.evaluate(()=>window.NoahsCombat.getState().phase)),'ATTACK',
+    'Viewing Forestfall must never stop the reel or change scored gameplay');
+  await page.locator('.ark-forestfall-controls button').last().click();
+  assert.equal(await page.locator('.ark-forestfall').count(),0);
+  await page.keyboard.press('g');
+  assert.equal((await page.evaluate(()=>window.NoahsCombat.getState().phase)),'POWER');
+  assert.equal(await page.locator('[data-forestfall-preview]').isDisabled(),false,
+    'File stays selected across battle-screen rerenders');
+  await page.locator('[data-forestfall-preview]').click();
+  assert.equal(await page.locator('.ark-forestfall').count(),1,
+    'Preview must also open from the POWER reel, not silently do nothing');
+  await page.locator('.ark-forestfall-controls button').last().click();
+  assert.equal((await page.evaluate(()=>window.NoahsCombat.getState().phase)),'POWER');
+});
+
+await run('forestfall-scored-special-hit-bridge',{width:1440,height:900},async page=>{
+  await page.locator('.painted-hotspots [data-art-action="PLAY"]').click();
+  await page.locator('[data-mode="SOLO_SELECT"]').click();
+  await page.locator('[data-animal="bear"]').click();
+  await page.locator('[data-prototype-intro]').click();
+  await page.locator('[data-prototype-fight]').click();
+  await page.locator('[data-forestfall-file]').setInputFiles({
+    name:'forestfall-impact-test.mp4',mimeType:'video/mp4',
+    buffer:Buffer.from('dummy video for cinematic event wiring only')
+  });
+  const baseline=await page.evaluate(()=>{
+    const s=window.NoahsCombat.getState();
+    return {phase:s.phase,bearHp:s.animals[0].hp,mooseHp:s.animals[1].hp};
+  });
+  assert.equal(baseline.phase,'ATTACK');
+  const testData=await page.evaluate(()=>{
+    const api=window.NoahsCombat;
+    const original=api.getState;
+    const current=original();
+    const attacker=current.animals.findIndex(a=>a.id==='bear');
+    const defender=1-attacker;
+    const maxHp=current.animals[defender].maxHp;
+    const prior=current.animals[defender].hp;
+    const damage=Math.min(prior,37);
+    const remainingHp=prior-damage;
+    const fake={...current,phase:'RESULT',round:401,
+      lastEvent:{kind:'HIT',attacker,defender,damage,remainingHp,
+        technique:'P',special:true,miracleBonus:0,miracleName:null}};
+    api.getState=()=>fake;
+    window.dispatchEvent(new CustomEvent('arkade:reelstop',{
+      detail:{phase:'POWER',value:'MARK',hit:true}}));
+    api.getState=original;
+    return {defenderId:current.animals[defender].id,damage,remainingHp,maxHp};
+  });
+  assert.equal(await page.locator('.ark-forestfall').count(),1,
+    'A real Bear special HIT event should open a fullscreen cutscene');
+  assert.equal(await page.locator('.ark-forestfall-reaction img').count(),1,
+    'The reaction inset identifies the real defender, not a generic enemy');
+  assert.ok((await page.locator('.ark-forestfall-target-art').getAttribute('src'))
+    .includes(testData.defenderId));
+  await page.locator('.ark-forestfall video').evaluate(video=>{
+    Object.defineProperty(video,'duration',{configurable:true,get:()=>14.93});
+    Object.defineProperty(video,'currentTime',{configurable:true,get:()=>11.95});
+    video.dispatchEvent(new Event('timeupdate'));
+  });
+  await page.locator('.ark-forestfall-reaction').waitFor({state:'visible',timeout:3000});
+  assert.match(await page.locator('.ark-forestfall-hit-damage').textContent(),
+    new RegExp(String(testData.damage)));
+  assert.match(await page.locator('.ark-forestfall-target-copy small').textContent(),
+    new RegExp(String(testData.remainingHp)));
+  const after=await page.evaluate(()=>{
+    const s=window.NoahsCombat.getState();
+    return {phase:s.phase,bearHp:s.animals[0].hp,mooseHp:s.animals[1].hp};
+  });
+  assert.deepEqual(after,baseline,'Video collision must never change real HP or reel phase');
+  await page.locator('.ark-forestfall-controls button').last().click();
+  assert.equal(await page.locator('.ark-forestfall').count(),0);
+  assert.equal(await page.locator('#game').getAttribute('inert'),null,
+    'Battle controls must unlock after the cinematic ends');
+}, {reducedMotion:'reduce'});
+
+await run('forestfall-video-to-native-fbx-match-cut',{width:1440,height:900},async page=>{
+  await page.locator('.painted-hotspots [data-art-action="PLAY"]').click();
+  await page.locator('[data-mode="SOLO_SELECT"]').click();
+  await page.locator('[data-animal="bear"]').click();
+  await page.locator('[data-prototype-intro]').click();
+  await page.locator('[data-prototype-fight]').click();
+  await page.evaluate(()=>{
+    // The CI repo intentionally has no licensed private FBX files.
+    // This mock verifies the actual film->WebGL bridge and lifecycle.
+    // Native skeleton/clip fidelity still needs the owner's local test.
+    window.__forestfallSpy={updates:[],stopped:0,started:0};
+    const original=window.NoahsArena3D;
+    window.NoahsArena3D={...original,
+      createForestfallCollision({host,event}){
+        window.__forestfallSpy.started++;
+        if(event.attackerId!=='bear'||event.defenderId!=='moose')return null;
+        const canvas=document.createElement('canvas');
+        canvas.dataset.forestfallFbx='mock';
+        host.append(canvas);
+        return {
+          mode:'native-bear-moose-fbx',
+          update(time,duration){
+            if(window.__forestfallSpy.failOnUpdate)
+              throw Error('mock WebGL context lost');
+            window.__forestfallSpy.updates.push({time,duration});
+            return true;
+          },
+          stop(){
+            window.__forestfallSpy.stopped++;
+            canvas.remove();
+          }
+        };
+      }
+    };
+  });
+  await page.locator('[data-forestfall-file]').setInputFiles({
+    name:'source-timing-test.mp4',mimeType:'video/mp4',
+    buffer:Buffer.from('fixture; no third-party video checked into CI')
+  });
+  const prior=await page.evaluate(()=>window.NoahsCombat.getState().animals.map(a=>a.hp));
+  await page.locator('[data-forestfall-preview]').click();
+  assert.equal(await page.locator('.ark-forestfall').getAttribute('data-collision'),'native-fbx');
+  const seek=async seconds=>page.locator('.ark-forestfall video').evaluate((video,sec)=>{
+    Object.defineProperty(video,'duration',{configurable:true,get:()=>14.93});
+    Object.defineProperty(video,'currentTime',{configurable:true,get:()=>sec});
+    video.dispatchEvent(new Event('timeupdate'));
+  },seconds);
+  await seek(11.3);
+  assert.equal(await page.locator('.ark-forestfall-3d-live').count(),0);
+  await seek(11.62);
+  assert.equal(await page.locator('.ark-forestfall-3d-live').count(),1);
+  assert.ok(await page.locator('.ark-forestfall-native-stage canvas').count()>0);
+  await seek(11.96);
+  assert.equal(await page.locator('.ark-forestfall-reaction-visible').count(),0,
+    'Once both source rigs are present, no cardboard opponent insert should appear');
+  assert.match(await page.locator('.ark-forestfall-result').textContent(),
+    /PREVIEW · NO HP CHANGE/);
+  await seek(13.35);
+  assert.equal(await page.locator('.ark-forestfall-3d-live').count(),0,
+    'The 3D match cut should hand back to the Bear video for its final roar');
+  const test=await page.evaluate(()=>window.__forestfallSpy);
+  assert.equal(test.started,1);
+  assert.ok(test.updates.length>=2);
+  await page.locator('.ark-forestfall-controls button').last().click();
+  assert.equal(await page.locator('.ark-forestfall').count(),0);
+  assert.equal((await page.evaluate(()=>window.__forestfallSpy)).stopped,1,
+    'Skip must dispose the temporary skinned scene/canvas');
+  assert.deepEqual(await page.evaluate(()=>window.NoahsCombat.getState().animals.map(a=>a.hp)),
+    prior,'A live 3D preview cannot apply or recalculate damage');
+  await page.evaluate(()=>{window.__forestfallSpy.failOnUpdate=true;});
+  await page.locator('[data-forestfall-preview]').click();
+  await seek(11.7);
+  assert.equal(await page.locator('.ark-forestfall').getAttribute('data-collision'),
+    'video-fallback','WebGL failure should return to original video rather than strand the match');
+  assert.match(await page.locator('.ark-forestfall-status').textContent(),/3D CONTACT UNAVAILABLE/);
+  await seek(11.95);
+  assert.equal(await page.locator('.ark-forestfall-reaction-visible').count(),1,
+    'After WebGL failure, the optional illustrated hit fallback remains available');
+  await page.locator('.ark-forestfall-controls button').last().click();
+  assert.equal((await page.evaluate(()=>window.__forestfallSpy)).stopped,2,
+    'Temporary WebGL clones must dispose both on Skip and renderer failure');
+  assert.deepEqual(await page.evaluate(()=>window.NoahsCombat.getState().animals.map(a=>a.hp)),
+    prior,'Renderer loss cannot alter the live scored HP');
+}, {reducedMotion:'reduce'});
+
 await run('battle-feel-desktop-1440x900',{width:1440,height:900},async page=>{
   await page.emulateMedia({reducedMotion:'no-preference'});
   await page.locator('.painted-hotspots [data-art-action="PLAY"]').click();
   await page.locator('[data-mode="SOLO_SELECT"]').click();
-  await page.locator('[data-animal="tiger"]').click();
+  await page.locator('[data-animal="bear"]').click();
   await page.locator('[data-prototype-intro]').click();
   await page.locator('[data-prototype-fight]').click();
   assert.equal(await page.locator('#game').getAttribute('data-screen'),'BATTLE_PLAY');
@@ -299,9 +483,13 @@ await run('battle-feel-desktop-1440x900',{width:1440,height:900},async page=>{
   assert.equal(await page.locator('.battlefield-ridge').count(),2);
   assert.equal(await page.locator('.combat-reel-neighbor').count(),2);
   const first=await page.locator('[data-combat-current]').innerText();
-  await page.waitForTimeout(155);
-  const later=await page.locator('[data-combat-current]').innerText();
-  assert.notEqual(first,later,'Attack reel must advance with elapsed time');
+  // A three-symbol reel may randomly return to its initial symbol after
+  // 155ms. Poll continuously for an actual transition rather than making
+  // a probabilistic equality comparison at only two timestamps.
+  await page.waitForFunction(initial=>{
+    const el=document.querySelector('[data-combat-current]');
+    return Boolean(el)&&el.textContent.trim()!==initial;
+  },first,{timeout:3000});
   await page.keyboard.press('g');
   assert.equal(await page.locator('.combat-reel').getAttribute('data-reel-type'),'POWER');
   for(let i=0;i<20;i++){
@@ -314,13 +502,27 @@ await run('battle-feel-desktop-1440x900',{width:1440,height:900},async page=>{
   const an=await page.locator('.combat-striker .combat-fighter-art')
     .evaluate(el=>getComputedStyle(el).animationName);
   assert.notEqual(an,'none','The original animal portrait should animate on attack');
-  assert.match(await page.locator('.combat-message').innerText(),/AMBER FANG|MOONSTEP|SHADOW RESOLVE|GOLDEN HEART|SUNWARD FEINT|SOVEREIGN ROAR/);
+  assert.equal(await page.locator('.ark-cinema').count(),1,'The new cinematic stage should be mounted');
+  assert.ok(['focus','intro','attack','contact','reaction','miracle','victory','done']
+    .includes(await page.locator('.ark-cinema').getAttribute('data-beat')));
+  await page.locator('.combat-message').waitFor({state:'visible',timeout:8000});
+  assert.match(await page.locator('.combat-message').innerText(),/FERAL CHARGE|LOW SWIPE|HIGH PAW STRIKE|RAGING REAR|ANTLER CHARGE|CROSS-ANTLER SWEEP|TWO-HOOF STOMP|LEAPING ANTLER DRIVE/);
+  await page.evaluate(()=>window.NoahsCinematics.sync());
+  assert.equal(await page.locator('.combat-battlefield .ark-cinema').count(),1,
+    'Repeated director sync must not leave ghost move titles');
+  await page.evaluate(()=>{
+    if(window.NoahsCombat.getState().phase==='FINISHED')window.NoahsCombat.rematch();
+    else window.NoahsCombat.next();
+    window.NoahsCinematics.sync();
+  });
+  assert.equal(await page.locator('.combat-battlefield .ark-cinema').count(),0,
+    'Returning to reels must remove the previous cinematic title DOM');
 }, {reducedMotion:'no-preference'});
 await run('battle-feel-reduced-motion-390x844',{width:390,height:844},async page=>{
   await page.locator('.painted-mobile-nav [data-art-action="PLAY"]').click();
   await page.locator('[data-mode="DUEL_SELECT"]').click();
-  await page.locator('[data-animal="lion"]').click();
-  await page.locator('[data-animal="tiger"]').click();
+  await page.locator('[data-animal="moose"]').click();
+  await page.locator('[data-animal="bear"]').click();
   await page.locator('[data-prototype-intro]').click();
   await page.locator('[data-prototype-fight]').click();
   assert.equal(await page.locator('.combat-battlefield').count(),1);
@@ -345,7 +547,7 @@ await run('battle-feel-reduced-motion-390x844',{width:390,height:844},async page
 await run('arcade-run-mode-1440x900',{width:1440,height:900},async page=>{
   await page.locator('.painted-hotspots [data-art-action="PLAY"]').click();
   await page.locator('[data-mode="SOLO_SELECT"]').click();
-  await page.locator('[data-animal="tiger"]').click();
+  await page.locator('[data-animal="bear"]').click();
   await page.locator('[data-prototype-intro]').click();
   await page.locator('[data-prototype-fight]').click();
   assert.match(await page.locator('.combat-series').innerText(),/EXPEDITION WINS/);
@@ -356,8 +558,8 @@ await run('arcade-run-mode-1440x900',{width:1440,height:900},async page=>{
 await run('versus-set-mode-390x844',{width:390,height:844},async page=>{
   await page.locator('.painted-mobile-nav [data-art-action="PLAY"]').click();
   await page.locator('[data-mode="DUEL_SELECT"]').click();
-  await page.locator('[data-animal="tiger"]').click();
-  await page.locator('[data-animal="lion"]').click();
+  await page.locator('[data-animal="bear"]').click();
+  await page.locator('[data-animal="moose"]').click();
   await page.locator('[data-prototype-intro]').click();
   await page.locator('[data-prototype-fight]').click();
   assert.match(await page.locator('.combat-heading').innerText(),/BOUT 1 · FIRST TO 2/);
@@ -369,7 +571,7 @@ await run('versus-set-mode-390x844',{width:390,height:844},async page=>{
 await run('reference-arena-layout-desktop',{width:1440,height:900},async page=>{
   await page.locator('.painted-hotspots [data-art-action="PLAY"]').click();
   await page.locator('[data-mode="SOLO_SELECT"]').click();
-  await page.locator('[data-animal="tiger"]').click();
+  await page.locator('[data-animal="bear"]').click();
   await page.locator('[data-prototype-intro]').click();
   await page.locator('[data-prototype-fight]').click();
   assert.equal(await page.locator('#game').getAttribute('data-screen'),'BATTLE_PLAY');
@@ -389,13 +591,13 @@ await run('reference-arena-layout-desktop',{width:1440,height:900},async page=>{
   assert.ok(metrics.stop.w>=70,'Primary input must be arcade-sized');
   assert.equal(metrics.buttons,1);
   const art=await page.locator('.combat-fighter-art').evaluateAll(nodes=>nodes.map(el=>el.naturalWidth));
-  assert.ok(art.length===2&&art.every(n=>n>0),'Both original animal artworks must load');
+  assert.ok(art.length===2&&art.every(n=>n>0),'Both original temporary animal portraits must load');
 });
 await run('reference-arena-layout-landscape',{width:844,height:390},async page=>{
   await page.locator('.painted-hotspots [data-art-action="PLAY"]').click();
   await page.locator('[data-mode="DUEL_SELECT"]').click();
-  await page.locator('[data-animal="lion"]').click();
-  await page.locator('[data-animal="tiger"]').click();
+  await page.locator('[data-animal="moose"]').click();
+  await page.locator('[data-animal="bear"]').click();
   await page.locator('[data-prototype-intro]').click();
   await page.locator('[data-prototype-fight]').click();
   const frame=await page.evaluate(()=>{
@@ -409,6 +611,54 @@ await run('reference-arena-layout-landscape',{width:844,height:390},async page=>
   await page.keyboard.press('g');
   assert.equal(await page.locator('.combat-reel').getAttribute('data-reel-type'),'ATTACK',
     'Local player two must get their own attack stop');
+});
+
+await run('private-3d-dialog-mobile-390x844',{width:390,height:844},async page=>{
+  await page.locator('.painted-mobile-nav [data-art-action="PLAY"]').click();
+  await page.locator('[data-mode="SOLO_SELECT"]').click();
+  await page.locator('[data-animal="moose"]').click();
+  await page.locator('[data-prototype-intro]').click();
+  await page.locator('[data-prototype-fight]').click();
+  assert.equal(await page.locator('#game').getAttribute('data-screen'),'BATTLE_PLAY');
+  assert.ok(await page.locator('[data-ark3d-open]').isVisible());
+  assert.ok(await page.locator('[data-bear-review-quick]').isVisible(),
+    'Bear review must be discoverable directly from the battle footer');
+  await page.locator('[data-bear-review-quick]').click();
+  assert.equal(await page.locator('.ark-fbx-dialog').count(),1,
+    'Quick launch without Bear assets must open the setup panel');
+  assert.match(await page.locator('[data-ark3d-status]').innerText(),/Load Brown Bear Motion Lab V2 files first/);
+  const location=await page.locator('.ark-fbx-dialog').evaluate(el=>{
+    const button=el.querySelector('[data-bear-review-start]');
+    const firstImporter=el.querySelector('[data-ark3d-species="bear"]');
+    return {buttonTop:button.getBoundingClientRect().top,
+      importerTop:firstImporter.getBoundingClientRect().top,
+      panelBottom:el.getBoundingClientRect().bottom,
+      visible:button.getBoundingClientRect().bottom<=el.getBoundingClientRect().bottom};
+  });
+  assert.ok(location.buttonTop<location.importerTop,'Bear review launch must appear before the import forms');
+  assert.ok(location.visible,'Bear review launch must be within the initial modal viewport');
+  await page.locator('[data-ark3d-close]').click();
+  const status=await page.evaluate(()=>window.NoahsArena3D.getStatus());
+  assert.equal(status.bear,false);
+  assert.equal(status.moose,false);
+  await page.locator('[data-ark3d-open]').click();
+  assert.equal(await page.locator('.ark-fbx-dialog').count(),1);
+  assert.equal(await page.locator('[data-ark3d-folder]').count(),2);
+  assert.equal(await page.locator('[data-bear-review-start]').count(),1);
+  const beforeReview=await page.evaluate(()=>JSON.stringify(window.NoahsCombat.getState()));
+  await page.locator('[data-bear-review-start]').click();
+  assert.match(await page.locator('[data-ark3d-status]').innerText(),/Load the Brown Bear Motion Lab V2/);
+  assert.equal(await page.evaluate(()=>JSON.stringify(window.NoahsCombat.getState())),beforeReview,
+    'An unavailable private model must never change battle HP or selections');
+  assert.equal(await page.locator('.ark-bear-review-toolbar').count(),0);
+  await page.locator('[data-ark3d-load="moose"]').click();
+  assert.match(await page.locator('[data-ark3d-status]').innerText(),/Choose an extracted moose folder/);
+  await page.locator('[data-ark3d-close]').click();
+  assert.equal(await page.locator('.ark-fbx-dialog').count(),0);
+  assert.equal(await page.locator('#game').getAttribute('data-screen'),'BATTLE_PLAY');
+  await page.keyboard.press('g');
+  assert.equal(await page.locator('.combat-reel').getAttribute('data-reel-type'),'POWER');
+  assert.equal(await page.locator('.combat-fighter-art').count(),2);
 });
 
 await browser.close();
