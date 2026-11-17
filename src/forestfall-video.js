@@ -216,8 +216,19 @@
         video.duration:14.93;
       const frame=impactCore?.at(video.currentTime,duration);
       if(active.collision&&frame?.live){
-        const rendered=active.collision.update(video.currentTime,duration);
-        node.classList.toggle('ark-forestfall-3d-live',Boolean(rendered));
+        try{
+          const rendered=active.collision.update(video.currentTime,duration);
+          node.classList.toggle('ark-forestfall-3d-live',Boolean(rendered));
+        }catch(error){
+          // Loss of a second WebGL context must never strand the player
+          // in a black screen or change their already scored result.
+          const failed=active.collision;active.collision=null;
+          try{failed.stop();}catch(_ignored){}
+          node.dataset.collision='video-fallback';
+          node.classList.remove('ark-forestfall-3d-live');
+          status.textContent='3D CONTACT UNAVAILABLE · VIDEO CONTINUES · '+
+            String(error?.message||'RENDERER ERROR');
+        }
       }else{
         node.classList.remove('ark-forestfall-3d-live');
       }
