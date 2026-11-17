@@ -80,3 +80,30 @@ test('Forestfall preview is not silently blocked during either spinning reel',()
  assert.ok(script.includes('Load the Forestfall MP4 before previewing it.'));
  assert.ok(script.includes("const node=document.createElement('section')"));
 });
+
+
+test('a scored Forestfall hit stages the actual defender response at the landing',()=>{
+ assert.ok(script.includes('const CONTACT_RATIO=.755'));
+ assert.ok(script.includes('const REACTION_MS=1120'));
+ assert.ok(script.includes("species=event?.defenderId&&window.NoahsRoster?.ANIMALS?.[event.defenderId]"));
+ assert.ok(script.includes("animal.src=species.art"));
+ assert.ok(script.includes('remainingHp+event.damage'));
+ assert.ok(script.includes('previous/max'));
+ assert.ok(script.includes('remains/max'));
+ assert.ok(script.includes("node.classList.add('ark-forestfall-impact','ark-forestfall-reaction-visible')"));
+ assert.ok(script.includes('video.currentTime<duration*CONTACT_RATIO'));
+ assert.ok(css.includes('.ark-forestfall-target-art'));
+ assert.ok(css.includes('.ark-forestfall-target-health'));
+ assert.ok(css.includes('ark-forestfall-defender-hit'));
+});
+test('Forestfall blocks interactions but always returns control after skip/complete/error',()=>{
+ assert.ok(script.includes("document.getElementById('game')?.setAttribute('inert','')"));
+ assert.ok(script.includes("document.getElementById('game')?.removeAttribute('inert')"));
+ assert.ok(script.includes('arkade:forestfallopen'));
+ assert.ok(script.includes('arkade:forestfallclose'));
+ assert.ok(script.includes("video.addEventListener('ended',()=>close(true)"));
+ assert.ok(script.includes("skip.addEventListener('click',()=>close(true))"));
+ assert.ok(script.includes("if(event.key==='Escape')"));
+ assert.ok(!script.includes('battle.stop('));
+ assert.ok(!script.includes('nextRound()'));
+});
