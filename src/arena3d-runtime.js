@@ -14,7 +14,7 @@
   let cameraLook=null,lastCameraShot=null,focusLight=null,
     fxGroup=null,fxParticles=[],fxGeometry=null,fxMaterials=[],
     shockRing=null,shockGeometry=null,shockMaterial=null;
-  let bearReview=null,reviewToolbar=null;
+  let bearReview=null,reviewToolbar=null,forestfallOverlayOpen=false;
   let message='Choose an extracted private Motion Lab folder. The files stay on this device.';
   const screen=()=>window.__arkade?.getScreen();
   const state=()=>window.NoahsCombat?.getState();
@@ -1016,7 +1016,11 @@
     paintEffects();
     paintFocusLight();
     const event=sequence?.event;
-    renderer.render(scene,event&&!reduced()?filmCamera:camera);
+    // The imported Forestfall cutscene owns the screen while open.
+    // Keep underlying actor timelines ticking to their completed combat
+    // states but avoid competing GPU draws with the live 3D match-cut.
+    if(!forestfallOverlayOpen)
+      renderer.render(scene,event&&!reduced()?filmCamera:camera);
     startLoop();
   }
   function syncScene(force=false){
@@ -1142,6 +1146,13 @@
     if(event.key!=='Escape'||!panel)return;
     event.preventDefault();event.stopImmediatePropagation();closePanel();
   },true);
+  window.addEventListener('arkade:forestfallopen',()=>{
+    forestfallOverlayOpen=true;
+  });
+  window.addEventListener('arkade:forestfallclose',()=>{
+    forestfallOverlayOpen=false;
+    startLoop();
+  });
   window.addEventListener('arkade:screenchange',()=>syncScene());
   window.addEventListener('resize',fitStage);
   document.addEventListener('visibilitychange',()=>{if(document.hidden)stopLoop();else startLoop();});
@@ -1303,12 +1314,14 @@
         impactRenderer?.domElement.remove();
         for(const resource of disposable)resource.dispose();
         world.clear();
+        impactRenderer?.forceContextLoss?.();
         impactRenderer?.dispose();
         impactRenderer=null;
       };
       return Object.freeze({update,stop,mode:'native-bear-moose-fbx'});
     }catch(error){
       impactRenderer?.domElement.remove();
+      impactRenderer?.forceContextLoss?.();
       impactRenderer?.dispose();
       disposable.forEach(resource=>resource.dispose());
       // Never make local video playback contingent on WebGL success.
