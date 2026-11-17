@@ -1152,8 +1152,170 @@
     fxParticles=[];fxGroup=null;
     renderer?.dispose();renderer=null;clearCanvas();
   },{once:true});
+  // A separate, short real-FBX contact scene for Forestfall. It renders
+  // two *clones* of the locally imported skinned models inside the video's
+  // 16:9 viewport. It never reuses/mutates the scored arena actors or combat
+  // state. Missing private assets simply retain the original video fallback.
+  const forestfallCore=window.NoahsForestfallCollisionCore;
+  function forestfallCanStage(event){
+    return Boolean(forestfallCore?.supports(event,{
+      bear:!!loaded.bear,moose:!!loaded.moose,
+      webgl:!!THREE&&!!renderer&&!loading
+    })&&screen()==='BATTLE_PLAY'&&!bearReview?.active);
+  }
+  function createForestfallCollision({host,event}={}){
+    if(!host||!forestfallCanStage(event))return null;
+    let impactRenderer=null,finished=false;
+    const disposable=[];
+    try{
+      const world=new THREE.Scene();
+      const backdrop=new THREE.Color(0x193625);
+      world.fog=new THREE.Fog(0x193625,11,35);
+      world.add(new THREE.HemisphereLight(0xf4e4cb,0x35463a,2));
+      const sun=new THREE.DirectionalLight(0xffd6a4,3.1);
+      sun.position.set(-3,8,5);world.add(sun);
+      const rim=new THREE.DirectionalLight(0x9bbbae,.95);
+      rim.position.set(4,3,-4);world.add(rim);
+      const ground=new THREE.Mesh(
+        new THREE.PlaneGeometry(50,50),
+        new THREE.MeshStandardMaterial({color:0x38533b,roughness:1,
+          metalness:0,side:THREE.DoubleSide}));
+      ground.rotation.x=-Math.PI/2;
+      ground.position.y=-.025;
+      ground.receiveShadow=true;
+      world.add(ground);disposable.push(ground.geometry,ground.material);
+      const dust=new THREE.Mesh(
+        new THREE.RingGeometry(.75,1.05,48),
+        new THREE.MeshBasicMaterial({color:0xe9d1a4,transparent:true,
+          opacity:0,depthWrite:false,side:THREE.DoubleSide}));
+      dust.rotation.x=-Math.PI/2;dust.position.y=.035;
+      world.add(dust);disposable.push(dust.geometry,dust.material);
+      const camera3d=new THREE.PerspectiveCamera(35,16/9,.1,60);
+      const slotDirection=event.attacker===0?1:-1;
+      const stageActor=(id,slot)=>{
+        const source=loaded[id];
+        const model=source.clone(source.model);
+        const pivot=new THREE.Group(),orient=new THREE.Group();
+        pivot.add(orient);orient.add(model);world.add(pivot);
+        const bounds=new THREE.Box3().setFromObject(model);
+        const size=bounds.getSize(new THREE.Vector3());
+        if(!Number.isFinite(size.y)||size.y<=0)
+          throw Error('Invalid private '+id+' model bounds');
+        const scale=Math.min(2.52/size.y,2.9/Math.max(.001,size.x),
+          2.9/Math.max(.001,size.z));
+        model.scale.multiplyScalar(scale);model.updateMatrixWorld(true);
+        const fitted=new THREE.Box3().setFromObject(model);
+        const center=fitted.getCenter(new THREE.Vector3());
+        model.position.set(-center.x,-fitted.min.y,-center.z);
+        const restX=model.position.x,restZ=model.position.z;
+        orient.rotation.y=(slot===0?Math.PI/2:-Math.PI/2)+yaw[id];
+        const roots=[];
+        model.traverse(node=>{
+          if(node.isBone&&/^RigRoot$/i.test(node.name))
+            roots.push({node,x:node.position.x,z:node.position.z});
+        });
+        const mixer=new THREE.AnimationMixer(model);
+        let current=null,currentKey=null;
+        return {
+          pivot,orient,model,
+          play(key){
+            const clip=source.clips[key]||source.clips.idle;
+            if(!clip||currentKey===key)return;
+            mixer.stopAllAction();
+            const action=mixer.clipAction(clip,model);
+            action.reset();action.enabled=true;action.setEffectiveWeight(1);
+            action.setLoop(key==='idle'?THREE.LoopRepeat:THREE.LoopOnce,
+              key==='idle'?Infinity:1);
+            action.clampWhenFinished=true;action.play();
+            current=action;currentKey=key;
+          },
+          sample(time){
+            mixer.setTime(Math.max(0,time));
+            model.position.x=restX;model.position.z=restZ;
+            for(const root of roots){
+              root.node.position.x=root.x;root.node.position.z=root.z;
+            }
+          },
+          destroy(){mixer.stopAllAction();world.remove(pivot);}
+        };
+      };
+      const bear=stageActor('bear',event.attacker);
+      const moose=stageActor('moose',event.defender);
+      bear.play('S');moose.play('idle');
+      const groundY=.0;
+      impactRenderer=new THREE.WebGLRenderer({alpha:true,antialias:false,
+        powerPreference:'low-power'});
+      impactRenderer.setClearColor(backdrop,.07);
+      impactRenderer.outputColorSpace=THREE.SRGBColorSpace;
+      impactRenderer.toneMapping=THREE.ACESFilmicToneMapping;
+      impactRenderer.toneMappingExposure=1.12;
+      impactRenderer.setPixelRatio(Math.min(1.35,window.devicePixelRatio||1));
+      impactRenderer.domElement.setAttribute('aria-hidden','true');
+      impactRenderer.domElement.dataset.forestfallFbx='bear-moose';
+      host.append(impactRenderer.domElement);
+      let width=0,height=0,collided=false;
+      const update=(time,duration)=>{
+        if(finished)return false;
+        const pose=forestfallCore.at(time,duration);
+        if(!pose.live)return false;
+        const w=Math.max(2,host.clientWidth||960),
+          h=Math.max(2,host.clientHeight||540);
+        if(w!==width||h!==height){
+          width=w;height=h;
+          impactRenderer.setSize(width,height,false);
+          camera3d.aspect=width/height;camera3d.updateProjectionMatrix();
+        }
+        const sign=slotDirection;
+        bear.pivot.position.set(sign*pose.bearX,groundY+pose.bearY,-.08);
+        bear.orient.rotation.z=sign*pose.bearLean;
+        moose.pivot.position.set(sign*pose.mooseX,groundY,.02);
+        moose.orient.rotation.z=sign*pose.mooseLean;
+        const t=pose.movieTime;
+        bear.sample(t-forestfallCore.ENTER);
+        if(pose.contact&&!collided){
+          collided=true;
+          // This is a real source animation on the imported Moose FBX,
+          // triggered at the source video landing. KO selects Death,
+          // otherwise Hit_Stand_L01. No HP changes occur in this scene.
+          moose.play(event.knockout?'knockout':'hit');
+        }
+        moose.sample(pose.contact?t-forestfallCore.CONTACT:t-forestfallCore.ENTER);
+        dust.visible=pose.contact&&pose.dust>.001;
+        dust.position.x=sign*.50;
+        dust.scale.setScalar(.8+pose.dust*2.4);
+        dust.material.opacity=.43*pose.dust;
+        const cameraHit=pose.contact?
+          Math.sin((t-forestfallCore.CONTACT)*51)*
+          Math.max(0,1-(t-forestfallCore.CONTACT)/.27)*.05:0;
+        camera3d.position.set(sign*(2.7-.45*pose.approach)+cameraHit,
+          2.82-.35*pose.approach,8.4-.45*pose.approach);
+        camera3d.lookAt(sign*.13,1.03,0);
+        impactRenderer.render(world,camera3d);
+        return true;
+      };
+      const stop=()=>{
+        if(finished)return;
+        finished=true;bear.destroy();moose.destroy();
+        impactRenderer?.domElement.remove();
+        for(const resource of disposable)resource.dispose();
+        world.clear();
+        impactRenderer?.dispose();
+        impactRenderer=null;
+      };
+      return Object.freeze({update,stop,mode:'native-bear-moose-fbx'});
+    }catch(error){
+      impactRenderer?.domElement.remove();
+      impactRenderer?.dispose();
+      disposable.forEach(resource=>resource.dispose());
+      // Never make local video playback contingent on WebGL success.
+      status('Forestfall 3D contact unavailable: '+(error?.message||String(error))+
+        '. The original video fallback remains playable.');
+      return null;
+    }
+  }
+
   window.NoahsArena3D=Object.freeze({
-    openPanel,
+    openPanel,forestfallCanStage,createForestfallCollision,
     startBearReview,
     stopBearReview,
     getReviewState:()=>bearReview?{
