@@ -11,6 +11,9 @@
   const MAX_BYTES=100*1024*1024;
   const MIME=/^video\/(mp4|webm)$/;
   let objectUrl=null,fileName='',active=null,lastKey=null;
+  const CONTACT_RATIO=.755;
+  const REACTION_MS=1120;
+  const fmt=n=>Math.max(0,Math.round(Number(n)||0));
   const onBattle=()=>window.__arkade?.getScreen()==='BATTLE_PLAY';
   const battle=()=>window.NoahsCombat?.getState();
   function updateControls(){
@@ -29,6 +32,9 @@
     video.removeAttribute('src');
     video.load();
     node.remove();
+    document.getElementById('game')?.removeAttribute('inert');
+    document.body.classList.remove('ark-forestfall-open');
+    window.dispatchEvent(new CustomEvent('arkade:forestfallclose'));
     if(focus&&onBattle()){
       (ui.querySelector('[data-combat-next],[data-combat-next-bout],'+
         '[data-combat-rematch],[data-forestfall-preview]'))?.focus();
@@ -85,6 +91,39 @@
     const result=document.createElement('div');
     result.className='ark-forestfall-result';
     result.setAttribute('aria-live','polite');
+    const reaction=document.createElement('div');
+    reaction.className='ark-forestfall-reaction';
+    reaction.setAttribute('aria-hidden','true');
+    const species=event?.defenderId&&window.NoahsRoster?.ANIMALS?.[event.defenderId];
+    const target=species?.label||event?.defenderId?.toUpperCase()||'OPPONENT';
+    if(event&&species){
+      const animal=document.createElement('img');
+      animal.className='ark-forestfall-target-art';
+      animal.src=species.art;
+      animal.alt='';
+      const copy=document.createElement('div');
+      copy.className='ark-forestfall-target-copy';
+      const name=document.createElement('strong');
+      name.textContent=target;
+      const damage=document.createElement('span');
+      damage.className='ark-forestfall-hit-damage';
+      damage.textContent='−'+fmt(event.damage)+' HP';
+      const health=document.createElement('small');
+      const fighter=battle()?.animals?.[event.defender];
+      const max=fmt(fighter?.maxHp)||Math.max(1,fmt(event.remainingHp+event.damage));
+      const remains=Math.min(max,fmt(event.remainingHp));
+      const previous=Math.min(max,remains+fmt(event.damage));
+      health.textContent=remains+' / '+max+' HP';
+      const meter=document.createElement('div');
+      meter.className='ark-forestfall-target-health';
+      meter.setAttribute('aria-hidden','true');
+      const fill=document.createElement('span');
+      fill.style.setProperty('--hp-before',100*previous/max+'%');
+      fill.style.setProperty('--hp-after',100*remains/max+'%');
+      meter.append(fill);
+      copy.append(name,damage,meter,health);
+      reaction.append(animal,copy);
+    }
     const status=document.createElement('p');
     status.className='ark-forestfall-status';
     status.textContent=preview?'LOCAL VIDEO PREVIEW · NO DAMAGE':
@@ -104,25 +143,42 @@
       });
     });
     controls.append(resume,skip);
-    node.append(video,title,result,status,controls);
+    node.append(video,title,result,reaction,status,controls);
     document.body.append(node);
-    active={node,video};
-    let hitShown=false;
+    document.getElementById('game')?.setAttribute('inert','');
+    document.body.classList.add('ark-forestfall-open');
+    active={node,video,preview,event};
+    window.dispatchEvent(new CustomEvent('arkade:forestfallopen',{
+      detail:{preview,eventKey:event?.key||null}}));
+    let hitShown=false,reactionUntil=null;
     const showHit=()=>{
       if(preview||hitShown||!event)return;
       const duration=Number.isFinite(video.duration)&&video.duration>1?
         video.duration:14.93;
       // Source video: dust/ground contact appears around 11.2 seconds.
-      if(video.currentTime<duration*.755)return;
+      if(video.currentTime<duration*CONTACT_RATIO)return;
       hitShown=true;
       const damage=Math.max(0,Number(event.damage)||0);
       const name=window.NoahsRoster?.ANIMALS?.[event.defenderId]?.label||
         event.defenderId.toUpperCase();
       result.textContent=name.toUpperCase()+' · −'+damage+' HP';
-      node.classList.add('ark-forestfall-impact');
+      node.classList.add('ark-forestfall-impact','ark-forestfall-reaction-visible');
+      reactionUntil=video.currentTime+REACTION_MS/1000;
+      // The MP4 shows a landing but no struck animal. This inset supplies
+      // an actual defender reaction and recorded HP without pretending to
+      // change the video, reapply damage, or access private FBX binaries.
       status.textContent='SPECIAL CONNECTED · RESULT ALREADY RECORDED';
     };
-    video.addEventListener('timeupdate',showHit);
+    const syncContact=()=>{
+      if(!active||active.node!==node)return;
+      showHit();
+      if(reactionUntil!==null&&video.currentTime>=reactionUntil){
+        node.classList.remove('ark-forestfall-reaction-visible');
+        reactionUntil=null;
+      }
+    };
+    video.addEventListener('timeupdate',syncContact);
+    video.addEventListener('seeked',syncContact);
     video.addEventListener('ended',()=>close(true),{once:true});
     video.addEventListener('error',()=>{
       if(!active||active.node!==node)return;
@@ -179,6 +235,25 @@
     if(!onBattle())close();
     updateControls();
   });
+  window.addEventListener('keydown',event=>{
+    if(!active)return;
+    if(event.key==='Escape'){
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      close(true);
+    }else if(event.key==='Tab'){
+      // The rest of the arena is inert, while video control buttons stay
+      // keyboard-accessible. Loop focus inside the temporary dialog.
+      const buttons=[...active.node.querySelectorAll('button:not([hidden])')];
+      if(!buttons.length)return;
+      const first=buttons[0],last=buttons.at(-1);
+      if(event.shiftKey&&document.activeElement===first){
+        event.preventDefault();last.focus();
+      }else if(!event.shiftKey&&document.activeElement===last){
+        event.preventDefault();first.focus();
+      }
+    }
+  },true);
   window.addEventListener('pagehide',()=>{
     close();
     if(objectUrl)URL.revokeObjectURL(objectUrl);
