@@ -11,7 +11,8 @@
   const MAX_BYTES=100*1024*1024;
   const MIME=/^video\/(mp4|webm)$/;
   let objectUrl=null,fileName='',active=null,lastKey=null;
-  const CONTACT_RATIO=.755;
+  const impactCore=window.NoahsForestfallCollisionCore;
+  const CONTACT_RATIO=impactCore?.CONTACT/impactCore?.SOURCE_SECONDS||11.82/14.93;
   const REACTION_MS=1120;
   const fmt=n=>Math.max(0,Math.round(Number(n)||0));
   const onBattle=()=>window.__arkade?.getScreen()==='BATTLE_PLAY';
@@ -26,8 +27,10 @@
   }
   function close(focus=false){
     if(!active)return;
-    const {node,video}=active;
+    const {node,video,collision,raf}=active;
     active=null;
+    if(raf)cancelAnimationFrame(raf);
+    collision?.stop();
     video.pause();
     video.removeAttribute('src');
     video.load();
@@ -72,8 +75,10 @@
       const bearIndex=state.animals.findIndex(animal=>animal.id==='bear');
       if(bearIndex>=0){
         const defender=1-bearIndex;
-        event={defender,defenderId:state.animals[defender].id,
-          damage:0,remainingHp:state.animals[defender].hp,preview:true};
+        event={attacker:bearIndex,attackerId:'bear',
+          defender,defenderId:state.animals[defender].id,
+          damage:0,remainingHp:state.animals[defender].hp,
+          knockout:false,preview:true};
       }
     }
     const node=document.createElement('section');
@@ -97,6 +102,15 @@
     video.muted=Boolean(settings.mute)||video.volume===0;
     const reduced=Boolean(settings.reducedMotion)||
       Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
+    // Keep the actual video as the camera source until its Bear lands.
+    // A separate native-FBX scene is match-cut into that same 16:9 window
+    // for ~1.7 seconds if both private animals were loaded locally.
+    const media=document.createElement('div');
+    media.className='ark-forestfall-media';
+    const nativeStage=document.createElement('div');
+    nativeStage.className='ark-forestfall-native-stage';
+    nativeStage.setAttribute('aria-hidden','true');
+    media.append(video,nativeStage);
     const result=document.createElement('div');
     result.className='ark-forestfall-result';
     result.setAttribute('aria-live','polite');
@@ -153,11 +167,14 @@
       });
     });
     controls.append(resume,skip);
-    node.append(video,title,result,reaction,status,controls);
+    node.append(media,title,result,reaction,status,controls);
     document.body.append(node);
     document.getElementById('game')?.setAttribute('inert','');
     document.body.classList.add('ark-forestfall-open');
-    active={node,video,preview,event};
+    const collision=window.NoahsArena3D?.createForestfallCollision?.({
+      host:nativeStage,event})||null;
+    active={node,video,preview,event,collision,raf:0};
+    node.dataset.collision=collision?'native-fbx':'video-fallback';
     window.dispatchEvent(new CustomEvent('arkade:forestfallopen',{
       detail:{preview,eventKey:event?.key||null}}));
     let hitShown=false,reactionUntil=null;
@@ -165,7 +182,8 @@
       if(hitShown||!event)return;
       const duration=Number.isFinite(video.duration)&&video.duration>1?
         video.duration:14.93;
-      // Source video: dust/ground contact appears around 11.2 seconds.
+      // Film inspection: front paws meet the ground around 11.82s,
+      // and the source's dust burst follows at 12.06s.
       if(video.currentTime<duration*CONTACT_RATIO)return;
       hitShown=true;
       const damage=Math.max(0,Number(event.damage)||0);
@@ -173,17 +191,28 @@
         event.defenderId.toUpperCase();
       result.textContent=preview?'PREVIEW · NO HP CHANGE':
         name.toUpperCase()+' · −'+damage+' HP';
-      node.classList.add('ark-forestfall-impact','ark-forestfall-reaction-visible');
+      const live=Boolean(active?.collision);
+      node.classList.add('ark-forestfall-impact');
+      // Only show the old illustrated cut-in if the user has not supplied
+      // both native models. During a live match-cut the actual skinned Moose
+      // plays its own Hit/Knockout FBX, with no superimposed silhouette.
+      if(!live)node.classList.add('ark-forestfall-reaction-visible');
       reactionUntil=video.currentTime+REACTION_MS/1000;
-      // The MP4 shows a landing but no struck animal. This inset supplies
-      // an actual defender reaction and recorded HP without pretending to
-      // change the video, reapply damage, or access private FBX binaries.
-      status.textContent=preview?
-        'LOCAL VIDEO PREVIEW · NO HP CHANGES':
-        'SPECIAL CONNECTED · RESULT ALREADY RECORDED';
+      status.textContent=preview?'LOCAL VIDEO PREVIEW · NO HP CHANGES':
+        live?'NATIVE BEAR × MOOSE IMPACT · REAL FBX REACTION':
+          'SPECIAL CONNECTED · RESULT ALREADY RECORDED';
     };
     const syncContact=()=>{
       if(!active||active.node!==node)return;
+      const duration=Number.isFinite(video.duration)&&video.duration>1?
+        video.duration:14.93;
+      const frame=impactCore?.at(video.currentTime,duration);
+      if(active.collision&&frame?.live){
+        const rendered=active.collision.update(video.currentTime,duration);
+        node.classList.toggle('ark-forestfall-3d-live',Boolean(rendered));
+      }else{
+        node.classList.remove('ark-forestfall-3d-live');
+      }
       showHit();
       if(reactionUntil!==null&&video.currentTime>=reactionUntil){
         node.classList.remove('ark-forestfall-reaction-visible','ark-forestfall-impact');
@@ -191,6 +220,21 @@
         reactionUntil=null;
       }
     };
+    const liveFrame=()=>{
+      if(!active||active.node!==node)return;
+      active.raf=0;
+      syncContact();
+      if(!video.paused&&!video.ended)active.raf=requestAnimationFrame(liveFrame);
+    };
+    video.addEventListener('play',()=>{
+      if(active?.node===node&&!active.raf)
+        active.raf=requestAnimationFrame(liveFrame);
+    });
+    video.addEventListener('pause',()=>{
+      if(active?.node===node&&active.raf){
+        cancelAnimationFrame(active.raf);active.raf=0;
+      }
+    });
     video.addEventListener('timeupdate',syncContact);
     video.addEventListener('seeked',syncContact);
     video.addEventListener('ended',()=>close(true),{once:true});
@@ -274,7 +318,8 @@
     objectUrl=null;
   },{once:true});
   window.NoahsForestfall=Object.freeze({
-    getStatus:()=>({ready:Boolean(objectUrl),fileName,playing:Boolean(active)}),
+    getStatus:()=>({ready:Boolean(objectUrl),fileName,playing:Boolean(active),
+      collision:active?.collision?.mode||'video-fallback'}),
     preview:()=>playVideo({preview:true})
   });
 })();
