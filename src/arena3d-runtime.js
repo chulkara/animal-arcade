@@ -1192,7 +1192,9 @@
           opacity:0,depthWrite:false,side:THREE.DoubleSide}));
       dust.rotation.x=-Math.PI/2;dust.position.y=.035;
       world.add(dust);disposable.push(dust.geometry,dust.material);
-      const camera3d=new THREE.PerspectiveCamera(35,16/9,.1,60);
+      // Widen the real contact lens enough to fit the airborne Bear's
+      // head, both paws and Moose antlers in the same 16:9 frame.
+      const camera3d=new THREE.PerspectiveCamera(39,16/9,.1,60);
       const slotDirection=event.attacker===0?1:-1;
       const stageActor=(id,slot)=>{
         const source=loaded[id];
@@ -1290,8 +1292,8 @@
           Math.sin((t-forestfallCore.CONTACT)*51)*
           Math.max(0,1-(t-forestfallCore.CONTACT)/.27)*.05:0;
         camera3d.position.set(sign*(2.7-.45*pose.approach)+cameraHit,
-          2.82-.35*pose.approach,8.4-.45*pose.approach);
-        camera3d.lookAt(sign*.13,1.03,0);
+          3.1-.30*pose.approach,9.8-.45*pose.approach);
+        camera3d.lookAt(sign*.13,1.35,0);
         impactRenderer.render(world,camera3d);
         return true;
       };
