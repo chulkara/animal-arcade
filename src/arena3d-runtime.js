@@ -369,7 +369,8 @@
     filmCamera.position.copy(camera.position);
     filmCamera.lookAt(cameraLook);
     layout=new THREE.Group();scene.add(layout);
-    scene.add(new THREE.HemisphereLight(0xf6e4c0,0x344b4c,2.0));
+    const forest=Boolean(window.NoahsForestArena);
+    scene.add(forest?new THREE.HemisphereLight(0xdcecff,0x4a5a32,1.9):new THREE.HemisphereLight(0xf6e4c0,0x344b4c,2.0));
     const sun=new THREE.DirectionalLight(0xffdeb0,3.4);
     sun.position.set(-4,8,5);sun.castShadow=true;
     sun.shadow.mapSize.set(1024,1024);
@@ -381,46 +382,52 @@
     // Warm procedural key light for charged attacks and the winner.
     focusLight=new THREE.PointLight(0xffbb72,0,10,1.7);
     focusLight.position.set(0,2.0,2);scene.add(focusLight);
-    // Real ground geometry gives the animals a shared shadow plane
-    // that changes perspective with each movie cut. Previously both
-    // animals floated over a static CSS mountain painting.
-    const groundGeometry=new THREE.PlaneGeometry(64,64,24,24);
-    const groundColor=new Float32Array(groundGeometry.attributes.position.count*3);
-    const vertex=groundGeometry.attributes.position;
-    for(let i=0;i<vertex.count;i++){
-      const x=vertex.getX(i),y=vertex.getY(i);
-      const wave=Math.sin(x*1.3+y*.85)*.035+Math.sin(x*.53-y*1.2)*.027;
-      const edge=Math.max(0,Math.min(1,Math.hypot(x,y)/25));
-      groundColor[i*3]=.20+wave*.32+edge*.06;
-      groundColor[i*3+1]=.31+wave*.55+edge*.05;
-      groundColor[i*3+2]=.24+wave*.28+edge*.06;
+    // PS2-era forest arena (sky dome, tree-line panorama, billboard trees,
+    // grass with a worn clearing). Scenery stays behind the fighters and off to
+    // the sides so no cinematic camera is ever blocked. See forest-arena.js.
+    if(forest)window.NoahsForestArena.build(THREE,scene,{shadows:true});
+    else{
+      // Real ground geometry gives the animals a shared shadow plane
+      // that changes perspective with each movie cut. Previously both
+      // animals floated over a static CSS mountain painting.
+      const groundGeometry=new THREE.PlaneGeometry(64,64,24,24);
+      const groundColor=new Float32Array(groundGeometry.attributes.position.count*3);
+      const vertex=groundGeometry.attributes.position;
+      for(let i=0;i<vertex.count;i++){
+        const x=vertex.getX(i),y=vertex.getY(i);
+        const wave=Math.sin(x*1.3+y*.85)*.035+Math.sin(x*.53-y*1.2)*.027;
+        const edge=Math.max(0,Math.min(1,Math.hypot(x,y)/25));
+        groundColor[i*3]=.20+wave*.32+edge*.06;
+        groundColor[i*3+1]=.31+wave*.55+edge*.05;
+        groundColor[i*3+2]=.24+wave*.28+edge*.06;
+      }
+      groundGeometry.setAttribute('color',new THREE.BufferAttribute(groundColor,3));
+      const ground=new THREE.Mesh(groundGeometry,new THREE.MeshStandardMaterial({
+        vertexColors:true,roughness:1,metalness:0,side:THREE.DoubleSide
+      }));
+      ground.rotation.x=-Math.PI/2;
+      ground.position.y=-.035;ground.receiveShadow=true;
+      scene.add(ground);
+      // A restrained scattering of procedural grass adds depth cues,
+      // without downloading a game texture or replacing the painted sky.
+      const grassGeometry=new THREE.ConeGeometry(.038,.17,3);
+      const grassMaterial=new THREE.MeshStandardMaterial({
+        color:0x6c8760,roughness:1,side:THREE.DoubleSide
+      });
+      const grass=new THREE.InstancedMesh(grassGeometry,grassMaterial,75);
+      const grassMatrix=new THREE.Matrix4(),grassPosition=new THREE.Vector3();
+      let seed=0x57494c44;
+      const rand=()=>{seed=(1664525*seed+1013904223)>>>0;return seed/4294967296;};
+      for(let i=0;i<75;i++){
+        let x=(rand()-.5)*13,z=(rand()-.5)*9;
+        if(Math.abs(x)<2.8&&Math.abs(z)<1.1)z+=(z<0?-1:1)*1.3;
+        grassPosition.set(x,.05+rand()*.08,z);
+        grassMatrix.makeTranslation(grassPosition.x,grassPosition.y,grassPosition.z);
+        grass.setMatrixAt(i,grassMatrix);
+      }
+      grass.instanceMatrix.needsUpdate=true;
+      scene.add(grass);
     }
-    groundGeometry.setAttribute('color',new THREE.BufferAttribute(groundColor,3));
-    const ground=new THREE.Mesh(groundGeometry,new THREE.MeshStandardMaterial({
-      vertexColors:true,roughness:1,metalness:0,side:THREE.DoubleSide
-    }));
-    ground.rotation.x=-Math.PI/2;
-    ground.position.y=-.035;ground.receiveShadow=true;
-    scene.add(ground);
-    // A restrained scattering of procedural grass adds depth cues,
-    // without downloading a game texture or replacing the painted sky.
-    const grassGeometry=new THREE.ConeGeometry(.038,.17,3);
-    const grassMaterial=new THREE.MeshStandardMaterial({
-      color:0x6c8760,roughness:1,side:THREE.DoubleSide
-    });
-    const grass=new THREE.InstancedMesh(grassGeometry,grassMaterial,75);
-    const grassMatrix=new THREE.Matrix4(),grassPosition=new THREE.Vector3();
-    let seed=0x57494c44;
-    const rand=()=>{seed=(1664525*seed+1013904223)>>>0;return seed/4294967296;};
-    for(let i=0;i<75;i++){
-      let x=(rand()-.5)*13,z=(rand()-.5)*9;
-      if(Math.abs(x)<2.8&&Math.abs(z)<1.1)z+=(z<0?-1:1)*1.3;
-      grassPosition.set(x,.05+rand()*.08,z);
-      grassMatrix.makeTranslation(grassPosition.x,grassPosition.y,grassPosition.z);
-      grass.setMatrixAt(i,grassMatrix);
-    }
-    grass.instanceMatrix.needsUpdate=true;
-    scene.add(grass);
     // Preserve the cleaner 9:13 AM ground treatment. The additional
     // geometric trees and rocks from the later pass occupied the foreground
     // and made the 3D stage less readable; ground and soft grass remain.
@@ -1020,7 +1027,7 @@
     // Keep underlying actor timelines ticking to their completed combat
     // states but avoid competing GPU draws with the live 3D match-cut.
     if(!forestfallOverlayOpen)
-      renderer.render(scene,event&&!reduced()?filmCamera:camera);
+      renderer.render(scene,filmCamera||camera);
     startLoop();
   }
   function syncScene(force=false){
