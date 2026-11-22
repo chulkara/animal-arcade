@@ -1203,7 +1203,13 @@
       ground.rotation.x=-Math.PI/2;
       ground.position.y=-.025;
       ground.receiveShadow=true;
-      world.add(ground);disposable.push(ground.geometry,ground.material);
+      // Same PS2-era forest as the fight, so the match-cut stays in one world.
+      const forestRoot=window.NoahsForestArena?.build(THREE,world,{shadows:false});
+      if(forestRoot){
+        forestRoot.traverse(o=>{if(o.geometry)disposable.push(o.geometry);
+          if(o.material){disposable.push(o.material);if(o.material.map)disposable.push(o.material.map);}});
+      }else world.add(ground);
+      disposable.push(ground.geometry,ground.material);
       const dust=new THREE.Mesh(
         new THREE.RingGeometry(.75,1.05,48),
         new THREE.MeshBasicMaterial({color:0xe9d1a4,transparent:true,

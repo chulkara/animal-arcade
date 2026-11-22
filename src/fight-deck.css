@@ -202,3 +202,7 @@
   background:var(--forest-backdrop,#5d7f44) center 40% / cover no-repeat !important;
 }
 .game.painted-enabled .ark-reference-layout :is(.battlefield-sun,.battlefield-ridge,.battlefield-ground) { display:none !important; }
+
+/* one message per moment: the TIEBREAKER callout and the slots already say it */
+.game.painted-enabled .ark-reference-layout:has(.fight-callout-tie) .combat-message { display:none !important; }
+.game.painted-enabled .ark-reference-layout :is(.ark-reel-snap,.ark-cinema-lock) { display:none !important; }
