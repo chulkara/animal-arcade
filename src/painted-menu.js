@@ -23,7 +23,6 @@
   const PLATE=[500,444,1172,888];
   // Menu-family screens get the dimming veil; battles and selection screens do not.
   const VEILED=['MODE_MENU','OPTIONS','SHOP_PREVIEW','HELP_PREVIEW','CARDS','BINDER'];
-  const audio=()=>window.NoahsAudio;
   const reducedMotion=()=>game.classList.contains('reduce-motion')||window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
   // Chamfered "pill" shapes matching the painted buttons.
@@ -96,13 +95,9 @@
     const glint=document.createElement('span');glint.className='pm-glint';glint.style.left=PX(1103);glint.style.top=PY(214);
     cursor.append(glint,runs,unlit,litSlot,sel,arrowL,arrowR);
 
-    // --- attract mode: CRT power-on + PRESS START (first visit per session, full motion only) ---
+    // --- CRT power-on (first visit per session, full motion only) ---
     const crt=document.createElement('div');crt.className='pm-crt';crt.setAttribute('aria-hidden','true');
     crt.innerHTML='<span class="pm-crt__half pm-crt__half--top"></span><span class="pm-crt__half pm-crt__half--bottom"></span><span class="pm-crt__beam"></span><span class="pm-crt__bloom"></span>';
-    const pressStart=document.createElement('button');
-    pressStart.type='button';pressStart.className='pm-press-start';pressStart.textContent='PRESS START';
-    pressStart.style.left=PX(836);pressStart.style.top=PY(893);
-    pressStart.tabIndex=-1;
 
     for(const item of actions){
       const hotspot=document.createElement('button');
@@ -120,7 +115,7 @@
       dock.appendChild(mobile);
     }
     const veil=document.createElement('div');veil.className='pm-veil';veil.setAttribute('aria-hidden','true');
-    stage.append(art,cursor,veil,hotspots,pressStart,crt,dock);
+    stage.append(art,cursor,veil,hotspots,crt,dock);
     game.appendChild(stage);
     // Letterbox: a small, blurred copy of the painting fills the bars around it.
     try{
@@ -133,7 +128,6 @@
     game.classList.add('painted-enabled','intro-complete');
     let selected=0;
     let busy=false;
-    let attract=false;
     const controls=[...stage.querySelectorAll('[data-art-action]')];
 
     function drawSelection(){
@@ -189,21 +183,6 @@
       stage.classList.remove('is-armed');void stage.offsetWidth;stage.classList.add('is-armed');
       window.setTimeout(()=>stage.classList.remove('is-armed'),900);
     }
-    function endAttract(withFanfare=true){
-      if(!attract)return;
-      attract=false;
-      try{sessionStorage.setItem(INTRO_KEY,'1');}catch{}
-      const a=audio();
-      a?.unlock?.();
-      if(withFanfare){a?.cue?.('reveal');}
-      a?.setMusic?.(true);
-      stage.classList.add('is-starting');
-      window.setTimeout(()=>{
-        stage.classList.remove('is-starting','is-attract');
-        stage.dataset.intro='done';
-        lightRun();
-      },reducedMotion()?0:380);
-    }
     function decoratePanel(screen){
       const ui=document.getElementById('ui');
       if(!ui)return;
@@ -237,18 +216,14 @@
       stage.classList.toggle('is-menu',isMenu);
     }
     stage.addEventListener('click',(event)=>{
-      if(event.target.closest('.pm-press-start')){endAttract();return;}
       const button=event.target.closest('[data-art-action]');
       if(button){
         const index=actions.findIndex(a=>a.id===button.dataset.artAction);
-        if(index>=0){
-          if(attract)endAttract(false);
-          setSelection(index);activate(actions[index].id);
-        }
-      }else if(attract)endAttract();
+        if(index>=0){setSelection(index);activate(actions[index].id);}
+      }
     });
     stage.addEventListener('pointerover',(event)=>{
-      if(arkade.getScreen()!=='MAIN_MENU'||attract||busy)return;
+      if(arkade.getScreen()!=='MAIN_MENU'||busy)return;
       const button=event.target.closest('[data-art-action]');
       if(button){
         const index=actions.findIndex(a=>a.id===button.dataset.artAction);
@@ -258,13 +233,6 @@
     window.addEventListener('keydown',(event)=>{
       if(arkade.getScreen()!=='MAIN_MENU'||event.altKey||event.ctrlKey||event.metaKey)return;
       const key=event.key;
-      if(attract){
-        if(['Shift','Tab','CapsLock'].includes(key))return;
-        event.preventDefault();event.stopImmediatePropagation();
-        if(event.repeat)return;
-        endAttract();
-        return;
-      }
       if(busy){event.preventDefault();event.stopImmediatePropagation();return;}
       if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','w','W','s','S'].includes(key)){
         event.preventDefault();event.stopImmediatePropagation();
@@ -284,16 +252,16 @@
     arkade.showPaintedMenu();
     syncScreen();
 
-    // First visit this session with full motion: power on, then wait for PRESS START.
+    // First visit this session with full motion: a short CRT power-on, then the menu
+    // lights up row by row. The menu is live throughout; there is no PRESS START wait.
     let seen=false;
     try{seen=sessionStorage.getItem(INTRO_KEY)==='1';}catch{}
     if(!seen && !reducedMotion() && !new URLSearchParams(location.search).has('skipintro')){
-      attract=true;
-      stage.classList.add('is-attract');
+      try{sessionStorage.setItem(INTRO_KEY,'1');}catch{}
       stage.dataset.intro='off';
       window.setTimeout(()=>{stage.dataset.intro='beam';},120);
       window.setTimeout(()=>{stage.dataset.intro='reveal';},520);
-      window.setTimeout(()=>{if(attract)stage.dataset.intro='title';},1900);
+      window.setTimeout(()=>{stage.dataset.intro='done';lightRun();},1150);
     }else{
       stage.dataset.intro='done';
     }
