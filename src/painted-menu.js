@@ -22,7 +22,7 @@
   // Panels sit over the painted button column (painting pixels).
   const PLATE=[500,444,1172,888];
   // Menu-family screens get the dimming veil; battles and selection screens do not.
-  const VEILED=['MODE_MENU','OPTIONS','SHOP_PREVIEW','HELP_PREVIEW','CARDS','BINDER'];
+  const VEILED=['MODE_MENU','OPTIONS','SHOP_PREVIEW','HELP_PREVIEW','CARDS','BINDER','ANIMAL_SELECT','BATTLE_STAGE'];
   const reducedMotion=()=>game.classList.contains('reduce-motion')||window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
   // Chamfered "pill" shapes matching the painted buttons.

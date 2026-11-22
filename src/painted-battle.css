@@ -1,0 +1,195 @@
+/* Battle screens in the painted menu's language: charcoal plates, cream double
+   rules, chamfered ends, Tiny5 / Pixelify type, and the painting's yellow for
+   whatever is active. Visual overrides only — no layout of the arena, timing,
+   or game logic is changed. Scoped to the painted-art build. */
+
+.game.painted-enabled {
+  --pb-plate:#232529;
+  --pb-plate-deep:#1a1c20;
+  --pb-cream:#ecd6a4;
+  --pb-cream-text:#f3e2b4;
+  --pb-cream-dim:rgba(243,226,180,.62);
+  --pb-yellow:#f6cd3c;
+  --pb-yellow-deep:#e2ac1f;
+  --pb-ink:#2a2310;
+  --pb-red:#d2462c;
+  --pb-pill:polygon(0 50%,14px 0,calc(100% - 14px) 0,100% 50%,calc(100% - 14px) 100%,14px 100%);
+  --pb-oct:polygon(12px 0,calc(100% - 12px) 0,100% 12px,100% calc(100% - 12px),calc(100% - 12px) 100%,12px 100%,0 calc(100% - 12px),0 12px);
+}
+
+/* ───────── shared: every non-battle panel becomes a plate ───────── */
+.game.painted-enabled :is(.animal-select-panel,.battle-stage-panel) {
+  border:0; border-radius:0; color:var(--pb-cream-text); font-family:'Pixelify Sans',system-ui,sans-serif;
+  background:linear-gradient(180deg,rgba(255,255,255,.025),transparent 30%),var(--pb-plate);
+  box-shadow:inset 0 0 0 3px var(--pb-cream),inset 0 0 0 9px var(--pb-plate),inset 0 0 0 10px rgba(236,214,164,.45);
+  clip-path:polygon(22px 0,calc(100% - 22px) 0,100% 22px,100% calc(100% - 22px),calc(100% - 22px) 100%,22px 100%,0 calc(100% - 22px),0 22px);
+  filter:drop-shadow(0 0 16px rgba(0,0,0,.6));
+  scrollbar-color:var(--pb-cream) transparent;
+  animation:pm-unfold .3s cubic-bezier(.2,.75,.25,1) both;
+}
+.game.painted-enabled :is(.animal-select-panel,.battle-stage-panel)::before,
+.game.painted-enabled :is(.animal-select-panel,.battle-stage-panel)::after { content:none; }
+.game.painted-enabled :is(.animal-select-panel,.battle-stage-panel,.ark-collection-panel) .panel-title {
+  font-family:'Tiny5',monospace; font-weight:400; letter-spacing:.18em; color:var(--pb-cream-text); text-shadow:0 3px 0 #000;
+  font-size:clamp(26px,3vw,42px);
+}
+.game.painted-enabled :is(.animal-select-panel,.battle-stage-panel) .panel-title::before,
+.game.painted-enabled :is(.animal-select-panel,.battle-stage-panel) .panel-title::after {
+  content:''; display:inline-block; width:0; height:0; vertical-align:.18em;
+  border-top:.26em solid transparent; border-bottom:.26em solid transparent; filter:drop-shadow(0 0 .2em rgba(255,214,92,.85));
+}
+.game.painted-enabled :is(.animal-select-panel,.battle-stage-panel) .panel-title::before { border-left:.42em solid var(--pb-yellow); margin-right:.6em; }
+.game.painted-enabled :is(.animal-select-panel,.battle-stage-panel) .panel-title::after { border-right:.42em solid var(--pb-yellow); margin-left:.42em; }
+.game.painted-enabled :is(.animal-select-panel,.battle-stage-panel,.ark-collection-panel) .section-eyebrow,
+.game.painted-enabled :is(.animal-select-panel,.battle-stage-panel) :is(.prototype-status,.arena-versus + *) {
+  font-family:'Tiny5',monospace; font-weight:400; letter-spacing:.22em; color:#ef7a5f;
+}
+.game.painted-enabled :is(.animal-select-panel,.battle-stage-panel,.ark-collection-panel) :is(.prototype-note,p) {
+  font-family:'Pixelify Sans',system-ui,sans-serif; color:var(--pb-cream-dim);
+}
+.game.painted-enabled .battle-stage-panel .prototype-announcer {
+  font-family:'Tiny5',monospace; font-weight:400; letter-spacing:.18em; color:var(--pb-yellow); text-shadow:0 3px 0 #000;
+}
+
+/* buttons on those plates: miniature painted buttons; the focused/hovered one lights up like PLAY */
+.game.painted-enabled :is(.animal-select-panel,.battle-stage-panel,.ark-collection-panel,.combat-finish,.combat-ready,.combat-footer) button:not([data-animal]):not(.ark-card):not([data-card]) {
+  position:relative; isolation:isolate; border:0 !important; border-radius:0 !important; box-shadow:none !important;
+  padding:10px 26px 9px; min-height:38px; text-shadow:none;
+  font-family:'Tiny5',monospace; font-weight:400; font-size:15px; letter-spacing:.16em; line-height:1.1;
+  color:var(--pb-cream-text); background:var(--pb-cream) !important; clip-path:var(--pb-pill);
+}
+.game.painted-enabled :is(.animal-select-panel,.battle-stage-panel,.ark-collection-panel,.combat-finish,.combat-ready,.combat-footer) button:not([data-animal]):not(.ark-card):not([data-card])::before {
+  content:''; position:absolute; inset:2px; z-index:-1; background:var(--pb-plate-deep);
+  clip-path:polygon(0 50%,13px 0,calc(100% - 13px) 0,100% 50%,calc(100% - 13px) 100%,13px 100%);
+}
+.game.painted-enabled :is(.animal-select-panel,.battle-stage-panel,.ark-collection-panel,.combat-finish,.combat-ready,.combat-footer) button:not([data-animal]):not(.ark-card):not([data-card]):is(:hover,:focus-visible,.active,.selected,[aria-pressed="true"]) {
+  color:var(--pb-ink); background:#ffe9a0 !important; outline:none; filter:drop-shadow(0 0 6px rgba(255,196,52,.55));
+}
+.game.painted-enabled :is(.animal-select-panel,.battle-stage-panel,.ark-collection-panel,.combat-finish,.combat-ready,.combat-footer) button:not([data-animal]):not(.ark-card):not([data-card]):is(:hover,:focus-visible,.active,.selected,[aria-pressed="true"])::before {
+  background:linear-gradient(180deg,#ffe066,var(--pb-yellow) 45%,var(--pb-yellow-deep));
+}
+
+/* animal select: cards in a cream rule, lit yellow when chosen */
+.game.painted-enabled .animal-choice,
+.game.painted-enabled [data-animal] {
+  border:0 !important; border-radius:0 !important; background:var(--pb-plate-deep) !important;
+  box-shadow:inset 0 0 0 2px rgba(236,214,164,.55) !important; clip-path:var(--pb-oct);
+  color:var(--pb-cream-text); transition:box-shadow .14s ease, transform .14s ease;
+}
+.game.painted-enabled [data-animal]:is(:hover,:focus-visible,.selected,[aria-pressed="true"]) {
+  outline:none !important; box-shadow:inset 0 0 0 3px var(--pb-yellow),inset 0 0 18px rgba(246,205,60,.25) !important;
+}
+.game.painted-enabled [data-animal] :is(h2,h3,strong,.animal-name) { font-family:'Tiny5',monospace; font-weight:400; letter-spacing:.14em; color:var(--pb-cream-text); }
+.game.painted-enabled [data-animal]:is(:hover,:focus-visible) :is(h2,h3,strong,.animal-name) { color:var(--pb-yellow); }
+.game.painted-enabled [data-animal] :is(small,em,p,span) { font-family:'Pixelify Sans',system-ui,sans-serif; font-style:normal; color:var(--pb-cream-dim); }
+
+/* battle stage preview */
+.game.painted-enabled .battle-stage-panel .arena { border-color:rgba(236,214,164,.25); }
+.game.painted-enabled .battle-stage-panel .arena-versus { font-family:'Tiny5',monospace; font-style:normal; color:var(--pb-yellow); text-shadow:0 3px 0 #000,0 0 14px rgba(246,205,60,.45); }
+.game.painted-enabled .battle-stage-panel :is(.arena-fighter strong,.arena-animal + strong,.arena-fighter h2) { font-family:'Tiny5',monospace; font-weight:400; letter-spacing:.14em; color:var(--pb-cream-text); }
+
+/* ───────── fight screen HUD ───────── */
+.game.painted-enabled .combat-panel { font-family:'Pixelify Sans',system-ui,sans-serif; }
+.game.painted-enabled .combat-panel .section-eyebrow { font-family:'Tiny5',monospace; color:#ef7a5f; }
+.game.painted-enabled .ark-arena-hud {
+  background:linear-gradient(180deg,rgba(18,19,22,.92),rgba(18,19,22,.72) 70%,transparent) !important;
+  border:0 !important; box-shadow:none !important;
+}
+.game.painted-enabled .ark-hud-nameplate strong {
+  font-family:'Tiny5',monospace !important; font-weight:400 !important; letter-spacing:.16em; color:var(--pb-cream-text) !important;
+  text-shadow:0 2px 0 #000;
+}
+.game.painted-enabled :is(.ark-hud-side,.ark-hud-health-value) { font-family:'Tiny5',monospace !important; letter-spacing:.14em; color:var(--pb-cream-dim) !important; }
+.game.painted-enabled .ark-hud-meter {
+  background:var(--pb-plate-deep) !important; border:0 !important; border-radius:0 !important;
+  box-shadow:inset 0 0 0 2px var(--pb-cream),inset 0 0 0 4px var(--pb-plate-deep) !important;
+  clip-path:polygon(0 50%,10px 0,calc(100% - 10px) 0,100% 50%,calc(100% - 10px) 100%,10px 100%);
+  padding:4px 14px !important;
+}
+.game.painted-enabled .ark-hud-meter span {
+  border-radius:0 !important; box-shadow:none !important;
+  background:repeating-linear-gradient(90deg,transparent 0 9px,rgba(42,35,16,.35) 9px 11px),linear-gradient(180deg,#ffe066,var(--pb-yellow) 50%,var(--pb-yellow-deep)) !important;
+}
+.game.painted-enabled .ark-hud-techniques span {
+  font-family:'Tiny5',monospace !important; letter-spacing:.12em; border:1px solid rgba(236,214,164,.45) !important; border-radius:0 !important;
+  background:var(--pb-plate-deep) !important; color:var(--pb-cream-dim) !important;
+}
+.game.painted-enabled .ark-arena-hud-center {
+  background:var(--pb-cream) !important; clip-path:var(--pb-oct); padding:6px 22px !important; border:0 !important; box-shadow:none !important;
+  isolation:isolate; position:relative;
+}
+.game.painted-enabled .ark-arena-hud-center::before { content:''; position:absolute; inset:2px; z-index:-1; background:var(--pb-plate); clip-path:var(--pb-oct); }
+.game.painted-enabled .ark-arena-hud-center b { font-family:'Tiny5',monospace !important; font-weight:400 !important; letter-spacing:.16em; color:var(--pb-cream-text) !important; text-shadow:0 2px 0 #000; }
+.game.painted-enabled .ark-arena-hud-center :is(span,small) { font-family:'Tiny5',monospace !important; letter-spacing:.2em; color:#ef7a5f !important; }
+.game.painted-enabled .combat-series {
+  background:var(--pb-plate-deep) !important; border:1px solid rgba(236,214,164,.45) !important; border-radius:0 !important;
+  font-family:'Tiny5',monospace !important; letter-spacing:.14em; color:var(--pb-cream-dim) !important;
+}
+.game.painted-enabled .combat-series b { color:var(--pb-yellow) !important; }
+.game.painted-enabled .combat-animal-name { font-family:'Tiny5',monospace !important; font-weight:400 !important; letter-spacing:.16em; color:var(--pb-cream-text) !important; text-shadow:0 2px 0 #000; }
+.game.painted-enabled .combat-selections span { font-family:'Tiny5',monospace !important; letter-spacing:.12em; background:var(--pb-plate-deep) !important; border:1px solid rgba(236,214,164,.4) !important; border-radius:0 !important; color:var(--pb-cream-dim) !important; }
+.game.painted-enabled .combat-selections b { color:var(--pb-yellow) !important; }
+
+/* developer tools: tucked to the top right, out of the arena */
+.game.painted-enabled .combat-footer {
+  position:absolute !important; top:128px !important; left:20px !important; right:auto !important; bottom:auto !important;
+  width:auto !important; display:flex !important; flex-wrap:wrap; justify-content:flex-start; align-items:center; gap:6px !important;
+  max-width:46vw; opacity:.55; transition:opacity .15s ease; z-index:30;
+}
+.game.painted-enabled .combat-footer:is(:hover,:focus-within) { opacity:1; }
+.game.painted-enabled .combat-footer button { font-size:11px !important; padding:6px 18px 5px !important; min-height:26px !important; }
+.game.painted-enabled .combat-footer .ark-forestfall-import { display:flex; flex-wrap:wrap; justify-content:flex-start; gap:6px; }
+.game.painted-enabled .combat-footer small { flex-basis:100%; text-align:left; font-family:'Pixelify Sans',system-ui,sans-serif; font-size:10px; color:var(--pb-cream-dim); }
+
+/* ───────── reels and the two arcade buttons ───────── */
+.game.painted-enabled .combat-controls {
+  background:linear-gradient(180deg,rgba(18,19,22,.86),rgba(18,19,22,.96)) !important;
+  border:0 !important; border-top:2px solid var(--pb-cream) !important;
+  box-shadow:inset 0 6px 0 var(--pb-plate),inset 0 7px 0 rgba(236,214,164,.4) !important;
+}
+.game.painted-enabled .combat-reel-label {
+  font-family:'Tiny5',monospace !important; font-style:normal !important; font-weight:400 !important; letter-spacing:.18em; color:var(--pb-cream-text) !important;
+  text-shadow:0 2px 0 #000;
+}
+.game.painted-enabled .combat-instruction { font-family:'Pixelify Sans',system-ui,sans-serif !important; color:var(--pb-cream-dim) !important; }
+.game.painted-enabled :is(.combat-reel,.ark-reel-opponent) {
+  background:var(--pb-plate-deep) !important; border:0 !important; border-radius:0 !important;
+  box-shadow:inset 0 0 0 2px var(--pb-cream),inset 0 0 0 6px var(--pb-plate-deep),inset 0 0 0 7px rgba(236,214,164,.4) !important;
+  clip-path:var(--pb-oct);
+}
+.game.painted-enabled .combat-reel .combat-reel-neighbor { font-family:'Tiny5',monospace !important; color:rgba(243,226,180,.38) !important; text-shadow:none !important; }
+.game.painted-enabled .combat-reel [data-combat-current] {
+  font-family:'Tiny5',monospace !important; font-style:normal !important; color:var(--pb-ink) !important; text-shadow:none !important;
+  background:linear-gradient(180deg,#ffe066,var(--pb-yellow) 45%,var(--pb-yellow-deep)) !important;
+  border:0 !important; border-radius:0 !important; box-shadow:0 0 0 2px #fff0b0,0 0 18px rgba(255,196,52,.55) !important;
+}
+.game.painted-enabled .ark-reel-lamps i { background:var(--pb-yellow) !important; box-shadow:0 0 6px rgba(255,214,92,.8) !important; border-radius:0 !important; rotate:45deg; }
+.game.painted-enabled .ark-reel-opponent :is(.ark-reel-opponent-label,.ark-reel-opponent-caption) { font-family:'Tiny5',monospace !important; letter-spacing:.18em; color:var(--pb-cream-dim) !important; }
+.game.painted-enabled .ark-reel-opponent .ark-reel-opponent-value { font-family:'Tiny5',monospace !important; color:var(--pb-cream-text) !important; text-shadow:0 2px 0 #000; }
+/* green and yellow stay green and yellow (they are the cabinet's buttons), framed in cream */
+.game.painted-enabled .combat-stop {
+  font-family:'Tiny5',monospace !important; font-weight:400 !important; letter-spacing:.12em;
+  box-shadow:0 0 0 3px var(--pb-cream),0 0 0 6px var(--pb-plate),0 0 0 7px rgba(236,214,164,.45),0 6px 0 rgba(0,0,0,.45) !important;
+}
+.game.painted-enabled .combat-stop:active { translate:0 3px; box-shadow:0 0 0 3px var(--pb-cream),0 0 0 6px var(--pb-plate),0 0 0 7px rgba(236,214,164,.45),0 3px 0 rgba(0,0,0,.45) !important; }
+
+/* round / bout results */
+.game.painted-enabled .combat-finish {
+  border:0 !important; border-radius:0 !important; color:var(--pb-cream-text);
+  background:linear-gradient(180deg,rgba(255,255,255,.025),transparent 30%),var(--pb-plate) !important;
+  box-shadow:inset 0 0 0 3px var(--pb-cream),inset 0 0 0 9px var(--pb-plate),inset 0 0 0 10px rgba(236,214,164,.45),0 18px 50px rgba(0,0,0,.6) !important;
+  clip-path:polygon(18px 0,calc(100% - 18px) 0,100% 18px,100% calc(100% - 18px),calc(100% - 18px) 100%,18px 100%,0 calc(100% - 18px),0 18px);
+}
+.game.painted-enabled .combat-finish strong { font-family:'Tiny5',monospace; font-weight:400; letter-spacing:.18em; color:var(--pb-yellow); text-shadow:0 3px 0 #000; }
+.game.painted-enabled .combat-finish :is(span,p) { font-family:'Pixelify Sans',system-ui,sans-serif; color:var(--pb-cream-dim); }
+.game.painted-enabled .combat-ready { background:transparent !important; border:0 !important; box-shadow:none !important; }
+
+/* exchange announcements ("CPU — ANTLER CHARGE") as a small plate */
+.game.painted-enabled .combat-message {
+  border:0 !important; border-radius:0 !important; color:var(--pb-cream-text) !important;
+  background:var(--pb-plate) !important;
+  box-shadow:inset 0 0 0 2px var(--pb-cream),inset 0 0 0 5px var(--pb-plate),inset 0 0 0 6px rgba(236,214,164,.4),0 10px 24px rgba(0,0,0,.5) !important;
+  clip-path:polygon(10px 0,calc(100% - 10px) 0,100% 10px,100% calc(100% - 10px),calc(100% - 10px) 100%,10px 100%,0 calc(100% - 10px),0 10px);
+}
+.game.painted-enabled .combat-message strong { font-family:'Tiny5',monospace !important; font-weight:400 !important; letter-spacing:.16em; color:var(--pb-yellow) !important; }
+.game.painted-enabled .combat-message span { font-family:'Pixelify Sans',system-ui,sans-serif !important; color:var(--pb-cream-dim) !important; }

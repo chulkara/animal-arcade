@@ -98,7 +98,7 @@
 
 .pm-unlit { opacity:0; transition:opacity .12s ease; }
 .pm-unlit.is-on { opacity:1; }
-.painted-stage:not(.is-menu) .pm-unlit.is-on { opacity:1; }
+.painted-stage:not(.is-menu) .pm-cursor { opacity:0; }
 .pm-erase, .pm-halo { position:absolute; border-radius:40%; filter:blur(.45cqw); }
 .pm-halo { border-radius:30%; background:#474a46; opacity:.7; filter:blur(.3cqw); }
 
