@@ -1,0 +1,60 @@
+/* Noah's Arkade design tokens — one small, consistent vocabulary:
+   midnight indigo atmosphere, cobalt globe, warm ivory type, aged gold, vermilion accents. */
+:root {
+  /* colour */
+  --c-midnight: #0e1230;
+  --c-midnight-deep: #080a1f;
+  --c-indigo: #1b2152;
+  --c-cobalt: #1f3f86;
+  --c-ivory: #f1e7cf;
+  --c-ivory-dim: rgba(241, 231, 207, 0.66);
+  --c-ivory-faint: rgba(241, 231, 207, 0.38);
+  --c-gold: #d9a947;
+  --c-gold-light: #f3d488;
+  --c-gold-pale: #fff1c4;
+  --c-gold-deep: #8f6222;
+  --c-gold-line: rgba(201, 161, 89, 0.7);
+  --c-vermilion: #c8432c;
+  --c-vermilion-light: #e8735a;
+  --c-charcoal: #14112b;
+  --gold-text: linear-gradient(180deg, #fff6d6 0%, #f3d488 30%, #d9a947 58%, #a8772b 100%);
+
+  /* type */
+  --f-display: 'Cinzel', 'Trajan Pro', Georgia, serif;
+  --f-serif: 'Cormorant Garamond', Georgia, serif;
+  --f-mono: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  --t-menu: clamp(19px, 2.3vw + 0.4vh, 34px);
+  --t-panel-title: clamp(24px, 2.6vw, 38px);
+  --t-body: clamp(17px, 1.25vw, 21px);
+  --t-small: 11px;
+  --track-wide: 0.16em;
+  --track-xwide: 0.38em;
+
+  /* space */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 24px;
+  --s-6: 32px;
+  --s-7: 48px;
+  --edge: clamp(16px, 2.2vw, 36px);
+
+  /* motion */
+  --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --ease-inout: cubic-bezier(0.65, 0, 0.35, 1);
+  --d-fast: 160ms;
+  --d-med: 420ms;
+  --d-slow: 900ms;
+  --d-stage: 1100ms;
+
+  /* layers */
+  --z-backdrop: 0;
+  --z-globe: 1;
+  --z-frame: 2;
+  --z-logo: 3;
+  --z-ui: 4;
+  --z-panel: 5;
+  --z-hud: 6;
+  --z-grain: 8;
+}
