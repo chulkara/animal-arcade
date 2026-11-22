@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { busGain, defaultSettings, isReducedMotion, loadSettings, sanitize, saveSettings, STORAGE_KEY, type StorageLike } from '../../src/state/settings';
 import { actionForKey, FUTURE_BATTLE_BINDINGS } from '../../src/input/controls';
-import { globeLayout } from '../../src/graphics/globe/layout';
 
 const memory = (): StorageLike & { data: Record<string, string> } => {
   const data: Record<string, string> = {};
@@ -11,7 +10,7 @@ const memory = (): StorageLike & { data: Record<string, string> } => {
 describe('settings', () => {
   it('round-trips through storage', () => {
     const store = memory();
-    const s = { ...defaultSettings, master: 3, muted: true, motion: 'reduced' as const, grain: false };
+    const s = { ...defaultSettings, master: 3, muted: true, motion: 'reduced' as const, scanlines: true };
     saveSettings(s, store);
     expect(JSON.parse(store.data[STORAGE_KEY])).toEqual(s);
     expect(loadSettings(store)).toEqual(s);
@@ -26,8 +25,9 @@ describe('settings', () => {
   });
 
   it('clamps and validates every field', () => {
-    const s = sanitize({ master: 42, music: -3, sfx: 'loud', muted: 'yes', motion: 'warp', grain: false, globeMotion: null });
-    expect(s).toEqual({ ...defaultSettings, master: 10, music: 0, grain: false });
+    const s = sanitize({ master: 42, music: -3, sfx: 'loud', muted: 'yes', motion: 'warp', scanlines: 1 });
+    expect(s).toEqual({ ...defaultSettings, master: 10, music: 0 });
+    expect(defaultSettings.scanlines).toBe(false); // the painting is shown untouched by default
   });
 
   it('mute and zero levels silence a bus; levels follow a perceptual curve', () => {
@@ -59,25 +59,5 @@ describe('input bindings', () => {
   it('keeps future battle buttons out of the menu bindings', () => {
     expect(actionForKey(FUTURE_BATTLE_BINDINGS.p1.BUTTON_GREEN!)).toBeNull();
     expect(actionForKey(FUTURE_BATTLE_BINDINGS.p1.BUTTON_YELLOW!)).toBeNull();
-  });
-});
-
-describe('globe layout', () => {
-  const sizes = [
-    [1920, 1080],
-    [1440, 900],
-    [1366, 768],
-    [1280, 720],
-    [390, 844],
-    [844, 390],
-  ];
-  it.each(sizes)('keeps the globe on screen at %ix%i in every stage', (w, h) => {
-    for (const stage of ['dark', 'title', 'menu', 'panel'] as const) {
-      const l = globeLayout(stage, w, h);
-      expect(l.r).toBeGreaterThan(20);
-      expect(l.cx - l.r).toBeGreaterThanOrEqual(-1);
-      expect(l.cx + l.r).toBeLessThanOrEqual(w + 1);
-      expect(l.cy + l.r).toBeLessThanOrEqual(h + 1);
-    }
   });
 });

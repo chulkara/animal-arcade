@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { initialNav, MENU_ITEMS, navReducer, stageFor, type NavEvent, type NavState } from '../../src/app/navigation';
+import { ART_H, ART_W, initialNav, MENU_ITEMS, navReducer, type NavEvent, type NavState } from '../../src/app/navigation';
 
 const run = (events: NavEvent[], from: NavState = initialNav) => events.reduce(navReducer, from);
 
@@ -48,10 +48,13 @@ describe('navigation state machine', () => {
     expect(run([{ type: 'HOVER', index: 99 }], menu)).toBe(menu);
   });
 
-  it('maps screens to scene stages', () => {
-    expect(stageFor('BOOT')).toBe('dark');
-    expect(stageFor('TITLE')).toBe('title');
-    expect(stageFor('MAIN_MENU')).toBe('menu');
-    expect(stageFor('OPTIONS')).toBe('panel');
+  it('menu hit areas sit inside the painting, in order, without overlapping', () => {
+    MENU_ITEMS.forEach((m, i) => {
+      expect(m.rect.x0).toBeGreaterThan(0);
+      expect(m.rect.x1).toBeLessThan(ART_W);
+      expect(m.rect.y1).toBeLessThan(ART_H);
+      if (i > 0) expect(m.rect.y0).toBeGreaterThanOrEqual(MENU_ITEMS[i - 1].rect.y1);
+    });
+    expect(MENU_ITEMS.map((m) => m.label)).toEqual(['PLAY', 'MY CARDS', 'BINDER', 'SHOP', 'SETTINGS']);
   });
 });

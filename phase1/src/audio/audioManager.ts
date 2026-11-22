@@ -3,7 +3,7 @@
 // so browsers' autoplay rules are always respected.
 import { busGain, type Settings } from '../state/settings';
 
-export type Cue = 'select' | 'confirm' | 'back' | 'reveal' | 'start' | 'tick';
+export type Cue = 'select' | 'confirm' | 'back' | 'reveal' | 'start' | 'tick' | 'denied' | 'power';
 
 type Ctx = AudioContext;
 
@@ -126,6 +126,42 @@ class AudioManager {
       case 'start':
         [0, 0.08, 0.16, 0.26].forEach((dt, i) => this.bell(t + dt, MIDI([62, 69, 74, 81][i]), 0.13, 0.9, 3.5, 1, true));
         this.swell(t, [50, 57, 62, 66, 69], 1.8, 0.11);
+        break;
+      case 'denied': {
+        // soft two-step square buzz: "not yet", never harsh
+        for (const [dt, f] of [[0, 196], [0.09, 165]] as const) {
+          const o = this.ctx!.createOscillator();
+          const g = this.ctx!.createGain();
+          const lp = this.ctx!.createBiquadFilter();
+          o.type = 'square';
+          o.frequency.value = f;
+          lp.type = 'lowpass';
+          lp.frequency.value = 1400;
+          g.gain.setValueAtTime(0.0001, t + dt);
+          g.gain.exponentialRampToValueAtTime(0.05, t + dt + 0.01);
+          g.gain.exponentialRampToValueAtTime(0.0001, t + dt + 0.12);
+          o.connect(lp).connect(g).connect(this.sfx);
+          o.start(t + dt);
+          o.stop(t + dt + 0.14);
+        }
+        break;
+      }
+      case 'power':
+        // CRT power-on: a quick rising whine plus a static breath
+        this.noiseHit(t, 0.35, 3800, 0.05);
+        {
+          const o = this.ctx!.createOscillator();
+          const g = this.ctx!.createGain();
+          o.type = 'sine';
+          o.frequency.setValueAtTime(5200, t);
+          o.frequency.exponentialRampToValueAtTime(15200, t + 0.3);
+          g.gain.setValueAtTime(0.0001, t);
+          g.gain.exponentialRampToValueAtTime(0.012, t + 0.05);
+          g.gain.exponentialRampToValueAtTime(0.0001, t + 0.45);
+          o.connect(g).connect(this.sfx);
+          o.start(t);
+          o.stop(t + 0.5);
+        }
         break;
       case 'reveal':
         this.swell(t, [38, 50, 57, 62, 64], 2.6, 0.13);

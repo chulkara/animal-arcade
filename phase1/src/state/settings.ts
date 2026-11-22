@@ -8,11 +8,10 @@ export interface Settings {
   sfx: number; // 0..10
   muted: boolean;
   motion: MotionPref;
-  grain: boolean;
-  globeMotion: boolean;
+  scanlines: boolean; // optional CRT overlay; off by default so the painting is shown untouched
 }
 
-export const STORAGE_KEY = 'noahs-arkade.settings.v1';
+export const STORAGE_KEY = 'noahs-arkade.settings.v2';
 export const INTRO_SEEN_KEY = 'noahs-arkade.intro-seen.v1';
 
 export const defaultSettings: Settings = {
@@ -21,8 +20,7 @@ export const defaultSettings: Settings = {
   sfx: 8,
   muted: false,
   motion: 'system',
-  grain: true,
-  globeMotion: true,
+  scanlines: false,
 };
 
 const clampLevel = (v: unknown, d: number) =>
@@ -37,8 +35,7 @@ export function sanitize(raw: unknown): Settings {
     sfx: clampLevel(r.sfx, defaultSettings.sfx),
     muted: bool(r.muted, defaultSettings.muted),
     motion: r.motion === 'reduced' || r.motion === 'full' || r.motion === 'system' ? r.motion : defaultSettings.motion,
-    grain: bool(r.grain, defaultSettings.grain),
-    globeMotion: bool(r.globeMotion, defaultSettings.globeMotion),
+    scanlines: bool(r.scanlines, defaultSettings.scanlines),
   };
 }
 
