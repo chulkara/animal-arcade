@@ -331,3 +331,12 @@
 .pm-cycle b { font-weight:400; color:#f3e2b4; padding:0 calc(var(--u)*.5); }
 .pm-opts__note { min-height:0 !important; margin-top:calc(var(--u)*.5) !important; font-size:calc(var(--u)*.95) !important; }
 .game.painted-enabled .options-panel .panel-title { margin-bottom:calc(var(--u)*.6); }
+
+/* During a fight the painting must never show through: the battle panel re-renders
+   (and fades in) every exchange, which briefly revealed the menu underneath. */
+.game.painted-enabled[data-screen="BATTLE_PLAY"] :is(.painted-stage,.pm-ambient) { visibility:hidden; }
+.game.painted-enabled[data-screen="BATTLE_PLAY"] .combat-panel.screen-copy { animation:none; }
+
+/* The blurred letterbox layer overhangs the edges; 'clip' (unlike 'hidden') can never be
+   scrolled, so focusing a control can't shift the whole game up. */
+.game.painted-enabled { overflow:clip; }

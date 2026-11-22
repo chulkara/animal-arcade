@@ -141,38 +141,6 @@
 .game.painted-enabled .combat-footer .ark-forestfall-import { display:flex; flex-wrap:wrap; justify-content:flex-start; gap:6px; }
 .game.painted-enabled .combat-footer small { flex-basis:100%; text-align:left; font-family:'Pixelify Sans',system-ui,sans-serif; font-size:10px; color:var(--pb-cream-dim); }
 
-/* ───────── reels and the two arcade buttons ───────── */
-.game.painted-enabled .combat-controls {
-  background:linear-gradient(180deg,rgba(18,19,22,.86),rgba(18,19,22,.96)) !important;
-  border:0 !important; border-top:2px solid var(--pb-cream) !important;
-  box-shadow:inset 0 6px 0 var(--pb-plate),inset 0 7px 0 rgba(236,214,164,.4) !important;
-}
-.game.painted-enabled .combat-reel-label {
-  font-family:'Tiny5',monospace !important; font-style:normal !important; font-weight:400 !important; letter-spacing:.18em; color:var(--pb-cream-text) !important;
-  text-shadow:0 2px 0 #000;
-}
-.game.painted-enabled .combat-instruction { font-family:'Pixelify Sans',system-ui,sans-serif !important; color:var(--pb-cream-dim) !important; }
-.game.painted-enabled :is(.combat-reel,.ark-reel-opponent) {
-  background:var(--pb-plate-deep) !important; border:0 !important; border-radius:0 !important;
-  box-shadow:inset 0 0 0 2px var(--pb-cream),inset 0 0 0 6px var(--pb-plate-deep),inset 0 0 0 7px rgba(236,214,164,.4) !important;
-  clip-path:var(--pb-oct);
-}
-.game.painted-enabled .combat-reel .combat-reel-neighbor { font-family:'Tiny5',monospace !important; color:rgba(243,226,180,.38) !important; text-shadow:none !important; }
-.game.painted-enabled .combat-reel [data-combat-current] {
-  font-family:'Tiny5',monospace !important; font-style:normal !important; color:var(--pb-ink) !important; text-shadow:none !important;
-  background:linear-gradient(180deg,#ffe066,var(--pb-yellow) 45%,var(--pb-yellow-deep)) !important;
-  border:0 !important; border-radius:0 !important; box-shadow:0 0 0 2px #fff0b0,0 0 18px rgba(255,196,52,.55) !important;
-}
-.game.painted-enabled .ark-reel-lamps i { background:var(--pb-yellow) !important; box-shadow:0 0 6px rgba(255,214,92,.8) !important; border-radius:0 !important; rotate:45deg; }
-.game.painted-enabled .ark-reel-opponent :is(.ark-reel-opponent-label,.ark-reel-opponent-caption) { font-family:'Tiny5',monospace !important; letter-spacing:.18em; color:var(--pb-cream-dim) !important; }
-.game.painted-enabled .ark-reel-opponent .ark-reel-opponent-value { font-family:'Tiny5',monospace !important; color:var(--pb-cream-text) !important; text-shadow:0 2px 0 #000; }
-/* green and yellow stay green and yellow (they are the cabinet's buttons), framed in cream */
-.game.painted-enabled .combat-stop {
-  font-family:'Tiny5',monospace !important; font-weight:400 !important; letter-spacing:.12em;
-  box-shadow:0 0 0 3px var(--pb-cream),0 0 0 6px var(--pb-plate),0 0 0 7px rgba(236,214,164,.45),0 6px 0 rgba(0,0,0,.45) !important;
-}
-.game.painted-enabled .combat-stop:active { translate:0 3px; box-shadow:0 0 0 3px var(--pb-cream),0 0 0 6px var(--pb-plate),0 0 0 7px rgba(236,214,164,.45),0 3px 0 rgba(0,0,0,.45) !important; }
-
 /* round / bout results */
 .game.painted-enabled .combat-finish {
   border:0 !important; border-radius:0 !important; color:var(--pb-cream-text);

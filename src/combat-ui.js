@@ -9,6 +9,14 @@
   let battle=null,slotIndex=0,interval=null,matchReward=null,rewardClaimed=false;
   let reelStart=0,reelOffset=0;
   const REEL_STEP_MS=96;
+  // Arcade flow: a countdown stops the reel for you, and after a hit plays out the
+  // next exchange starts by itself (Enter / click skips ahead).
+  const COUNTDOWN_MS=10000;
+  const ADVANCE_MIN_MS=1300;   // never jump on before the hit has been seen
+  const ADVANCE_MAX_MS=10500;  // safety cap if a cinematic never reports done
+  const RESULT_HOLD_MS=1600;   // after the cinematic, the result line stays up this long
+  let countdownKey='',countdownLeft=COUNTDOWN_MS,countdownAt=0,lastShownSecond=-1;
+  let advanceTimer=0,advanceKey='',advanceSince=0,filmDoneAt=0;
   const animal=window.NoahsRoster.ANIMALS;
   const MOVES=Object.freeze(Object.fromEntries(window.NoahsRoster.ids.map(
     id=>[id,animal[id].moves])));
@@ -54,6 +62,57 @@
     if(prev)prev.textContent=token(values[(index+values.length-1)%values.length]);
     if(next)next.textContent=token(values[(index+1)%values.length]);
   }
+  function paused(){
+    // Never run the clock or advance while the player is in a setup dialog,
+    // a non-scoring film review, or the Forestfall movie.
+    return Boolean(document.querySelector('.ark-fbx-dialog:not([hidden])')||
+      window.NoahsArena3D?.getReviewState?.()?.active||
+      window.NoahsForestfall?.getStatus?.()?.playing||document.hidden);
+  }
+  function countdownStateKey(s){return [s.session?.bout,s.round,s.phase,s.actor,s.tieCharge].join(':');}
+  function updateCountdown(now){
+    const s=current();
+    const node=ui.querySelector('[data-combat-countdown]');
+    if(!s||!['ATTACK','POWER'].includes(s.phase)){if(node)node.hidden=true;return false;}
+    const key=countdownStateKey(s);
+    if(key!==countdownKey){countdownKey=key;countdownLeft=COUNTDOWN_MS;countdownAt=now;lastShownSecond=-1;}
+    if(paused()){countdownAt=now;}
+    else{countdownLeft-=Math.max(0,now-countdownAt);countdownAt=now;}
+    const secs=Math.max(0,Math.ceil(countdownLeft/1000));
+    if(node){
+      node.hidden=false;
+      if(secs!==lastShownSecond){
+        lastShownSecond=secs;
+        node.querySelector('b').textContent=String(secs);
+        node.dataset.urgent=secs<=3?'true':'false';
+        node.style.setProperty('--left',String(Math.max(0,countdownLeft/COUNTDOWN_MS)));
+        if(secs<=3&&secs>0)window.NoahsAudio?.cue('reelTick');
+      }else node.style.setProperty('--left',String(Math.max(0,countdownLeft/COUNTDOWN_MS)));
+    }
+    if(countdownLeft<=0){countdownKey='';stopSlot();return true;}
+    return false;
+  }
+  function scheduleAdvance(){
+    const s=current();
+    if(!s||s.phase!=='RESULT'||screen()!=='BATTLE_PLAY'){advanceKey='';return;}
+    const key=countdownStateKey(s);
+    if(advanceKey!==key){advanceKey=key;advanceSince=performance.now();filmDoneAt=0;}
+    if(advanceTimer)return;
+    const tick=()=>{
+      advanceTimer=0;
+      const st=current();
+      if(!st||st.phase!=='RESULT'||screen()!=='BATTLE_PLAY'||countdownStateKey(st)!==advanceKey){advanceKey='';return;}
+      const waited=performance.now()-advanceSince;
+      const cine=window.NoahsCinematics?.getState?.();
+      const filmDone=!cine||cine.done;
+      if(filmDone&&!filmDoneAt)filmDoneAt=performance.now();
+      const held=filmDoneAt?performance.now()-filmDoneAt:0;
+      if(paused()){advanceSince=performance.now()-Math.min(waited,ADVANCE_MIN_MS);if(filmDoneAt)filmDoneAt=performance.now();}
+      else if((filmDone&&held>=RESULT_HOLD_MS&&waited>=ADVANCE_MIN_MS)||waited>=ADVANCE_MAX_MS){next();return;}
+      advanceTimer=window.setTimeout(tick,120);
+    };
+    advanceTimer=window.setTimeout(tick,120);
+  }
   function frame(time){
     if(screen()!=='BATTLE_PLAY'||document.hidden){interval=null;return;}
     const values=activeValues();
@@ -67,16 +126,19 @@
       // on every frame. Audio still respects the user's mute/SFX settings.
       if(next%3===0)window.NoahsAudio?.cue('reelTick');
     }
+    if(updateCountdown(time))return;
     interval=requestAnimationFrame(frame);
   }
   function syncTimer(){
     stopTimer();
+    scheduleAdvance();
     const s=current();
     if(screen()!=='BATTLE_PLAY'||!s||!['ATTACK','POWER'].includes(s.phase)||document.hidden)return;
     reelOffset=(s.round+s.actor*2+(s.phase==='POWER'?1:0)+s.tieCharge)%activeValues().length;
     reelStart=performance.now();
     slotIndex=reelOffset;
     updateReel();
+    updateCountdown(reelStart);
     interval=requestAnimationFrame(frame);
   }
   function stopSlot(){
@@ -195,6 +257,34 @@
       ${e.strongBonus||e.miracleBonus?`<span class="combat-card-bonus">CARD BOOST ${e.strongBonus?'+ '+e.strongBonus+' STRONG':''}
         ${e.miracleBonus?'+ '+e.miracleBonus+' MIRACLE':''}</span>`:''}</div>`;
   }
+  // ── Fight deck: both players' attack + power slots, always on screen ──
+  const TECH_LABEL={G:'GUTS',T:'TECHNIQUE',P:'POWER'};
+  function slot(s,i,type){
+    const sel=s.selected[i],val=type==='ATTACK'?sel.technique:sel.power;
+    const live=s.phase===type&&s.actor===i&&val===null&&!(s.mode==='SOLO'&&i===1);
+    const kind=type==='ATTACK'?'attack':'power';
+    const cap=type==='ATTACK'?'ATTACK':'POWER';
+    if(live)return `<div class="combat-reel fight-slot fight-slot-${kind} is-live" aria-label="${type==='ATTACK'?'Attack':'Power'} slot" data-reel-type="${s.phase}">
+        <span class="combat-reel-neighbor" data-combat-prev aria-hidden="true">—</span>
+        <span data-combat-current aria-live="off">${token(valueNow())}</span>
+        <span class="combat-reel-neighbor" data-combat-next-value aria-hidden="true">—</span>
+        <div class="ark-reel-lamps" aria-hidden="true">${Array.from({length:8},(_,k)=>'<i style="--lamp:'+k+'"></i>').join('')}</div>
+        <em class="fight-slot-cap">${cap}</em></div>`;
+    if(val!==null&&val!==undefined)return `<div class="fight-slot fight-slot-${kind} is-locked" data-value="${val}">
+        <b>${token(val)}</b><em class="fight-slot-cap">${type==='ATTACK'?TECH_LABEL[val]:cap}</em></div>`;
+    // The other side's reel is spinning while this phase is open (CPU or the waiting player).
+    if(s.phase===type){
+      const strip=(type==='ATTACK'?api.TECHNIQUES:api.POWERS).map(token);
+      return `<div class="fight-slot fight-slot-${kind} is-spinning" aria-hidden="true">
+        <span class="fight-strip">${[...strip,...strip].map(v=>`<i>${v}</i>`).join('')}</span><em class="fight-slot-cap">${cap}</em></div>`;
+    }
+    return `<div class="fight-slot fight-slot-${kind} is-empty" aria-hidden="true"><em class="fight-slot-cap">${cap}</em></div>`;
+  }
+  function side(s,i){
+    return `<div class="fight-side fight-side-${i}${i===1?' ark-reel-opponent':''}${s.actor===i&&['ATTACK','POWER'].includes(s.phase)?' is-active':''}" aria-label="${actorName(s,i)} slots">
+      <span class="fight-side-name">${actorName(s,i)}</span>
+      ${slot(s,i,'ATTACK')}${slot(s,i,'POWER')}</div>`;
+  }
   function controls(s){
     if(s.phase==='FINISHED'){
       const complete=s.session.complete;
@@ -216,29 +306,44 @@
            <button type="button" data-combat-next-bout data-initial-focus>NEXT BOUT →</button>`}
       </div>`;
     }
-    if(s.phase==='RESULT')return `<div class="combat-ready">
-      <button type="button" data-combat-next data-initial-focus>NEXT ROUND →</button></div>`;
-    const isAttack=s.phase==='ATTACK',action=isAttack?'GREEN':'YELLOW';
-    const label=isAttack?'STOP ATTACK SLOT':'STOP POWER SLOT';
-    const phaseLabel=isAttack?'CHOOSE FIGHTING STYLE':'DECIDE WHO STRIKES';
-    const help=isAttack?'Stop on G (Guts), T (Technique), or P (Power).':
+    const isAttack=s.phase==='ATTACK',isPower=s.phase==='POWER',result=s.phase==='RESULT';
+    const phaseLabel=result?'THE STRIKE LANDS':isAttack?'CHOOSE FIGHTING STYLE':'DECIDE WHO STRIKES';
+    const help=result?'The next exchange starts automatically. Press Enter to skip ahead.':
+      isAttack?'Stop on G (Guts), T (Technique), or P (Power).':
       'Stop on 10–50 or the ✦ fighting mark. Higher power attacks; ties reroll.';
-    return `<div class="combat-controls">
-      <div class="combat-reel-label">${actorLabel(s)} · ${phaseLabel}</div>
-      <div class="combat-reel" aria-label="${isAttack?'Attack':'Power'} slot" data-reel-type="${s.phase}">
-        <span class="combat-reel-neighbor" data-combat-prev aria-hidden="true">—</span>
-        <span data-combat-current aria-live="off">${token(valueNow())}</span>
-        <span class="combat-reel-neighbor" data-combat-next-value aria-hidden="true">—</span>
-        <div class="ark-reel-lamps" aria-hidden="true">${Array.from({length:10},(_,i)=>'<i style="--lamp:'+i+'"></i>').join('')}</div>
-      </div>
-      <button type="button" data-combat-stop data-initial-focus class="combat-stop ${isAttack?'combat-green':'combat-yellow'}">
-      <span aria-hidden="true" class="combat-light"></span>${action} — ${label}</button>
-      <div class="ark-reel-opponent" aria-label="Other animal's locked slots">
-        <span class="ark-reel-opponent-label">${s.mode==='SOLO'?'CPU':'OTHER PLAYER'}</span>
-        <span class="ark-reel-opponent-value">${token(isAttack?s.selected[1-s.actor].technique:s.selected[1-s.actor].power)}</span>
-        <span class="ark-reel-opponent-caption">${isAttack?'ATTACK REEL':'POWER REEL'}</span>
-      </div>
+    const center=result?
+      `<button type="button" data-combat-next data-initial-focus class="fight-skip">NEXT ▶</button>`:
+      `<div class="fight-countdown" data-combat-countdown aria-label="Time left"><b>${Math.ceil(COUNTDOWN_MS/1000)}</b></div>
+       <button type="button" data-combat-stop data-initial-focus class="combat-stop ${isAttack?'combat-green':'combat-yellow'}">
+        <span aria-hidden="true" class="combat-light"></span>${isAttack?'GREEN — STOP ATTACK SLOT':'YELLOW — STOP POWER SLOT'}</button>`;
+    return `<div class="combat-controls fight-deck" data-phase="${s.phase}">
+      <div class="combat-reel-label">${result?phaseLabel:actorLabel(s)+' · '+phaseLabel}</div>
+      ${side(s,0)}
+      <div class="fight-center">${center}</div>
+      ${side(s,1)}
       <p class="combat-instruction" role="status">${help}</p></div>`;
+  }
+  // ── Big arcade callouts over the arena ──
+  function callouts(s){
+    const e=s.lastEvent;
+    const out=[];
+    if(s.phase==='ATTACK'&&s.selected.every(x=>x.technique===null)){
+      out.push(s.round===1?
+        `<div class="fight-callout fight-callout-fight" aria-hidden="true"><small>BOUT ${s.session.bout}</small><b>FIGHT!</b></div>`:
+        `<div class="fight-callout fight-callout-small" aria-hidden="true"><b>SET YOUR ATTACK!</b></div>`);
+    }
+    if(s.phase==='POWER'&&e?.kind==='TIE'){
+      const [a,b]=(e.powers||[]).map(token);
+      if(a!==undefined)out.push(`<div class="fight-clash is-tie" aria-hidden="true"><span class="fight-clash-l">${a}</span><span class="fight-clash-r">${b}</span></div>`);
+      out.push(`<div class="fight-callout fight-callout-tie" aria-hidden="true"><b>TIEBREAKER</b><small>CHARGE ×${e.charge}</small></div>`);
+    }else if(s.phase==='POWER'&&s.selected.every(x=>x.power===null)){
+      out.push(`<div class="fight-callout fight-callout-small" aria-hidden="true"><b>POWER UP!</b></div>`);
+    }
+    if(['RESULT','FINISHED'].includes(s.phase)&&e?.kind==='HIT'){
+      const p=s.selected.map(x=>token(x.power));
+      out.push(`<div class="fight-clash" data-winner="${e.attacker}" aria-hidden="true"><span class="fight-clash-l">${p[0]}</span><span class="fight-clash-r">${p[1]}</span></div>`);
+    }
+    return out.join('');
   }
   function render(){
     const s=current();
@@ -271,6 +376,7 @@
           <div class="combat-versus" aria-hidden="true">VS</div>
           ${fighter(s,1)}
         </div>
+        ${callouts(s)}
         ${s.lastEvent?.kind==='HIT'?
           `<div class="battlefield-impact-flash" aria-hidden="true"></div>
            <div class="battlefield-damage battlefield-damage-${s.lastEvent.defender}" aria-hidden="true">

@@ -86,6 +86,7 @@
       if(p0===p1){
         state.tieCharge=Math.min(5,state.tieCharge+1);
         state.lastEvent={kind:'TIE',round:state.round,charge:state.tieCharge,
+          powers:[state.selected[0].power,state.selected[1].power],
           message:'POWER TIE! REROLL FOR A STRONGER STRIKE.'};
         state.history.push(state.lastEvent);
         state.selected.forEach(entry=>{entry.power=null;});
