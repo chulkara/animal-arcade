@@ -183,29 +183,144 @@
       stage.classList.remove('is-armed');void stage.offsetWidth;stage.classList.add('is-armed');
       window.setTimeout(()=>stage.classList.remove('is-armed'),900);
     }
+    const PLATE_TITLES={MODE_MENU:'SELECT MODE',OPTIONS:'SETTINGS',SHOP_PREVIEW:'SHOP',HELP_PREVIEW:'HOW TO PLAY'};
     function decoratePanel(screen){
       const ui=document.getElementById('ui');
       if(!ui)return;
+      const plate=ui.querySelector('.painted-submenu,.preview-panel,.options-panel');
+      if(plate&&!plate.dataset.pmDecorated){
+        plate.dataset.pmDecorated='1';
+        const title=plate.querySelector('.panel-title');
+        if(title&&PLATE_TITLES[screen])title.textContent=PLATE_TITLES[screen];
+        const back=plate.querySelector('.arcade-back');
+        if(back)back.innerHTML='<span aria-hidden="true">◀</span> BACK <kbd>Esc</kbd>';
+      }
       if(screen==='MODE_MENU'){
         // One note line under the list, like the painted plates: it describes the lit choice.
         const list=ui.querySelector('.mode-options');
         if(list&&!ui.querySelector('.pm-note')){
           const note=document.createElement('p');note.className='pm-note';note.setAttribute('aria-live','polite');
           list.after(note);
-          const show=(b)=>{if(b?.dataset.mode)note.textContent=b.querySelector('small')?.textContent||'';};
+          const show=(b)=>{if(b?.dataset.mode)note.textContent=MODE_NOTES[b.dataset.mode]||b.querySelector('small')?.textContent||'';};
           list.addEventListener('focusin',e=>show(e.target.closest('[data-mode]')));
           list.addEventListener('pointerover',e=>{const b=e.target.closest('[data-mode]');if(b){b.focus({preventScroll:true});show(b);}});
           show(list.querySelector('[data-mode]'));
         }
       }
-      if(screen==='OPTIONS'){
-        // Segmented volume bars: expose each slider's value to CSS.
-        for(const r of ui.querySelectorAll('input[type=range][data-setting]')){
-          const set=()=>r.style.setProperty('--v',r.value);set();
-          r.addEventListener('input',set);
-        }
-      }
+      if(screen==='OPTIONS')buildOptions(ui);
     }
+    const MODE_NOTES={
+      SOLO_SELECT:'Battle the computer. Three wild challengers.',
+      DUEL_SELECT:'Two players, one keyboard. First to two victories.',
+      BINDER:'Choose your three-card battle set.',
+      HELP_PREVIEW:'Stop the attack reel, then the power reel. The stronger result strikes.'
+    };
+
+    // Settings in the painted-plate layout. The game's own inputs stay in the page
+    // (hidden) and are driven from these rows, so saving and audio work unchanged.
+    const OPT_ROWS=[
+      {key:'master',label:'MASTER',kind:'level'},
+      {key:'music',label:'MUSIC',kind:'level'},
+      {key:'sfx',label:'EFFECTS',kind:'level'},
+      {key:'mute',label:'SOUND',kind:'switch',invert:true},
+      {key:'reducedMotion',label:'MOTION',kind:'motion'},
+      {key:'reset',label:'DEFAULTS',kind:'reset'}
+    ];
+    let optRow=0;
+    function optInput(ui,key){return ui.querySelector(`[data-setting="${key}"]`);}
+    function setOpt(ui,key,value){
+      const input=optInput(ui,key);if(!input)return;
+      if(input.type==='range'){input.value=String(value);input.dispatchEvent(new Event('input',{bubbles:true}));}
+      else{input.checked=Boolean(value);input.dispatchEvent(new Event('change',{bubbles:true}));}
+    }
+    function renderOptions(ui){
+      const list=ui.querySelector('.pm-opts');if(!list)return;
+      list.querySelectorAll('.pm-opts__row').forEach((li,i)=>{
+        const row=OPT_ROWS[i];li.classList.toggle('is-selected',i===optRow);li.tabIndex=i===optRow?0:-1;
+        const ctl=li.querySelector('.pm-opts__control');
+        if(row.kind==='level'){
+          const level=Math.round(Number(optInput(ui,row.key)?.value||0)/10);
+          li.setAttribute('aria-valuenow',String(level));
+          ctl.innerHTML=`<span class="pm-bar"><button type="button" tabindex="-1" class="pm-bar__btn" data-step="-1">◀</button>${Array.from({length:10},(_,k)=>`<button type="button" tabindex="-1" class="pm-bar__seg${k<level?' is-on':''}" data-level="${k+1}"></button>`).join('')}<button type="button" tabindex="-1" class="pm-bar__btn" data-step="1">▶</button><span class="pm-bar__num">${String(level).padStart(2,'0')}</span></span>`;
+        }else if(row.kind==='switch'){
+          const raw=Boolean(optInput(ui,row.key)?.checked);const on=row.invert?!raw:raw;
+          li.setAttribute('aria-checked',String(on));
+          ctl.innerHTML=`<span class="pm-toggle"><span class="${on?'is-lit':''}">ON</span><span class="${!on?'is-lit':''}">OFF</span></span>`;
+        }else if(row.kind==='motion'){
+          const reduced=Boolean(optInput(ui,row.key)?.checked);
+          ctl.innerHTML=`<span class="pm-cycle">◀ <b>${reduced?'REDUCED':'FULL'}</b> ▶</span>`;
+        }else{
+          ctl.innerHTML='<span class="pm-cycle">PRESS ENTER</span>';
+        }
+      });
+    }
+    function adjustOpt(ui,i,dir,level){
+      const row=OPT_ROWS[i];
+      if(row.kind==='level'){
+        const cur=Math.round(Number(optInput(ui,row.key)?.value||0)/10);
+        const next=Math.max(0,Math.min(10,level!==undefined?level:cur+dir));
+        if(next!==cur){setOpt(ui,row.key,next*10);window.NoahsAudio?.cue('move');}
+      }else if(row.kind==='switch'||row.kind==='motion'){
+        setOpt(ui,row.key,!optInput(ui,row.key)?.checked);window.NoahsAudio?.cue('move');
+      }else if(row.kind==='reset'){
+        setOpt(ui,'master',65);setOpt(ui,'music',28);setOpt(ui,'sfx',75);setOpt(ui,'mute',false);
+        setOpt(ui,'reducedMotion',Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches));
+        window.NoahsAudio?.cue('confirm');
+      }
+      renderOptions(ui);
+    }
+    function buildOptions(ui){
+      const panel=ui.querySelector('.options-panel');
+      if(!panel||panel.querySelector('.pm-opts'))return;
+      optRow=0;
+      panel.classList.add('pm-options');
+      const list=document.createElement('ul');list.className='pm-opts';
+      OPT_ROWS.forEach((row,i)=>{
+        const li=document.createElement('li');li.className='pm-opts__row';li.dataset.row=String(i);
+        li.dataset.testid='pm-opt-'+row.key;
+        if(row.kind==='level'){li.setAttribute('role','slider');li.setAttribute('aria-valuemin','0');li.setAttribute('aria-valuemax','10');}
+        else if(row.kind==='switch'){li.setAttribute('role','switch');}
+        else li.setAttribute('role','button');
+        li.setAttribute('aria-label',row.label);
+        li.innerHTML=`<span class="pm-opts__arrow" aria-hidden="true">▶</span><span class="pm-opts__label">${row.label}</span><span class="pm-opts__control"></span>`;
+        list.appendChild(li);
+      });
+      const note=document.createElement('p');note.className='pm-note pm-opts__note';note.textContent='Saved on this computer.';
+      panel.querySelector('.options-columns').after(list,note);
+      list.addEventListener('pointerover',e=>{
+        const li=e.target.closest('.pm-opts__row');if(!li)return;
+        const i=Number(li.dataset.row);if(i!==optRow){optRow=i;renderOptions(ui);window.NoahsAudio?.cue('move');}
+      });
+      list.addEventListener('click',e=>{
+        const li=e.target.closest('.pm-opts__row');if(!li)return;
+        const i=Number(li.dataset.row);optRow=i;
+        const seg=e.target.closest('[data-level]'),step=e.target.closest('[data-step]');
+        if(seg){const lv=Number(seg.dataset.level);const cur=Math.round(Number(optInput(ui,OPT_ROWS[i].key).value)/10);adjustOpt(ui,i,0,lv===cur?lv-1:lv);}
+        else if(step)adjustOpt(ui,i,Number(step.dataset.step));
+        else if(OPT_ROWS[i].kind!=='level')adjustOpt(ui,i,1);
+        else renderOptions(ui);
+      });
+      renderOptions(ui);
+      list.querySelector('.pm-opts__row')?.focus({preventScroll:true});
+    }
+    window.addEventListener('keydown',(event)=>{
+      if(arkade.getScreen()!=='OPTIONS'||event.altKey||event.ctrlKey||event.metaKey)return;
+      const ui=document.getElementById('ui');
+      if(!ui?.querySelector('.pm-opts'))return;
+      const k=event.key;
+      if(['ArrowUp','ArrowDown','w','W','s','S'].includes(k)){
+        event.preventDefault();event.stopImmediatePropagation();
+        optRow=(optRow+(['ArrowUp','w','W'].includes(k)?OPT_ROWS.length-1:1))%OPT_ROWS.length;
+        renderOptions(ui);ui.querySelectorAll('.pm-opts__row')[optRow]?.focus({preventScroll:true});
+        window.NoahsAudio?.cue('move');
+      }else if(['ArrowLeft','ArrowRight','a','A','d','D'].includes(k)){
+        event.preventDefault();event.stopImmediatePropagation();
+        adjustOpt(ui,optRow,['ArrowLeft','a','A'].includes(k)?-1:1);
+      }else if((k==='Enter'||k===' ')&&!event.target.closest?.('.arcade-back')){
+        event.preventDefault();event.stopImmediatePropagation();
+        if(!event.repeat&&OPT_ROWS[optRow].kind!=='level')adjustOpt(ui,optRow,1);
+      }
+    },true);
     function syncScreen(){
       const screen=arkade.getScreen();
       game.classList.toggle('pm-veiled',VEILED.includes(screen));

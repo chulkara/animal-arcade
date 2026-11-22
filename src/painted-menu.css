@@ -192,7 +192,7 @@
 .game.painted-enabled :is(.painted-submenu,.preview-panel,.options-panel,.ark-collection-panel) :is(.section-eyebrow,.panel-number,.ornament-line) { display:none; }
 .game.painted-enabled :is(.painted-submenu,.preview-panel,.options-panel,.ark-collection-panel) .panel-title {
   margin:0 0 calc(var(--u)*1.1); font-family:'Tiny5',monospace; font-weight:400; white-space:nowrap;
-  font-size:calc(var(--u)*2.4); letter-spacing:.18em; color:#f3e2b4; text-shadow:0 calc(var(--u)*.15) 0 #000;
+  font-size:calc(var(--u)*2.6); letter-spacing:.18em; color:#f3e2b4; text-shadow:0 calc(var(--u)*.15) 0 #000;
 }
 .game.painted-enabled :is(.painted-submenu,.preview-panel,.options-panel,.ark-collection-panel) .panel-title::before, .game.painted-enabled :is(.painted-submenu,.preview-panel,.options-panel,.ark-collection-panel) .panel-title::after {
   content:''; display:inline-block; width:0; height:0; vertical-align:.18em;
@@ -212,9 +212,9 @@
 .pm-note { min-height:calc(var(--u)*1.7); margin-top:calc(var(--u)*.6); }
 
 /* mode list: miniature painted buttons; the focused one is lit like PLAY */
-.game.painted-enabled .mode-options { width:72%; max-width:none; margin:0 auto; display:grid; gap:calc(var(--u)*.6); }
+.game.painted-enabled .mode-options { width:72%; max-width:none; margin:0 auto; display:grid; gap:calc(var(--u)*.7); }
 .game.painted-enabled .mode-options button {
-  position:relative; isolation:isolate; height:calc(var(--u)*2.85); padding:0; border:0; display:grid; place-items:center;
+  position:relative; isolation:isolate; height:calc(var(--u)*3); padding:0; border:0; display:grid; place-items:center;
   font-family:'Tiny5',monospace; font-size:calc(var(--u)*1.7); letter-spacing:.16em; line-height:1; color:#f3e2b4; background:#ecd6a4;
   clip-path:polygon(0 50%,calc(var(--u)*1.4) 0,calc(100% - var(--u)*1.4) 0,100% 50%,calc(100% - var(--u)*1.4) 100%,calc(var(--u)*1.4) 100%);
 }
@@ -281,10 +281,10 @@
 /* desktop/landscape: Mode, Settings and info plates sit over the painted button column */
 @media not all and (max-aspect-ratio: 4/5) {
   .game.painted-enabled :is(.painted-submenu,.preview-panel,.options-panel) {
-    position:absolute; transform:none; max-height:none; overflow:auto;
+    position:absolute; transform:none; max-height:none; max-width:none; overflow:auto;
     left:calc(50% - var(--sw) * .20096); width:calc(var(--sw) * .40191);
     top:calc(50% - var(--sw) * .01585); height:calc(var(--sw) * .26555);
-    padding:calc(var(--u)*2.1) calc(var(--u)*3.2) calc(var(--u)*1.4);
+    padding:calc(var(--u)*2.1) calc(var(--u)*3.2) calc(var(--u)*1.6);
     display:flex; flex-direction:column; transform-origin:var(--pm-ox,50%) var(--pm-oy,20%);
   }
   .game.painted-enabled :is(.painted-submenu,.preview-panel,.options-panel) .arcade-back { margin-top:auto; }
@@ -297,3 +297,37 @@
   .pm-crt { display:none; }
 }
 .game.reduce-motion .pm-cursor *, .game.reduce-motion .panel { animation:none !important; transition:none !important; }
+
+/* back label as on the painted plates: "◀ BACK [Esc]" */
+.game.painted-enabled :is(.painted-submenu,.preview-panel,.options-panel) .arcade-back kbd {
+  margin-left:.5em; padding:0 .4em; border:1px solid rgba(243,226,180,.62); border-radius:3px; background:transparent;
+  font-family:'IBM Plex Mono',ui-monospace,monospace; font-size:.75em; color:inherit;
+}
+.game.painted-enabled :is(.painted-submenu,.preview-panel,.options-panel) .arcade-back span { margin-right:.2em; }
+
+/* settings rows (the game's own inputs stay in the page, hidden, and are driven from these) */
+.game.painted-enabled .pm-options .options-columns { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); }
+.pm-opts { list-style:none; margin:0; padding:0; text-align:left; }
+.pm-opts__row {
+  display:grid; grid-template-columns:calc(var(--u)*1.6) calc(var(--u)*8.4) 1fr; align-items:center;
+  height:calc(var(--u)*2.25); border-bottom:calc(var(--u)*.08) solid rgba(236,214,164,.14); cursor:pointer;
+  font-family:'Tiny5',monospace; font-size:calc(var(--u)*1.35); letter-spacing:.14em;
+}
+.pm-opts__row:focus { outline:none; }
+.pm-opts__arrow { color:#f6cd3c; font-size:calc(var(--u)*.9); opacity:0; translate:calc(var(--u)*-.4) 0; transition:opacity .12s,translate .16s cubic-bezier(.3,.9,.3,1); filter:drop-shadow(0 0 .3em rgba(255,214,92,.85)); }
+.pm-opts__row.is-selected .pm-opts__arrow { opacity:1; translate:0 0; }
+.pm-opts__label { color:rgba(243,226,180,.62); }
+.pm-opts__row.is-selected .pm-opts__label { color:#f6cd3c; }
+.pm-opts__control { justify-self:end; font-size:calc(var(--u)*1.1); }
+.pm-bar { display:inline-flex; align-items:center; gap:calc(var(--u)*.3); }
+.pm-bar__btn { border:0; background:none; color:#f6cd3c; font-size:calc(var(--u)*.8); padding:calc(var(--u)*.3) calc(var(--u)*.4); opacity:.75; cursor:pointer; }
+.pm-bar__btn:hover { opacity:1; }
+.pm-bar__seg { width:calc(var(--u)*.95); height:calc(var(--u)*1.25); padding:0; border:calc(var(--u)*.1) solid rgba(236,214,164,.55); background:transparent; cursor:pointer; }
+.pm-bar__seg.is-on { background:linear-gradient(180deg,#ffe066,#e2ac1f); border-color:#fff0b0; }
+.pm-bar__num { width:calc(var(--u)*2.2); text-align:right; color:#f3e2b4; }
+.pm-toggle span { padding:calc(var(--u)*.15) calc(var(--u)*.6) calc(var(--u)*.05); color:rgba(243,226,180,.62); }
+.pm-toggle span.is-lit { background:#f6cd3c; color:#2a2310; }
+.pm-cycle { color:rgba(243,226,180,.62); }
+.pm-cycle b { font-weight:400; color:#f3e2b4; padding:0 calc(var(--u)*.5); }
+.pm-opts__note { min-height:0 !important; margin-top:calc(var(--u)*.5) !important; font-size:calc(var(--u)*.95) !important; }
+.game.painted-enabled .options-panel .panel-title { margin-bottom:calc(var(--u)*.6); }
