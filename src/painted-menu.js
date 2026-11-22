@@ -19,6 +19,10 @@
   const PX=x=>(x/ART_W*100)+'%';
   const PY=y=>(y/ART_H*100)+'%';
   const INTRO_KEY='noahs-arkade.painted-intro.v1';
+  // Panels sit over the painted button column (painting pixels).
+  const PLATE=[500,444,1172,888];
+  // Menu-family screens get the dimming veil; battles and selection screens do not.
+  const VEILED=['MODE_MENU','OPTIONS','SHOP_PREVIEW','HELP_PREVIEW','CARDS','BINDER'];
   const audio=()=>window.NoahsAudio;
   const reducedMotion=()=>game.classList.contains('reduce-motion')||window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
@@ -115,8 +119,17 @@
       mobile.textContent=item.label.toUpperCase();
       dock.appendChild(mobile);
     }
-    stage.append(art,cursor,hotspots,pressStart,crt,dock);
+    const veil=document.createElement('div');veil.className='pm-veil';veil.setAttribute('aria-hidden','true');
+    stage.append(art,cursor,veil,hotspots,pressStart,crt,dock);
     game.appendChild(stage);
+    // Letterbox: a small, blurred copy of the painting fills the bars around it.
+    try{
+      const c=document.createElement('canvas');c.width=168;c.height=95;
+      c.getContext('2d').drawImage(art,0,0,c.width,c.height);
+      const ambient=document.createElement('div');ambient.className='pm-ambient';ambient.setAttribute('aria-hidden','true');
+      ambient.style.backgroundImage=`url(${c.toDataURL('image/jpeg',.8)})`;
+      game.insertBefore(ambient,stage);
+    }catch{/* the plain letterbox colour remains */}
     game.classList.add('painted-enabled','intro-complete');
     let selected=0;
     let busy=false;
@@ -151,8 +164,15 @@
         stage.querySelector(selector)?.focus({preventScroll:true});
       }
     }
+    function setPanelOrigin(){
+      // Panels unfold out of the button that opened them.
+      const [x0,y0,x1,y1]=actions[selected].r,[px0,py0,px1,py1]=PLATE;
+      game.style.setProperty('--pm-ox',(((x0+x1)/2-px0)/(px1-px0)*100)+'%');
+      game.style.setProperty('--pm-oy',(((y0+y1)/2-py0)/(py1-py0)*100)+'%');
+    }
     function activate(action){
       if(arkade.getScreen()!=='MAIN_MENU'||busy)return;
+      setPanelOrigin();
       if(reducedMotion()){arkade.openPainted(action);return;}
       // A short press beat: the button flashes and the arrows pinch in, then the panel opens.
       busy=true;
@@ -184,8 +204,34 @@
         lightRun();
       },reducedMotion()?0:380);
     }
+    function decoratePanel(screen){
+      const ui=document.getElementById('ui');
+      if(!ui)return;
+      if(screen==='MODE_MENU'){
+        // One note line under the list, like the painted plates: it describes the lit choice.
+        const list=ui.querySelector('.mode-options');
+        if(list&&!ui.querySelector('.pm-note')){
+          const note=document.createElement('p');note.className='pm-note';note.setAttribute('aria-live','polite');
+          list.after(note);
+          const show=(b)=>{if(b?.dataset.mode)note.textContent=b.querySelector('small')?.textContent||'';};
+          list.addEventListener('focusin',e=>show(e.target.closest('[data-mode]')));
+          list.addEventListener('pointerover',e=>{const b=e.target.closest('[data-mode]');if(b){b.focus({preventScroll:true});show(b);}});
+          show(list.querySelector('[data-mode]'));
+        }
+      }
+      if(screen==='OPTIONS'){
+        // Segmented volume bars: expose each slider's value to CSS.
+        for(const r of ui.querySelectorAll('input[type=range][data-setting]')){
+          const set=()=>r.style.setProperty('--v',r.value);set();
+          r.addEventListener('input',set);
+        }
+      }
+    }
     function syncScreen(){
-      const isMenu=arkade.getScreen()==='MAIN_MENU';
+      const screen=arkade.getScreen();
+      game.classList.toggle('pm-veiled',VEILED.includes(screen));
+      decoratePanel(screen);
+      const isMenu=screen==='MAIN_MENU';
       hotspots.setAttribute('aria-hidden',String(!isMenu));
       dock.setAttribute('aria-hidden',String(!isMenu));
       stage.classList.toggle('is-menu',isMenu);
