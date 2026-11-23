@@ -303,7 +303,7 @@ function hitStop(event,elapsed,nativeMs){
 // strike lands with ~0.25 units of bone clearance (skin on skin).
 const CONTACT_KEEP=Object.freeze({
   bear:Object.freeze({G:1.50,T:1.02,P:1.20,S:1.30}),
-  moose:Object.freeze({G:1.30,T:1.25,P:1.30,S:1.30})
+  moose:Object.freeze({G:1.05,T:0.35,P:0.70,S:1.00})
 });
 function contactKeep(attackerId,move){
   return (CONTACT_KEEP[attackerId]||CONTACT_KEEP.bear)[move]??1.3;

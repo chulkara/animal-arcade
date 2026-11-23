@@ -390,3 +390,16 @@ test('completed Bear review holds the correct winner title instead of reverting 
  assert.ok(ui.includes("if(holdWinner)stage.dataset.cineBeat='victory'"));
  assert.ok(ui.includes("event.attackerId.toUpperCase()+' WINS!'"));
 });
+
+test('attack closing is a bounded curve that returns to the start mark',()=>{
+ for(const attackerId of ['bear','moose'])for(const move of ['G','T','P','S']){
+  const keep=director.contactKeep(attackerId,move);
+  assert.ok(keep>0&&keep<2,'keep gap must be a sane world distance');
+  const evt={attacker:attackerId==='bear'?0:1,defender:attackerId==='bear'?1:0,attackerId,defenderId:attackerId==='bear'?'moose':'bear',move,damage:10};
+  const t=director.duration(evt,1200);
+  assert.equal(director.blocking(evt,0,1200).closing,0,'no closing before the windup');
+  const at=director.blocking(evt,t.actionLead+t.contact,1200).closing;
+  assert.ok(at>.95,'fully closed at contact');
+  assert.ok(director.blocking(evt,t.actionLead+t.contact+900,1200).closing<.01,'withdrawn after recoil');
+ }
+});

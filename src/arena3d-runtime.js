@@ -811,7 +811,7 @@
     const front=extent(attacker,dir),near=extent(defender,-dir);
     const gap=Math.abs(defender.baseX-attacker.baseX)-front-near;
     const close=gap-cinematics.contactKeep(event.attackerId,event.move);
-    return Number.isFinite(close)?Math.max(0,Math.min(1.2,close)):0;
+    return Number.isFinite(close)?Math.max(0,Math.min(1.7,close)):0;
   }
   function advanceEvent(delta){
     if(!sequence)return;
