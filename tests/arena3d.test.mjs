@@ -82,7 +82,7 @@ test('3D asset material binding scripts load before the FBX importer',()=>{
    'src/arena3d-core.js',
    'src/arena3d-loader.js',
    'src/arena3d-runtime.js'
- ].map(src=>html.indexOf('src="./'+src+'"'));
+ ].map(src=>html.indexOf('src="./'+src));
  assert.ok(loadOrder.every(index=>index!==-1),'3D dependency script is missing from the page');
  assert.ok(loadOrder.every((index,i)=>i===0||loadOrder[i-1]<index),
    '3D material helpers must load before the FBX loader');

@@ -161,3 +161,16 @@
 }
 .game.painted-enabled .combat-message strong { font-family:'Tiny5',monospace !important; font-weight:400 !important; letter-spacing:.16em; color:var(--pb-yellow) !important; }
 .game.painted-enabled .combat-message span { font-family:'Pixelify Sans',system-ui,sans-serif !important; color:var(--pb-cream-dim) !important; }
+
+/* Dev tools step aside while a move or victory cinematic plays, so they
+   never sit on the move title. They return as soon as the beat ends. */
+.game.painted-enabled .ark-reference-layout.ark-cinematic-active:not(.ark-bear-reviewing) .combat-footer {
+  opacity:0 !important; pointer-events:none !important;
+}
+/* Bout results sit in the deck strip, under the winner, never over it. */
+.game.painted-enabled .ark-reference-layout .combat-finish {
+  bottom:16px !important; width:min(820px,72vw) !important;
+  flex-direction:row !important; flex-wrap:wrap; justify-content:center; align-items:center;
+  column-gap:20px; row-gap:6px; padding:16px 30px !important; margin:0 !important;
+}
+.game.painted-enabled .ark-reference-layout .combat-finish :is(.combat-intermission,.combat-card-reward) { flex-basis:100%; text-align:center; margin:0; }

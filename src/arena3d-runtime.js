@@ -791,7 +791,27 @@
       victoryLowered:false,victoryMoved:false,victoryWalkStopped:false,
       victoryPosition:'upright'};
     const attacker=actors[event.attacker];
+    sequence.closeDist=closingDistance(event);
     if(attacker?.asset?.clips?.angry)attacker.native('angry');
+  }
+  // How far the attacker's pivot must additionally travel so its strike
+  // actually reaches the defender. Measured once per exchange from the live
+  // idle skeletons (relative to each pivot), so it is an absolute bound,
+  // never accumulated per frame.
+  function closingDistance(event){
+    const attacker=actors[event.attacker],defender=actors[event.defender];
+    if(!THREE||!attacker?.joint?.size||!defender?.joint?.size)return 0;
+    const dir=event.attacker===0?1:-1,v=new THREE.Vector3();
+    const extent=(actor,sign)=>{
+      actor.model.updateMatrixWorld(true);let best=0;
+      for(const bone of actor.joint.values()){bone.getWorldPosition(v);
+        best=Math.max(best,sign*(v.x-actor.pivot.position.x));}
+      return best;
+    };
+    const front=extent(attacker,dir),near=extent(defender,-dir);
+    const gap=Math.abs(defender.baseX-attacker.baseX)-front-near;
+    const close=gap-cinematics.contactKeep(event.attackerId,event.move);
+    return Number.isFinite(close)?Math.max(0,Math.min(1.2,close)):0;
   }
   function advanceEvent(delta){
     if(!sequence)return;
@@ -910,8 +930,8 @@
     if(attacker){
       const source=attacker.id==='moose'&&attacker.proc?
         attacker.pivot.position.x:attacker.baseX;
-      attacker.pivot.position.x=source+direction*choreo.attackerTravel*
-        (attacker.id==='moose'?.27:1);
+      attacker.pivot.position.x=source+direction*(choreo.attackerTravel*
+        (attacker.id==='moose'?.27:1)+(sequence.closeDist||0)*choreo.closing);
       if(attacker.id==='bear'){
         attacker.pivot.position.y=choreo.attackerLift;
         attacker.orientation.rotation.z=direction*choreo.attackerLean;
@@ -1365,6 +1385,15 @@
       done:bearReview.done,index:bearReview.index,countdown:bearReview.countdown
     }:null,
     getClipDuration:(index,move)=>nativeLength({attacker:index,move}),
+    // Diagnostic only: world-space X extent of each live skeleton (no mesh data).
+    getReach:()=>actors.map(actor=>{
+      if(!actor?.joint?.size||!THREE)return null;
+      const v=new THREE.Vector3();let min=Infinity,max=-Infinity,lead=null;
+      actor.model.updateMatrixWorld(true);
+      for(const [name,bone] of actor.joint){bone.getWorldPosition(v);
+        if(v.x<min)min=v.x;if(v.x>max)max=v.x;}
+      return {id:actor.id,pivotX:actor.pivot.position.x,min,max};
+    }),
     getStatus:()=>({bear:Boolean(loaded.bear),moose:Boolean(loaded.moose),
       sceneReady:Boolean(renderer),active:actors.filter(Boolean).length,
       // The private FBX may not have a jaw bone or mouth morph. Expose

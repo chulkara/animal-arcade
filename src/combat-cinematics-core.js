@@ -296,6 +296,18 @@ function hitStop(event,elapsed,nativeMs){
 // Art-direct root motion independently from the imported attack FBX.
 // Source FBXs may contain long horizontal RigRoot translations; these must
 // not fling an animal through/behind its opponent. The pivot owns travel.
+// Skeleton gap (front bone of attacker → nearest bone of defender, idle
+// pose) that each native strike still leaves open at contact. Measured on the
+// private Bear rig: without closing, paws stopped 0.75–0.95 units short of
+// the Moose. The runtime closes the idle gap down to these values so the
+// strike lands with ~0.25 units of bone clearance (skin on skin).
+const CONTACT_KEEP=Object.freeze({
+  bear:Object.freeze({G:1.50,T:1.02,P:1.20,S:1.30}),
+  moose:Object.freeze({G:1.30,T:1.25,P:1.30,S:1.30})
+});
+function contactKeep(attackerId,move){
+  return (CONTACT_KEEP[attackerId]||CONTACT_KEEP.bear)[move]??1.3;
+}
 function blocking(event,elapsed,nativeMs){
   const timing=duration(event,nativeMs);
   const t=Math.max(0,(Number(elapsed)||0)-timing.actionLead);
@@ -315,7 +327,7 @@ function blocking(event,elapsed,nativeMs){
   const recoil=ease(clamp(recoilMs/140,0,1))*
     (1-ease(clamp((recoilMs-120)/510,0,1)));
   return Object.freeze({
-    attackerTravel:offset,windup:prep,strike,recoil,
+    attackerTravel:offset,closing:approach*withdrawal,windup:prep,strike,recoil,
     // These small rig-container adjustments give impact mass without
     // forcing every animal to use the same procedural leg animation.
     attackerLean:-.045*prep+.085*strike,
@@ -350,5 +362,5 @@ return Object.freeze({ATTACKS,MIRACLES,POSES,HIT_STOP_MS,
   VICTORY_LOWER_START_MS,VICTORY_LOWER_READY_MS,
   VICTORY_APPROACH_START_MS,VICTORY_APPROACH_END_MS,
   VICTORY_HOWL_START_MS,VICTORY_HOWL_CUE_MS,VICTORY_BANNER_MS,VICTORY_END_MS,
-  spec,miracle,duration,shot,camera,victoryApproach,bearHowl,hitStop,blocking,panel});
+  spec,miracle,duration,shot,camera,victoryApproach,bearHowl,hitStop,blocking,contactKeep,panel});
 });
