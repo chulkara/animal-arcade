@@ -67,6 +67,16 @@
             color:0xffffff,map,roughness:.9,metalness:0,
             side:THREE.FrontSide
           });
+          // The mouth interior sits in shadow inside the head, so the small,
+          // dark teeth/gum atlas read as a black hole when the jaw opens.
+          // Let that one material carry a little of its own light.
+          if(id==='bear'&&role==='teeth'&&map){
+            matte.emissive=new THREE.Color(0xffffff);
+            matte.emissiveMap=map;
+            matte.emissiveIntensity=.9;
+            matte.color.setScalar(1.35);
+            matte.roughness=.55;
+          }
           replacedMaterials.push(matte);
           return matte;
         });

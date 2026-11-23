@@ -50,7 +50,7 @@ test('multi-angle victory gives distinct low-angle, orbit, high and wide hero sh
  const evt={...base,attacker:1,defender:0,attackerId:'bear',
   defenderId:'moose',move:'G',knockout:true,finished:true};
  const start=director.duration(evt,1000).victoryStart;
- const shots=[start+50,start+1080,start+2200,start+3370]
+ const shots=[start+50,start+1080,start+1700,start+3370]
   .map(ms=>director.shot(evt,ms,1000));
  assert.deepEqual(shots.map(s=>s.beat),['VICTORY','VICTORY','VICTORY','VICTORY']);
  assert.deepEqual(shots.map(s=>s.shot),['lowHero','sideHero','highHero','finale']);
@@ -106,11 +106,12 @@ test('regression: winning Bear gets front, reverse, overhead and final face clos
    attackerId:'bear',defenderId:'moose',move:'P',finished:true,knockout:true};
   const begin=director.duration(evt,1200).victoryStart;
   const heroWorldX=attacker===0?-2.02:2.02;
-  const views=[100,1100,2300,3350].map(t=>director.camera(evt,begin+t,1200));
+  const views=[100,1100,1700,3350].map(t=>director.camera(evt,begin+t,1200));
   const angles=views.map(cam=>Math.atan2(cam.x-cam.targetX,cam.z));
   views.forEach((cam,index)=>{
    assert.equal(cam.beat,'VICTORY');
-   assert.equal(cam.targetX,heroWorldX);
+   assert.ok(Math.abs(cam.targetX-heroWorldX)<=.6,'Camera tracks the winner through its approach');
+   assert.ok(Math.abs(cam.targetX)<=2.02,'Approach moves toward centre, never away');
    assert.ok(cam.zoom<=1.7);
    assert.equal(cam.cut,true);
   });
@@ -268,16 +269,16 @@ test('bear win has a visible inhale followed by a head-raised sustained cry',()=
  const none=director.bearHowl(1600);
  assert.equal(none.active,false);
  assert.equal(none.jawOpen,0);
- const inhale=director.bearHowl(2400);
+ const inhale=director.bearHowl(3800);
  assert.equal(inhale.phase,'inhale');
  assert.ok(inhale.headPitch>.08,'First gather breath by lowering the head');
  assert.ok(inhale.bodyDrop<-.02,'Shift weight before the cry');
- const roaring=director.bearHowl(3380);
+ const roaring=director.bearHowl(4600);
  assert.equal(roaring.phase,'roar');
- assert.ok(roaring.headPitch<-.42,'Then throw the head back visibly');
+ assert.ok(roaring.headPitch<-.2,'Then lift the head visibly');
  assert.ok(roaring.neckPitch<-.2);
  assert.ok(roaring.jawOpen>.8);
- const held=director.bearHowl(5200);
+ const held=director.bearHowl(5800);
  assert.ok(held.jawOpen>.6,'The expression survives the delayed banner');
  for(const attacker of [0,1]){
   const evt={...base,attacker,defender:1-attacker,attackerId:'bear',

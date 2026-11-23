@@ -240,8 +240,8 @@ const VICTORY_LOWER_READY_MS=2500;
 const VICTORY_APPROACH_START_MS=2540;
 const VICTORY_APPROACH_END_MS=3530;
 const VICTORY_HOWL_START_MS=3350;
-const VICTORY_HOWL_CUE_MS=4400;
-const VICTORY_BANNER_MS=3950;
+const VICTORY_HOWL_CUE_MS=4100; // roar sound starts as the jaw drops
+const VICTORY_BANNER_MS=4650; // the win banner lands mid-roar, never before it
 const VICTORY_END_MS=6600;
 function victoryApproach(victoryElapsed){
   const elapsed=Math.max(0,Number(victoryElapsed)||0);
@@ -265,7 +265,7 @@ function bearHowl(victoryElapsed){
   if(elapsed<VICTORY_HOWL_START_MS)return zero;
   const inhale=ease((elapsed-VICTORY_HOWL_START_MS)/560);
   const throwBack=ease((elapsed-3850)/540);
-  const open=ease((elapsed-4070)/360);
+  const open=ease((elapsed-4000)/300);
   const fade=ease((elapsed-5500)/690);
   const vocal=Math.sin((elapsed-VICTORY_HOWL_CUE_MS)*.021);
   return Object.freeze({
@@ -273,7 +273,7 @@ function bearHowl(victoryElapsed){
     phase:elapsed<3850?'inhale':elapsed<4400?'throw':
       elapsed<5500?'roar':'hold',
     intensity:inhale*(1-.14*fade),
-    headPitch:.12*inhale-.59*throwBack+.012*vocal*open,
+    headPitch:.12*inhale-.38*throwBack+.012*vocal*open, // lifted, but the open mouth still faces the camera
     headYaw:.04*throwBack*Math.sin(elapsed*.003),
     neckPitch:.07*inhale-.29*throwBack,
     chestPitch:.11*inhale-.18*throwBack,

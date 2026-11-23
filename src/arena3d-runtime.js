@@ -251,12 +251,18 @@
       // Convert that world-space pitch/yaw into each bone's local frame,
       // so the movement stays anatomically legible on mirrored fighters.
       const yawWorld=new THREE.Vector3(0,1,0);
+      // The four-paw approach turns the winner a little toward the lens.
+      // Fold that turn into the pitch axis so head lift never reads as roll.
+      const approachTurn=-(slot===0?1:-1)*cinematics.victoryApproach(t).turn;
       const baseYaw=(slot===0?Math.PI/2:-Math.PI/2)+yaw[id];
       // Respect the optional TURN 90° control too: the correct head-up
       // axis follows the animal's current facing, not merely its slot.
       const facingWorld=new THREE.Vector3(0,0,1)
-        .applyAxisAngle(yawWorld,baseYaw);
+        .applyAxisAngle(yawWorld,baseYaw+approachTurn);
       const pitchWorld=facingWorld.clone().cross(yawWorld).normalize();
+      // Orientation sits inside the turned pivot, so its lean axis ignores the turn.
+      const pivotPitch=new THREE.Vector3(0,0,1).applyAxisAngle(yawWorld,baseYaw)
+        .cross(yawWorld).normalize();
       const localWorldAxis=(bone,axis)=>{
         bone.updateWorldMatrix(true,false);
         const q=new THREE.Quaternion();
@@ -305,10 +311,10 @@
       // plane, not around orientation.rotation.x (that rolled the torso).
       orientation.rotation.set(0,baseYaw,0);
       orientation.quaternion.premultiply(new THREE.Quaternion()
-        .setFromAxisAngle(pitchWorld,-howl.bodyLean*.38*strength));
+        .setFromAxisAngle(pivotPitch,-howl.bodyLean*.38*strength));
       pivot.position.y=howl.bodyDrop*.50*strength;
       if(jawBone&&!nativeRoar)
-        setWorld(jawBone.name,pitchWorld,-.58*howl.jawOpen);
+        setWorld(jawBone.name,pitchWorld,-.8*howl.jawOpen); // wide, readable roar
       for(const morph of openMorphs)
         morph.mesh.morphTargetInfluences[morph.index]=
           morph.base+(1-morph.base)*howl.jawOpen;
@@ -346,7 +352,7 @@
       actor.resetHowlFace?.();
       resetApplied(actor);actor.proc=null;actor.procElapsed=0;
       actor.soleRest=null;
-      pivot.position.set(actor.baseX,0,0);
+      pivot.position.set(actor.baseX,0,0);pivot.rotation.set(0,0,0);
       orientation.rotation.set(0,(slot===0?Math.PI/2:-Math.PI/2)+yaw[id],0);
       actor.native('idle');
     };
@@ -885,8 +891,14 @@
     // after the native rear/victory clip has started.
     if(sequence.finished&&event.finished&&sequence.elapsed>=timing.victoryStart){
       if(attacker){
-        attacker.pivot.position.x=attacker.baseX;
-        attacker.pivot.position.z=0;
+        // Absolute, bounded transform from timeline progress (no per-frame
+        // drift): the winner really walks toward centre and the lens, so the
+        // camera target that tracks victoryApproach() has a body to follow.
+        const approach=cinematics.victoryApproach(sequence.elapsed-timing.victoryStart);
+        const facing=event.attacker===0?1:-1;
+        attacker.pivot.position.x=attacker.baseX+facing*approach.travel;
+        attacker.pivot.position.z=approach.depth;
+        attacker.pivot.rotation.y=-facing*approach.turn;
       }
       return;
     }

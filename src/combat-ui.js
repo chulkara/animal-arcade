@@ -77,7 +77,8 @@
     const key=countdownStateKey(s);
     if(key!==countdownKey){countdownKey=key;countdownLeft=COUNTDOWN_MS;countdownAt=now;lastShownSecond=-1;}
     if(paused()){countdownAt=now;}
-    else{countdownLeft-=Math.max(0,now-countdownAt);countdownAt=now;}
+    // cap each frame's share: a long main-thread stall (e.g. parsing a 3D model) never eats the clock
+    else{countdownLeft-=Math.min(100,Math.max(0,now-countdownAt));countdownAt=now;}
     const secs=Math.max(0,Math.ceil(countdownLeft/1000));
     if(node){
       node.hidden=false;

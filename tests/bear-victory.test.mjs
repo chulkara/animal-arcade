@@ -20,31 +20,36 @@ test('reference-inspired victory has a visible inhale, head throw and 2+ second 
  const standing=cinema.bearHowl(1000);
  assert.equal(standing.active,false);
  assert.equal(standing.jawOpen,0);
- const inhale=cinema.bearHowl(2400);
+ const walking=cinema.bearHowl(3000);
+ assert.equal(walking.jawOpen,0,'Mouth stays closed during the four-paw approach');
+ const inhale=cinema.bearHowl(3800);
  assert.equal(inhale.phase,'inhale');
  assert.ok(inhale.headPitch>.08,'Bear must first lower its muzzle to inhale');
  assert.ok(inhale.bodyDrop<-.03,'Bear should gather weight through its body');
  assert.equal(inhale.jawOpen,0);
 
- const throwBack=cinema.bearHowl(2900);
+ const throwBack=cinema.bearHowl(4200);
  assert.equal(throwBack.phase,'throw');
  assert.ok(throwBack.headPitch<0);
  assert.ok(throwBack.neckPitch<0);
- const roaring=cinema.bearHowl(3380);
+ const roaring=cinema.bearHowl(4600);
  assert.equal(roaring.phase,'roar');
- assert.ok(roaring.headPitch<-.42,'The head must clearly tip backward');
+ assert.ok(roaring.headPitch<-.2,'The muzzle lifts upward, still facing the camera');
+ assert.ok(roaring.headPitch>-.42,'Not thrown so far back that the open mouth hides from camera');
  assert.ok(roaring.neckPitch<-.2,'The neck must visibly extend');
  assert.ok(roaring.jawOpen>.8,'Open the jaw while vocalizing');
- assert.ok(roaring.forePaw<-.15,'Both forepaws participate');
- assert.ok(roaring.chestPitch<-.1);
- const held=cinema.bearHowl(5300);
+ assert.ok(roaring.forePaw<-.02,'Forepaws brace on the ground');
+ assert.ok(roaring.chestPitch<-.05);
+ const open=cinema.bearHowl(cinema.VICTORY_HOWL_CUE_MS+150);
+ assert.ok(open.jawOpen>.5,'Jaw is opening as the roar sound cues');
+ const held=cinema.bearHowl(5800);
  assert.equal(held.phase,'hold');
  assert.ok(held.jawOpen>.6,'Bear must remain expressive until the shot completes');
 });
 
 test('four camera cuts lead to a sustained winning performance, not just a still image',()=>{
  const t=cinema.duration(event,1200);
- const sequence=[80,1300,2250,2750,3400,4700]
+ const sequence=[80,1100,1700,2750,4300,4800]
    .map(ms=>cinema.shot(event,t.victoryStart+ms,1200));
  assert.deepEqual(sequence.map(x=>x.shot),
    ['lowHero','sideHero','highHero','finale','finale','finale']);
@@ -70,7 +75,7 @@ test('the renderer actually activates a native roar and a physical fallback, not
  const runtime=readFileSync('src/arena3d-runtime.js','utf8');
  const overlay=readFileSync('src/combat-cinematics.js','utf8');
  const css=readFileSync('src/combat-cinematics.css','utf8');
- assert.ok(runtime.includes("attacker.native('roar')"));
+ assert.ok(runtime.includes("attacker.native('roar',.26)"));
  assert.ok(runtime.includes('winner.victoryGesture(sequence.elapsed-start,Boolean(sequence.roarPlayed))'));
  assert.ok(runtime.includes('howl.bodyLean'));
  assert.ok(runtime.includes('howl.bodyDrop'));

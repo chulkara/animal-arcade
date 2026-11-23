@@ -206,3 +206,6 @@
 /* one message per moment: the TIEBREAKER callout and the slots already say it */
 .game.painted-enabled .ark-reference-layout:has(.fight-callout-tie) .combat-message { display:none !important; }
 .game.painted-enabled .ark-reference-layout :is(.ark-reel-snap,.ark-cinema-lock) { display:none !important; }
+
+/* the deck shows names and picks; the old labels under each animal only cluttered the arena */
+.game.painted-enabled .ark-reference-layout :is(.combat-animal-name,.combat-selections) { display:none !important; }
