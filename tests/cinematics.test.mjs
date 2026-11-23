@@ -403,3 +403,23 @@ test('attack closing is a bounded curve that returns to the start mark',()=>{
   assert.ok(director.blocking(evt,t.actionLead+t.contact+900,1200).closing<.01,'withdrawn after recoil');
  }
 });
+
+test('knockout drives the loser back and keeps it there',()=>{
+ const evt={attacker:0,defender:1,attackerId:'bear',defenderId:'moose',move:'P',damage:40,finished:true,knockout:true};
+ const t=director.duration(evt,1200),hit=t.actionLead+t.contact;
+ assert.equal(director.blocking(evt,hit-10,1200).defenderKnock,0);
+ const late=director.blocking(evt,hit+2000,1200);
+ assert.ok(late.defenderKnock>.7,'held, not bounced back');
+ assert.ok(late.defenderTravel<.01,'ordinary hits still return');
+});
+
+test('measured clip contact replaces the ratio guess and can be cleared',()=>{
+ const evt={attacker:0,defender:1,attackerId:'bear',defenderId:'moose',move:'P',damage:10};
+ const guess=director.duration(evt,1600).contact;
+ assert.ok(director.setMeasuredContact('bear','P',900));
+ assert.equal(director.duration(evt,1600).contact,900);
+ assert.equal(director.duration(evt,undefined).contact,director.duration(evt).contact,'placeholder path ignores measurements');
+ director.clearMeasuredContacts();
+ assert.equal(director.duration(evt,1600).contact,guess);
+ assert.equal(director.setMeasuredContact('tiger','P',900),false);
+});

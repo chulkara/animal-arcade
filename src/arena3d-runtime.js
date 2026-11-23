@@ -107,6 +107,62 @@
     const actor={id,slot,asset,model,pivot,orientation,mixer,joint,rootAnchors,additive:new Map(),
       current:null,currentKey:null,proc:null,procElapsed:0,baseX:pivot.position.x,
       soleRest:null,soleHeight};
+    // Find when each native strike actually lands: sample the clip offline
+    // and take the frame where the striking bones reach furthest forward
+    // (in the actor's own facing frame, root travel anchored like at runtime).
+    // Bone transforms are restored afterwards, so nothing visible changes.
+    if(id==='bear'&&cinematics?.setMeasuredContact){
+      const paws=['RigLFLegDigit11','RigRFLegDigit11','RigLFLegAnkle','RigRFLegAnkle'];
+      const strikers={G:['RigHead'],T:paws,P:paws,S:[...paws,'RigHead']};
+      const saved=[...joint.values()].map(b=>[b,b.position.clone(),b.quaternion.clone(),b.scale.clone()]);
+      const probe=new THREE.AnimationMixer(model),v=new THREE.Vector3();
+      for(const move of Object.keys(strikers)){
+        const clip=asset.clips[move];const bones=strikers[move].map(n=>joint.get(n)).filter(Boolean);
+        if(!clip||!bones.length||!(clip.duration>.2))continue;
+        const action=probe.clipAction(clip);action.reset().play();
+        let best=-Infinity,bestT=null;
+        for(let t=0;t<=clip.duration;t+=1/60){
+          probe.setTime(t);
+          for(const a of rootAnchors){a.bone.position.x=a.x;a.bone.position.z=a.z;}
+          orientation.updateMatrixWorld(true);
+          for(const bone of bones){
+            orientation.worldToLocal(bone.getWorldPosition(v));
+            const reach=v.z;
+            if(reach>best){best=reach;bestT=t;}
+          }
+        }
+        action.stop();probe.uncacheAction(clip);
+        const frac=bestT/clip.duration;
+        if(!(frac>.12&&frac<.97))console.info('[arena3d] bear',move,'reach peak at',Math.round(bestT*1000),'ms rejected; keeping estimate');
+        if(bestT!=null&&frac>.12&&frac<.97){
+          cinematics.setMeasuredContact('bear',move,bestT*1000);
+          console.info('[arena3d] bear',move,'contact measured at',Math.round(bestT*1000),'ms of',Math.round(clip.duration*1000));
+        }
+      }
+      for(const [b,p,q,sc] of saved){b.position.copy(p);b.quaternion.copy(q);b.scale.copy(sc);}
+      model.updateMatrixWorld(true);
+    }
+    // Many death clips open with a slow stagger before the body drops, which
+    // read as the loser ignoring the knockout blow. Measure when the pelvis
+    // starts to fall and begin the clip shortly before that.
+    actor.knockoutLead=0;
+    if(asset.clips.knockout&&joint.get('RigPelvis')){
+      const pelvis=joint.get('RigPelvis'),clip=asset.clips.knockout;
+      const saved=[...joint.values()].map(b=>[b,b.position.clone(),b.quaternion.clone(),b.scale.clone()]);
+      const probe=new THREE.AnimationMixer(model),v=new THREE.Vector3(),action=probe.clipAction(clip);
+      action.reset().play();probe.setTime(0);orientation.updateMatrixWorld(true);
+      const stand=orientation.worldToLocal(pelvis.getWorldPosition(v)).y;
+      let drop=null;
+      for(let t=0;t<=clip.duration;t+=1/60){
+        probe.setTime(t);orientation.updateMatrixWorld(true);
+        if(orientation.worldToLocal(pelvis.getWorldPosition(v)).y<stand*.93){drop=t;break;}
+      }
+      action.stop();probe.uncacheAction(clip);
+      for(const [b,p,q,sc] of saved){b.position.copy(p);b.quaternion.copy(q);b.scale.copy(sc);}
+      model.updateMatrixWorld(true);
+      if(drop!=null)actor.knockoutLead=Math.max(0,Math.min(clip.duration*.6,drop-.18));
+      console.info('[arena3d]',id,'knockout drop at',drop==null?'none':Math.round(drop*1000),'ms; lead',Math.round(actor.knockoutLead*1000));
+    }
     actor.native=(key,fadeSeconds=.15)=>{
       if(key!=='victory'&&key!=='roar')actor.resetHowlFace?.();
       resetApplied(actor);actor.proc=null;actor.procElapsed=0;
@@ -117,6 +173,7 @@
       const previous=actor.current;
       if(previous&&previous!==next)previous.fadeOut(fadeSeconds);
       next.reset();next.enabled=true;next.setEffectiveWeight(1);
+      if(name==='knockout'&&actor.knockoutLead)next.time=actor.knockoutLead;
       const oneShot=!['idle','run','walk','breathing','jump','victory','angry'].includes(name);
       next.setLoop(oneShot?THREE.LoopOnce:THREE.LoopRepeat,oneShot?1:Infinity);
       next.clampWhenFinished=name==='knockout'||name==='roar';
@@ -204,6 +261,12 @@
     // targets, the howl visibly opens the mouth. All changes are reversible.
     const jawBone=[...joint.entries()].find(([name])=>
       /(?:^|rig)(?:lower)?jaw|mandible/i.test(name))?.[1]||null;
+    // The source Bear has no modelled mouth interior: opening the jaw only
+    // stretches lip skin around an empty hole, which reads as a black box.
+    // Build a back-faced "mouth bag" from the muzzle's own triangles, inset a
+    // hair along the normals and skinned to the same skeleton. It is only
+    // visible through the opening, where it shows as gums/palate.
+    if(id==='bear'&&jawBone)buildMouthBag(model,jawBone);
     const openMorphs=[];
     model.traverse(node=>{
       if(!node.isMesh||!node.morphTargetDictionary||!node.morphTargetInfluences)return;
@@ -314,7 +377,23 @@
         .setFromAxisAngle(pivotPitch,-howl.bodyLean*.38*strength));
       pivot.position.y=howl.bodyDrop*.50*strength;
       if(jawBone&&!nativeRoar)
-        setWorld(jawBone.name,pitchWorld,-.8*howl.jawOpen); // wide, readable roar
+        setWorld(jawBone.name,pitchWorld,-.52*howl.jawOpen); // ~30°: open, not unhinged
+      // The textured gums, tongue and palate exist but sit in the head's own
+      // shadow, so an open mouth read as a black slot. A small warm fill
+      // light in front of the jaw (radius < 1 unit, no shadows) lights the
+      // inside of the mouth only while it is open.
+      if(jawBone){
+        if(!actor.mouthLight&&pivot.parent){
+          actor.mouthLight=new THREE.PointLight(0xff9f8a,0,.55,2);
+          actor.mouthLight.castShadow=false;pivot.parent.add(actor.mouthLight);
+        }
+        if(actor.mouthLight){
+          const at=jawBone.getWorldPosition(new THREE.Vector3())
+            .addScaledVector(facingWorld,.06).addScaledVector(yawWorld,.04);
+          actor.mouthLight.position.copy(at);
+          actor.mouthLight.intensity=reduced()?0:2.2*howl.jawOpen;
+        }
+      }
       for(const morph of openMorphs)
         morph.mesh.morphTargetInfluences[morph.index]=
           morph.base+(1-morph.base)*howl.jawOpen;
@@ -352,7 +431,7 @@
       actor.resetHowlFace?.();
       resetApplied(actor);actor.proc=null;actor.procElapsed=0;
       actor.soleRest=null;
-      pivot.position.set(actor.baseX,0,0);pivot.rotation.set(0,0,0);
+      pivot.position.set(actor.baseX,0,0);pivot.rotation.set(0,0,0);if(actor.mouthLight)actor.mouthLight.intensity=0;
       orientation.rotation.set(0,(slot===0?Math.PI/2:-Math.PI/2)+yaw[id],0);
       actor.native('idle');
     };
@@ -798,6 +877,117 @@
   // actually reaches the defender. Measured once per exchange from the live
   // idle skeletons (relative to each pivot), so it is an absolute bound,
   // never accumulated per frame.
+  function buildMouthBag(model,jawBone){
+    let skin=null;model.traverse(o=>{if(!skin&&o.isSkinnedMesh&&o.skeleton?.bones.includes(jawBone))skin=o;});
+    if(!skin)return;
+    // Clones of the same imported model share geometry: build once, reuse.
+    if(skin.geometry.userData.mouthBag){attachMouthBag(skin,skin.geometry.userData.mouthBag);return;}
+    const g=skin.geometry,P=g.attributes.position,N=g.attributes.normal,SI=g.attributes.skinIndex,SW=g.attributes.skinWeight;
+    const ji=skin.skeleton.bones.indexOf(jawBone);
+    const at=i=>g.index?g.index.getX(i):i; // FBXLoader output is usually non-indexed
+    // Muzzle region from the jaw's own vertices (bind/mesh space), so the
+    // bag follows this rig's proportions instead of hard-coded numbers.
+    const box=new THREE.Box3(),v=new THREE.Vector3();
+    for(let i=0;i<P.count;i++){let w=0;for(let c=0;c<4;c++)if(SI.getComponent(i,c)===ji)w+=SW.getComponent(i,c);
+      if(w>.5)box.expandByPoint(v.fromBufferAttribute(P,i));}
+    if(box.isEmpty()){console.info('[arena3d] bear mouth bag skipped: no jaw vertices');return;}
+    const size=box.getSize(new THREE.Vector3()),region=box.clone();
+    region.expandByVector(new THREE.Vector3(size.x*.15,size.y*.25,size.z*1.1));
+    // Stop below the nose leather: thin nostril folds z-fight with an inset bag.
+    region.max.z=box.max.z+size.z*.2;
+    const head=g.groups.find(gr=>gr.materialIndex===1)||g.groups[0];
+    const keep=[];
+    for(let t=head.start;t<head.start+head.count;t+=3){
+      let inside=true;
+      for(let k=0;k<3;k++)if(!region.containsPoint(v.fromBufferAttribute(P,at(t+k)))){inside=false;break;}
+      if(inside)keep.push(at(t),at(t+1),at(t+2));
+    }
+    if(keep.length<30)return;
+    paintInnerLips(skin,box,at,i=>{let w=0;for(let c=0;c<4;c++)if(SI.getComponent(i,c)===ji)w+=SW.getComponent(i,c);return w;});
+    const inset=Math.max(size.x,size.y,size.z)*.012;
+    const pos=new Float32Array(P.count*3);
+    for(let i=0;i<P.count;i++){
+      pos[i*3]=P.getX(i)-(N?N.getX(i)*inset:0);pos[i*3+1]=P.getY(i)-(N?N.getY(i)*inset:0);pos[i*3+2]=P.getZ(i)-(N?N.getZ(i)*inset:0);
+    }
+    const bag=new THREE.BufferGeometry();
+    bag.setAttribute('position',new THREE.BufferAttribute(pos,3));
+    if(N)bag.setAttribute('normal',N);
+    bag.setAttribute('skinIndex',SI);bag.setAttribute('skinWeight',SW);
+    bag.setIndex(keep);
+    g.userData.mouthBag=bag;
+    attachMouthBag(skin,bag);
+    console.info('[arena3d] bear mouth bag',keep.length/3,'triangles');
+  }
+  function attachMouthBag(skin,bag){
+    const mat=new THREE.MeshStandardMaterial({color:0x7a2629,roughness:.55,metalness:0,side:THREE.BackSide,
+      emissive:new THREE.Color(0x2a0707),emissiveIntensity:1});
+    const mesh=new THREE.SkinnedMesh(bag,mat);
+    mesh.name='MouthBag';mesh.frustumCulled=false;mesh.castShadow=false;mesh.receiveShadow=false;
+    mesh.position.copy(skin.position);mesh.quaternion.copy(skin.quaternion);mesh.scale.copy(skin.scale);
+    skin.parent.add(mesh);mesh.bind(skin.skeleton,skin.bindMatrix);
+  }
+  // The inner lip faces are mapped to the dark lip-line texels of the head
+  // atlas. Closed, they are folded away; open, they stretch into a big black
+  // box. Re-assign exactly those triangles (dark texel + inside the jaw's
+  // own region) to a gum material via extra draw groups. Nothing else in the
+  // texture or the closed face changes.
+  function paintInnerLips(skin,jawBox,at,jawWeight){
+    const g=skin.geometry,P=g.attributes.position,UV=g.attributes.uv;
+    const mats=Array.isArray(skin.material)?skin.material:null;
+    if(!mats||!UV||g.userData.innerLipsDone)return;
+    const pad=jawBox.getSize(new THREE.Vector3()).multiplyScalar(.18);
+    const inner=jawBox.clone().expandByVector(pad);
+    // No upward padding: the black nose leather sits just above the jaw.
+    // (The FBX mesh is Z-up in its own space; the jaw box's top is the lip line.)
+    inner.max.z=jawBox.max.z;
+    const v=new THREE.Vector3(),c=new THREE.Vector3();
+    let headGroup=null;
+    for(const gr of g.groups){
+      for(let t=gr.start;t<gr.start+gr.count;t+=3){
+        if(inner.containsPoint(v.fromBufferAttribute(P,at(t)))){headGroup=gr;break;}
+      }
+      if(headGroup)break;
+    }
+    const image=mats[headGroup?.materialIndex]?.map?.image;
+    if(!headGroup||!image?.width)return;
+    const canvas=document.createElement('canvas');
+    canvas.width=image.width;canvas.height=image.height;
+    const ctx=canvas.getContext('2d',{willReadFrequently:true});
+    ctx.drawImage(image,0,0);
+    const px=ctx.getImageData(0,0,canvas.width,canvas.height).data;
+    const lum=(u,w)=>{const x=Math.min(canvas.width-1,Math.max(0,Math.floor(u*canvas.width)));
+      const y=Math.min(canvas.height-1,Math.max(0,Math.floor((1-w)*canvas.height)));
+      const i=(y*canvas.width+x)*4;return (px[i]*.3+px[i+1]*.59+px[i+2]*.11)/255;};
+    const pick=[];
+    for(let t=headGroup.start;t<headGroup.start+headGroup.count;t+=3){
+      c.set(0,0,0);let u=0,w=0;
+      for(let k=0;k<3;k++){c.add(v.fromBufferAttribute(P,at(t+k)));u+=UV.getX(at(t+k));w+=UV.getY(at(t+k));}
+      // Only faces that move with the jaw stretch open; the (head-only) nose
+      // leather is dark too but must stay untouched.
+      const jawy=Math.max(jawWeight(at(t)),jawWeight(at(t+1)),jawWeight(at(t+2)));
+      pick.push(jawy>.1&&inner.containsPoint(c.multiplyScalar(1/3))&&lum(u/3,w/3)<.1);
+    }
+    const count=pick.filter(Boolean).length;
+    if(count<8||count>600)return;
+    const gum=new THREE.MeshStandardMaterial({color:0x9a3b3f,roughness:.85,metalness:0,
+      emissive:new THREE.Color(0x3a0c10),emissiveIntensity:1,side:THREE.DoubleSide});
+    mats.push(gum);const gumIndex=mats.length-1;
+    const rebuilt=[];
+    for(const gr of g.groups){
+      if(gr!==headGroup){rebuilt.push(gr);continue;}
+      let runStart=gr.start,runGum=pick[0];
+      for(let k=1;k<=pick.length;k++){
+        if(k===pick.length||pick[k]!==runGum){
+          const start=gr.start+k*3;
+          rebuilt.push({start:runStart,count:start-runStart,materialIndex:runGum?gumIndex:gr.materialIndex});
+          runStart=start;runGum=pick[k];
+        }
+      }
+    }
+    g.clearGroups();for(const gr of rebuilt)g.addGroup(gr.start,gr.count,gr.materialIndex);
+    g.userData.innerLipsDone=true;
+    console.info('[arena3d] bear inner lips',count,'triangles,',rebuilt.length,'draw groups');
+  }
   function closingDistance(event){
     const attacker=actors[event.attacker],defender=actors[event.defender];
     if(!THREE||!attacker?.joint?.size||!defender?.joint?.size)return 0;
@@ -825,10 +1015,27 @@
       attacker?.move(event.move);
     }
     const actionTime=sequence.elapsed-lead;
-    const contact=core.contactMs(event.attackerId,event.move,length);
+    // One source of truth: the director's contact (measured from the clip
+    // when available) drives both the 3D reaction and the DOM cinematic.
+    const contact=timing?.contact??core.contactMs(event.attackerId,event.move,length);
     if(sequence.attackStarted&&!sequence.contact&&actionTime>=contact){
       sequence.contact=true;
       defender?.native(event.knockout?'knockout':'hit');
+      const pelvis=defender?.joint?.get('RigPelvis');
+      if(event.knockout&&pelvis&&THREE)
+        sequence.pelvisStand=pelvis.getWorldPosition(new THREE.Vector3()).y;
+    }
+    // The knockout lands when the loser's pelvis actually reaches the
+    // ground in the native death clip — read from the live skeleton, so the
+    // thud/dust/shake match whatever clip and rig are loaded.
+    if(event.knockout&&sequence.pelvisStand&&sequence.thumpAt==null&&defender){
+      const pelvis=defender.joint.get('RigPelvis');
+      const y=pelvis.getWorldPosition(new THREE.Vector3()).y;
+      if(y<sequence.pelvisStand*.5||actionTime>contact+2600){
+        sequence.thumpAt=sequence.elapsed;
+        sequence.thumpX=pelvis.getWorldPosition(new THREE.Vector3()).x;
+        if(!reduced())window.NoahsAudio?.cue('thud');
+      }
     }
     const settle=core.settleMs(event.attackerId,event.move,length);
     if(sequence.attackStarted&&!sequence.finished&&actionTime>=settle){
@@ -938,7 +1145,8 @@
       }
     }
     if(defender&&sequence.contact){
-      defender.pivot.position.x=defender.baseX+opposite*choreo.defenderTravel;
+      defender.pivot.position.x=defender.baseX+opposite*
+        (event.knockout?choreo.defenderKnock:choreo.defenderTravel);
       // Native hit and knockout clips remain the primary reaction.
       if(!event.knockout&&defender.id==='bear')
         defender.orientation.rotation.z=opposite*choreo.defenderLean;
@@ -991,6 +1199,34 @@
       filmCamera.zoom=Math.min(2.2,(wants?.zoom??1)*heroFactor);
       filmCamera.updateProjectionMatrix();
       if(wants?.beat==='VICTORY')fitVictoryInFrame(event,wants);
+      applyThump(sequence?.elapsed??0);
+    }
+  }
+  // Short, decaying camera shake plus a ground dust ring when a knocked-out
+  // animal hits the floor. Deterministic in sequence time; off for reduced motion.
+  let thumpRing=null;
+  function applyThump(time){
+    const at=sequence?.thumpAt;
+    const age=at==null?Infinity:time-at;
+    if(!thumpRing&&THREE&&scene){
+      thumpRing=new THREE.Mesh(new THREE.RingGeometry(.35,.62,36),
+        new THREE.MeshBasicMaterial({color:0xd9c8a2,transparent:true,opacity:0,depthWrite:false}));
+      thumpRing.rotation.x=-Math.PI/2;thumpRing.position.y=.04;thumpRing.visible=false;
+      scene.add(thumpRing);
+    }
+    const live=age>=0&&age<900&&!reduced();
+    if(thumpRing){
+      thumpRing.visible=live;
+      if(live){
+        thumpRing.position.x=sequence.thumpX;
+        thumpRing.scale.setScalar(1+age/260);
+        thumpRing.material.opacity=.55*Math.exp(-age/260);
+      }
+    }
+    if(live&&age<420){
+      const k=.075*Math.exp(-age/130);
+      filmCamera.position.y+=k*Math.sin(age*.11);
+      filmCamera.position.x+=k*.6*Math.sin(age*.083+1.3);
     }
   }
   function fitVictoryInFrame(event,wants){
@@ -1002,7 +1238,7 @@
     // the animated head and the planted hind paws, not a guessed height.
     const names=['RigHead','RigNeck','RigChest','RigPelvis',
       'RigLFLeg3','RigRFLeg3','RigLBLeg3','RigRBLeg3',
-      'RigLBLegAnkle','RigRBLegAnkle'];
+      'RigLFLegAnkle','RigRFLegAnkle','RigLBLegAnkle','RigRBLegAnkle'];
     const points=names.map(name=>winner.joint.get(name)).filter(Boolean);
     if(!points.length)return;
     winner.model.updateMatrixWorld(true);

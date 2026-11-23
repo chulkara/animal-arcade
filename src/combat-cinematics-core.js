@@ -59,10 +59,24 @@ function miracle(name){
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 const ease=t=>{t=clamp(t,0,1);return t*t*(3-2*t);};
 const lerp=(a,b,t)=>a+(b-a)*ease(t);
+// Contact moments measured from the loaded native clips (the frame where
+// the striking paw/head reaches furthest forward). When present they replace
+// the ratio guess, so the defender reacts on the frame the blow lands.
+const MEASURED={};
+function setMeasuredContact(attackerId,move,ms){
+  if(!ATTACKS[attackerId]?.[move])return false;
+  if(!Number.isFinite(ms)||ms<=0){if(MEASURED[attackerId])delete MEASURED[attackerId][move];return false;}
+  (MEASURED[attackerId]||(MEASURED[attackerId]={}))[move]=Math.round(ms);
+  return true;
+}
+function clearMeasuredContacts(){for(const key of Object.keys(MEASURED))delete MEASURED[key];}
 function duration(event,nativeMs){
   if(!ATTACKS[event?.attackerId]?.[event?.move])throw new RangeError('Invalid battle event');
   const attack=length(event,nativeMs);
+  const measured=MEASURED[event.attackerId]?.[event.move];
   const contact=event.attackerId==='moose'?{G:830,T:680,P:1220,S:1330}[event.move]:
+    Number.isFinite(measured)&&Number.isFinite(nativeMs)?
+      clamp(measured,180,Math.min(attack+180,2400)):
     clamp(Math.round(attack*{G:.58,T:.68,P:.74,S:.69}[event.move]),
       180,Math.min(attack+180,2400));
   const miracleLead=event.miracleName?850:0;
@@ -302,7 +316,7 @@ function hitStop(event,elapsed,nativeMs){
 // the Moose. The runtime closes the idle gap down to these values so the
 // strike lands with ~0.25 units of bone clearance (skin on skin).
 const CONTACT_KEEP=Object.freeze({
-  bear:Object.freeze({G:1.50,T:1.02,P:1.20,S:1.30}),
+  bear:Object.freeze({G:1.50,T:1.22,P:1.55,S:1.55}),
   moose:Object.freeze({G:1.05,T:0.35,P:0.70,S:1.00})
 });
 function contactKeep(attackerId,move){
@@ -334,6 +348,9 @@ function blocking(event,elapsed,nativeMs){
     attackerLift:move==='P' ? -.035*prep+.035*strike :
       move==='G' ? -.025*prep+.018*strike : -.018*prep+.01*strike,
     defenderTravel:{G:.38,T:.24,P:.44,S:.52}[move]*recoil,
+    // A knockout is not a bounce: the loser is driven back and stays there.
+    defenderKnock:{G:.62,T:.48,P:.78,S:.90}[move]*
+      ease(clamp(recoilMs/260,0,1)),
     defenderLean:-.060*recoil,
     contact,ready:t>=contact,ended:t>=timing.finish-timing.actionLead,
     move
@@ -362,5 +379,5 @@ return Object.freeze({ATTACKS,MIRACLES,POSES,HIT_STOP_MS,
   VICTORY_LOWER_START_MS,VICTORY_LOWER_READY_MS,
   VICTORY_APPROACH_START_MS,VICTORY_APPROACH_END_MS,
   VICTORY_HOWL_START_MS,VICTORY_HOWL_CUE_MS,VICTORY_BANNER_MS,VICTORY_END_MS,
-  spec,miracle,duration,shot,camera,victoryApproach,bearHowl,hitStop,blocking,contactKeep,panel});
+  spec,miracle,duration,shot,camera,victoryApproach,bearHowl,hitStop,blocking,contactKeep,setMeasuredContact,clearMeasuredContacts,panel});
 });

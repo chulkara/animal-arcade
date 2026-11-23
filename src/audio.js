@@ -151,6 +151,9 @@
       case 'tie':
         tone(520,.11,'square',.10);tone(490,.14,'square',.07,.1);
         tone(610,.17,'sine',.10,.21);break;
+      case 'thud':
+        // Body hitting the ground: low, short, felt more than heard.
+        burst(.22,.20,260);tone(62,.36,'sine',.22);tone(44,.48,'triangle',.14,.03);break;
       case 'ko':
         tone(175,.35,'triangle',.19);tone(131,.42,'sawtooth',.12,.12);
         tone(262,.5,'sine',.08,.21);break;
