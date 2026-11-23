@@ -98,14 +98,30 @@
         g.fillStyle=r()<.5?'rgba(120,170,110,.55)':'rgba(10,35,22,.5)';g.fillRect(x,y,3,2);
       }
     }else{
-      // broadleaf: clustered canopy blobs
-      for(let i=0;i<46;i++){
-        const a=r()*Math.PI*2,d=r()*86,x=128+Math.cos(a)*d*1.05,y=200+Math.sin(a)*d*.85,rad=30+r()*28;
-        const cg=g.createRadialGradient(x-rad*.3,y-rad*.4,rad*.1,x,y,rad);
-        cg.addColorStop(0,'#6f9a4a');cg.addColorStop(.55,'#3f6b2e');cg.addColorStop(1,'#26461f');
-        g.fillStyle=cg;g.beginPath();g.arc(x,y,rad,0,Math.PI*2);g.fill();
+      // broadleaf (birch/aspen-like): a thin pale trunk with forked branches and
+      // ragged leaf clumps made of many small leaves, not round blobs
+      g.clearRect(0,0,256,512);
+      g.strokeStyle='#d9d2c0';g.lineCap='round';
+      g.lineWidth=9;g.beginPath();g.moveTo(128,512);g.lineTo(126,240);g.stroke();
+      g.strokeStyle='#3b3328';for(let y=280;y<500;y+=18+r()*16){g.lineWidth=2;g.beginPath();g.moveTo(123,y);g.lineTo(131,y+2);g.stroke();}
+      g.strokeStyle='#cfc6b2';g.lineWidth=4;
+      const tips=[];
+      for(let k=0;k<7;k++){
+        const y0=250+k*22+r()*10,dir=k%2?1:-1,len=40+r()*50;
+        const x1=126+dir*len,y1=y0-40-r()*60;
+        g.beginPath();g.moveTo(126,y0);g.quadraticCurveTo(126+dir*len*.4,y0-20,x1,y1);g.stroke();tips.push([x1,y1]);
       }
-      for(let i=0;i<220;i++){const x=40+r()*176,y=110+r()*190;g.fillStyle=r()<.5?'rgba(160,200,110,.5)':'rgba(15,40,15,.45)';g.fillRect(x,y,3,3);}
+      tips.push([126,200],[110,150],[146,140],[128,100]);
+      for(const [tx,ty] of tips){
+        const n=70+Math.floor(r()*40),rad=34+r()*20;
+        for(let q=0;q<n;q++){
+          const a=r()*Math.PI*2,d=Math.sqrt(r())*rad,x=tx+Math.cos(a)*d,y=ty+Math.sin(a)*d*.8;
+          const shade=(y-ty)/rad; // lighter on top
+          const c2=shade<-.3?'#9cbf5a':shade<.2?'#6f9a3c':'#3f6626';
+          g.fillStyle=c2;g.save();g.translate(x,y);g.rotate(r()*Math.PI);
+          g.beginPath();g.ellipse(0,0,4+r()*3,2+r()*1.5,0,0,Math.PI*2);g.fill();g.restore();
+        }
+      }
     }
     return c;
   }
@@ -175,7 +191,7 @@
     const ground=new THREE.Mesh(geo,new THREE.MeshLambertMaterial({map:texture(THREE,grassTileCanvas(),{wrap:true,repeat:30}),vertexColors:true}));
     ground.rotation.x=-Math.PI/2;ground.position.y=-.035;ground.receiveShadow=shadows;root.add(ground);
     // billboard trees: behind the fighters and far to the sides only
-    const mats=['pine','pine','broad'].map((k,i)=>new THREE.MeshLambertMaterial({
+    const mats=['pine','pine','pine','broad'].map((k,i)=>new THREE.MeshLambertMaterial({
       map:texture(THREE,treeCanvas(k==='pine'?'pine':'broad',0x700+i*97)),alphaTest:.5,side:THREE.DoubleSide}));
     const spots=[];
     for(let i=0;i<46;i++){
