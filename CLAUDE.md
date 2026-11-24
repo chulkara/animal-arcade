@@ -95,3 +95,14 @@ Each turn both players secretly pick one action; both resolve simultaneously.
   (`git bundle create x.bundle <base>..<branch>`; never `..HEAD`), then
   `git fetch <bundle> <branch> && git reset --hard FETCH_HEAD`.
 - Active branch: `menu-feel-integration-20261122`.
+
+## Attack film grammar (from the 2026-11-24 reference footage)
+The original never shows both animals touching. An attack is a short film:
+arena clash → white flash → attacker alone with aura + title card (roar) →
+attacker's strike against a fire void → white flash on contact → victim alone
+launched into the sky with flying damage numbers → victim lands (dust, thud) →
+back to the arena two-shot with the HP drain. Implemented as "solo" attacks:
+`SOLO`/`soloView()` in `combat-cinematics-core.js` (pure, tested), backdrops,
+aura shells and launch arc in `arena3d-runtime.js`, title/damage/flash DOM in
+`combat-cinematics.js`. Enabled so far for Bear High Paw Strike only; add a
+move to `SOLO` to convert it.

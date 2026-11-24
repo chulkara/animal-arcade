@@ -18,6 +18,7 @@ function cleanup(){
  // DOM node. Each new Bear review appended another .ark-cinema, leaving
  // LOW SWIPE painted over Guts, Power and even the final victory.
  if(stage)delete stage.dataset.cineBeat;
+ const filmRoot=ui.querySelector('.ark-reference-layout');if(filmRoot)delete filmRoot.dataset.soloFilm;
  overlay?.remove();
  ui.querySelectorAll('.combat-battlefield .ark-cinema').forEach(node=>node.remove());
  timer=0;lastBeat='';lastShot='';howlCued=false;winCued=false;
@@ -44,6 +45,9 @@ function createOverlay(){
   '<strong data-ark-cinema-title></strong><span data-ark-cinema-sub></span></div>'+
   '<div class="ark-cinema-charge" aria-hidden="true"></div>'+
   '<div class="ark-cinema-howl-waves" aria-hidden="true"><i></i><i></i><i></i></div>'+
+  '<div class="ark-cinema-solo-flash"></div>'+
+  '<div class="ark-cinema-solo-title"><small data-ark-solo-rank></small><strong data-ark-solo-name></strong></div>'+
+  '<div class="ark-cinema-dmg" data-ark-dmg><b data-ark-dmg-a></b><b data-ark-dmg-b></b></div>'+
   '<div class="ark-cinema-win-stamp" data-ark-cinema-winner></div>'+
   '<div class="ark-cinema-symbols">'+
   Array.from({length:14},(_,i)=>'<span style="--n:'+i+'"></span>').join('')+'</div>'+
@@ -79,7 +83,10 @@ function sync(){
  if(panel){panel.classList.add('ark-cinematic-active');panel.classList.remove('ark-cinematic-done');}
  draw();
 }
-function cueForBeat(beat){
+function cueForBeat(beat,solo,event){
+ if(solo&&beat==='TITLE')return window.NoahsAudio?.cue(event?.attackerId==='bear'?'bearHowl':'cinemaFocus');
+ if(solo&&beat==='LAUNCH')return window.NoahsAudio?.cue('cinemaRush');
+ if(solo&&(beat==='IMPACT'||beat==='FOCUS'))return;
  if(beat==='CONTACT')window.NoahsAudio?.cue('impact');
  else if(beat==='MIRACLE')window.NoahsAudio?.cue('cinemaMiracle');
  else if(beat==='INTRO')window.NoahsAudio?.cue('cinemaIntro');
@@ -119,6 +126,17 @@ function draw(time){
       beat==='MIRACLE'?'MIRACLE CARD ACTIVATED':
       beat==='CONTACT'?'THE IMPACT':beat==='REACTION'?'THE AFTERSHOCK':'SIGNATURE MOVE';
    if(heading)heading.textContent=panel.title;
+   overlay.dataset.solo=panel.solo?'1':'';
+   const rank=overlay.querySelector('[data-ark-solo-rank]'),name=overlay.querySelector('[data-ark-solo-name]');
+   if(rank)rank.textContent=panel.solo?api.soloSpec(event).rank:'';
+   if(name)name.textContent=panel.solo?panel.title:'';
+   if(panel.solo){
+     // Two hits then the total, like the reference's flying numbers.
+     const dmg=Math.max(0,Math.round(event.damage||0));
+     const first=dmg>1?Math.round(dmg*.4):dmg,second=dmg-first;
+     const a=overlay.querySelector('[data-ark-dmg-a]'),b=overlay.querySelector('[data-ark-dmg-b]');
+     if(a)a.textContent=first?String(first):'';if(b)b.textContent=second?String(second):'';
+   }
    if(sub)sub.textContent=rehearsal?
      beat==='CONTACT'?'STAGED CONTACT · NO HP CHANGES':
      beat==='REACTION'?'OPPONENT HIT REACTION':
@@ -127,10 +145,18 @@ function draw(time){
      'SIGNATURE ATTACK · REPEATABLE MOVEMENT':panel.sub;
    // A locally supplied Forestfall cutscene already owns its soundtrack.
    // Don't play the generic 3D arena soundtrack on top of its audio.
-   if(!reduce()&&!window.NoahsForestfall?.getStatus?.().playing)cueForBeat(beat);
+   if(!reduce()&&!window.NoahsForestfall?.getStatus?.().playing)cueForBeat(beat,panel.solo,event);
  }
  const p=api.shot(event,elapsed,length);
  overlay.dataset.shot=p.shot;
+ const solo=api.soloView?api.soloView(event,elapsed,length):null;
+ overlay.style.setProperty('--solo-flash',reduce()||!solo?.active?'0':solo.flash.toFixed(3));
+ overlay.dataset.pops=solo?.active?String(solo.pops):'0';
+ // During the attack film the arena HUD steps away (as in the reference),
+ // returning with the HP drain when the film cuts back to the arena.
+ const film=Boolean(solo?.active)&&['TITLE','ATTACK','CONTACT','LAUNCH','IMPACT'].includes(p.beat);
+ const layoutRoot=ui.querySelector('.ark-reference-layout');
+ if(layoutRoot){if(film)layoutRoot.dataset.soloFilm='1';else delete layoutRoot.dataset.soloFilm;}
  overlay.dataset.move=event.move;
  overlay.dataset.winner=event.attackerId;
  if(lastShot!==p.shot){

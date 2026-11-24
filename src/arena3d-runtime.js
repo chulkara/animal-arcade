@@ -163,6 +163,42 @@
       if(drop!=null)actor.knockoutLead=Math.max(0,Math.min(clip.duration*.6,drop-.18));
       console.info('[arena3d]',id,'knockout drop at',drop==null?'none':Math.round(drop*1000),'ms; lead',Math.round(actor.knockoutLead*1000));
     }
+    // Glowing aura for solo attacks: two back-faced shells pushed out along
+    // the skinned normals (inner hot orange, outer soft red), additive, so
+    // the animal reads as burning with power against sky or fire void.
+    actor.aura=[];
+    actor.setAura=(level,time=0)=>{
+      if(!actor.aura.length&&level>0){
+        model.traverse(o=>{
+          if(!o.isSkinnedMesh||o.name==='MouthBag'||o.userData.aura)return;
+          o.geometry.computeBoundingSphere();
+          const r=o.geometry.boundingSphere?.radius||1;
+          for(const [k,color,base] of [[.012,0xffa53a,.55],[.034,0xff5218,.28]]){
+            const mat=new THREE.MeshBasicMaterial({color,transparent:true,opacity:0,
+              side:THREE.BackSide,blending:THREE.AdditiveBlending,depthWrite:false,fog:false});
+            mat.userData.base=base;
+            mat.onBeforeCompile=shader=>{
+              shader.uniforms.uPush={value:r*k};
+              // Capture the bind-space normal before skinnormal_vertex poses
+              // it; the push happens before skinning, so it must be bind-space.
+              shader.vertexShader='uniform float uPush;\nvec3 auraN=vec3(0.0);\n'+shader.vertexShader
+                .replace('#include <beginnormal_vertex>','#include <beginnormal_vertex>\nauraN=objectNormal;')
+                .replace('#include <begin_vertex>','#include <begin_vertex>\ntransformed+=normalize(auraN+vec3(1e-6))*uPush;');
+            };
+            const shell=new THREE.SkinnedMesh(o.geometry,mat);
+            shell.userData.aura=true;shell.frustumCulled=false;shell.castShadow=false;shell.receiveShadow=false;
+            shell.position.copy(o.position);shell.quaternion.copy(o.quaternion);shell.scale.copy(o.scale);
+            o.parent.add(shell);shell.bind(o.skeleton,o.bindMatrix);
+            actor.aura.push(shell);
+          }
+        });
+      }
+      for(const shell of actor.aura){
+        shell.visible=level>0.001;
+        const flicker=.82+.18*Math.sin(time*.021+shell.id);
+        shell.material.opacity=shell.material.userData.base*level*flicker;
+      }
+    };
     actor.native=(key,fadeSeconds=.15)=>{
       if(key!=='victory'&&key!=='roar')actor.resetHowlFace?.();
       resetApplied(actor);actor.proc=null;actor.procElapsed=0;
@@ -493,6 +529,14 @@
       }
       strikeAccent();
       reactAccent(reduced()?0:delta);
+      // Title-card roar: head up, jaw open (warm light inside the mouth).
+      const lvl=reduced()?0:(actor.roarLevel||0);
+      if(lvl>0.001){
+        updateFacing();
+        addPitch('RigNeck1',.10*lvl);addPitch('RigHead',.16*lvl);addPitch('RigChest',.05*lvl);
+        addPitch('RigJaw',-.22*lvl);
+      }
+      if(actor.mouthLight)actor.mouthLight.intensity=2.0*lvl;
       // Hind-foot correction runs AFTER victoryGesture and applyBlocking
       // so the animated roar's weight shift does not overwrite grounding.
       if(actor.proc){
@@ -662,7 +706,9 @@
     const focusPhase=elapsed>=(timing?.miracleLead||0)&&elapsed<(timing?.actionLead||0);
     const miracle=cinematics?.miracle(event.miracleName);
     const miraclePhase=miracle&&elapsed<(timing?.miracleLead||0);
-    const hitPhase=actionTime>=contact&&actionTime<contact+650;
+    const soloT=timing?.solo?timing:null;
+    const hitPhase=soloT?elapsed>=soloT.landAt&&elapsed<soloT.landAt+650:
+      actionTime>=contact&&actionTime<contact+650;
     const victor=event.finished&&elapsed>=(timing?.victoryStart||Infinity);
     const heroTime=victor?elapsed-timing.victoryStart:0;
     // Hold a clean winning portrait instead of floating white bubbles
@@ -680,7 +726,7 @@
       hitPhase?'dust':'triumph';
     const t=miraclePhase?elapsed/Math.max(1,timing.miracleLead):
       focusPhase?(elapsed-timing.miracleLead)/Math.max(1,timing.focusLead):
-      hitPhase?(actionTime-contact)/650:
+      hitPhase?(soloT?(elapsed-soloT.landAt):(actionTime-contact))/650:
       (elapsed-timing.victoryStart)/4000;
     const colors={starfall:0xffd28d,storm:0xb9d6ff,tide:0x78e8da,
       eclipse:0xd7a4ff,dawn:0xffce85,charge:0xffb968,
@@ -688,9 +734,9 @@
     if(shockRing){
       shockRing.visible=hitPhase;
       if(hitPhase){
-        const age=Math.max(0,actionTime-contact);
+        const age=Math.max(0,soloT?elapsed-soloT.landAt:actionTime-contact);
         const size=.65+age/245;
-        shockRing.position.x=target;
+        shockRing.position.x=soloT?(actors[event.defender]?.pivot.position.x??target):target;
         shockRing.position.z=0;
         shockRing.scale.setScalar(size);
         shockMaterial.opacity=.68*Math.exp(-age/190);
@@ -735,7 +781,7 @@
         alpha=.65*(1-t*.6);
       }else if(kind==='dust'){
         radius=.18+2.2*t*(.5+i%7/9);
-        x=target+Math.cos(a)*radius;
+        x=(soloT?(actors[event.defender]?.pivot.position.x??target):target)+Math.cos(a)*radius;
         z=Math.sin(a)*radius;
         y=.08+.42*t+ring*.035;alpha=.74*(1-t);
       }else{
@@ -753,6 +799,85 @@
       material.opacity=cleanPortrait?0:Math.max(0,Math.min(.85,alpha));
     }
   }
+  // Fire void behind the attacker during a solo strike: a camera-facing
+  // plane placed just beyond the animal, so the forest disappears and only
+  // the burning animal remains (as in the reference footage).
+  let fireVoid=null;const backdropTex={};
+  function makeBackdropTexture(kind){
+    const c=document.createElement('canvas');c.width=c.height=256;
+    const g=c.getContext('2d');
+    let seed=kind==='fire'?7:11;const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
+    if(kind==='fire'){g.fillStyle='#2a0602';g.fillRect(0,0,256,256);}
+    else{
+      const grad=g.createLinearGradient(0,0,0,256);
+      grad.addColorStop(0,'#1f5fc0');grad.addColorStop(.6,'#4a92e2');grad.addColorStop(1,'#9cc8f0');
+      g.fillStyle=grad;g.fillRect(0,0,256,256);
+    }
+    // Soft blobs drawn at every wrapped position so the texture tiles seamlessly.
+    for(let i=0;i<(kind==='fire'?150:60);i++){
+      const x=rnd()*256,y=kind==='fire'?rnd()*256:40+rnd()*170,r=kind==='fire'?10+rnd()*42:12+rnd()*30,hot=rnd();
+      const inner=kind!=='fire'?'rgba(255,255,255,.5)':
+        hot>.82?'rgba(255,236,160,.6)':hot>.5?'rgba(255,150,50,.5)':hot>.22?'rgba(230,70,15,.45)':'rgba(70,8,2,.55)';
+      for(const dx of [-256,0,256])for(const dy of (kind==='fire'?[-256,0,256]:[0])){
+        const cx=x+dx,cy=y+dy;
+        if(cx<-r||cx>256+r||cy<-r||cy>256+r)continue;
+        const grad=g.createRadialGradient(cx,cy,0,cx,cy,r);
+        grad.addColorStop(0,inner);grad.addColorStop(1,kind==='fire'?'rgba(90,10,0,0)':'rgba(255,255,255,0)');
+        g.fillStyle=grad;g.fillRect(cx-r,cy-r,r*2,r*2);
+      }
+    }
+    const t=new THREE.CanvasTexture(c);
+    t.wrapS=THREE.RepeatWrapping;t.wrapT=kind==='fire'?THREE.RepeatWrapping:THREE.ClampToEdgeWrapping;
+    t.repeat.set(kind==='fire'?3:2,kind==='fire'?3:1);
+    if(THREE.SRGBColorSpace)t.colorSpace=THREE.SRGBColorSpace;
+    return t;
+  }
+  // A camera-facing backdrop placed just beyond the animal on screen:
+  // a fire void behind the striking attacker, open blue sky behind the
+  // launched victim (the reference's two solo-shot backgrounds).
+  function paintSolo(time){
+    const view=sequence?.solo&&!reduced()?
+      cinematics.soloView(sequence.event,sequence.elapsed,nativeLength(sequence.event)):null;
+    const attacker=sequence?actors[sequence.event.attacker]:null;
+    const defender=sequence?actors[sequence.event.defender]:null;
+    for(const actor of actors){if(actor)actor.pivot.visible=true;}
+    if(attacker)attacker.pivot.visible=view?view.showAttacker:true;
+    if(defender)defender.pivot.visible=view?view.showDefender:true;
+    for(const actor of actors){
+      actor?.setAura?.(actor===attacker&&view?view.aura:0,time||0);
+      if(actor)actor.roarLevel=actor===attacker&&view?view.roar:0;
+    }
+    const cam=filmCamera||camera;
+    const kind=view?.fire?'fire':view?.launch&&!view.launch.landed?'sky':null;
+    const subject=kind==='fire'?attacker:defender;
+    if(!kind||!cam||!subject){if(fireVoid)fireVoid.visible=false;return;}
+    if(!fireVoid){
+      fireVoid=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.MeshBasicMaterial({
+        transparent:true,opacity:0,depthWrite:true,fog:false}));
+      scene.add(fireVoid);
+    }
+    const tex=backdropTex[kind]||(backdropTex[kind]=makeBackdropTexture(kind));
+    if(fireVoid.material.map!==tex){fireVoid.material.map=tex;fireVoid.material.needsUpdate=true;}
+    const at=subject.pivot.getWorldPosition(new THREE.Vector3());
+    const dist=cam.position.distanceTo(at)+3.2;
+    const dir=new THREE.Vector3();cam.getWorldDirection(dir);
+    fireVoid.position.copy(cam.position).addScaledVector(dir,dist);
+    fireVoid.quaternion.copy(cam.quaternion);
+    // Square and oversized: never stretched, always covers any aspect ratio.
+    const h=2*dist*Math.tan(THREE.MathUtils.degToRad(cam.fov/2))/(cam.zoom||1);
+    const side=h*Math.max(1,cam.aspect||1,16/9)*1.6;
+    fireVoid.scale.set(side,side,1);
+    if(kind==='fire'){
+      tex.offset.set(Math.sin(time*.0004)*.06,-((time*.00028)%1));
+      fireVoid.material.color.setScalar(.9+.1*Math.sin(time*.025));
+      fireVoid.material.opacity=view.fire;
+    }else{
+      tex.offset.set((time*.00004)%1,0);
+      fireVoid.material.color.setScalar(1);
+      fireVoid.material.opacity=1;
+    }
+    fireVoid.visible=true;
+  }
   function paintFocusLight(){
     if(!focusLight||!sequence||reduced()){
       if(focusLight)focusLight.intensity=0;
@@ -762,6 +887,7 @@
     const beat=cinematics.shot(event,sequence.elapsed,nativeLength(event));
     const target=beat.beat==='FOCUS'?
       ({G:1.85,T:2.20,P:3.45,S:3.90}[event.move]||2.5):
+      beat.solo&&(beat.beat==='TITLE'||beat.beat==='ATTACK')?2.4:
       beat.beat==='VICTORY'?1.1:beat.beat==='CONTACT'?1.2:0;
     const colors={G:0xe0c19b,T:0x9ff0d1,P:0xffaa70,S:0xffd680};
     focusLight.color.setHex(colors[event.move]||0xffbb72);
@@ -959,7 +1085,8 @@
       victoryLowered:false,victoryMoved:false,victoryWalkStopped:false,
       victoryPosition:'upright'};
     const attacker=actors[event.attacker];
-    sequence.closeDist=closingDistance(event);
+    sequence.solo=Boolean(cinematics?.soloSpec?.(event));
+    sequence.closeDist=sequence.solo?0:closingDistance(event);
     if(attacker?.asset?.clips?.angry)attacker.native('angry');
   }
   // How far the attacker's pivot must additionally travel so its strike
@@ -1118,7 +1245,12 @@
     // The knockout lands when the loser's pelvis actually reaches the
     // ground in the native death clip — read from the live skeleton, so the
     // thud/dust/shake match whatever clip and rig are loaded.
-    if(event.knockout&&sequence.pelvisStand&&sequence.thumpAt==null&&defender){
+    if(sequence.solo&&timing?.solo&&sequence.thumpAt==null&&sequence.elapsed>=timing.landAt){
+      sequence.thumpAt=sequence.elapsed;
+      sequence.thumpX=defender?.pivot.position.x??0;
+      if(!reduced())window.NoahsAudio?.cue('thud');
+    }
+    if(!sequence.solo&&event.knockout&&sequence.pelvisStand&&sequence.thumpAt==null&&defender){
       const pelvis=defender.joint.get('RigPelvis');
       const y=pelvis.getWorldPosition(new THREE.Vector3()).y;
       if(y<sequence.pelvisStand*.5||actionTime>contact+2600){
@@ -1127,7 +1259,8 @@
         if(!reduced())window.NoahsAudio?.cue('thud');
       }
     }
-    const settle=core.settleMs(event.attackerId,event.move,length);
+    const settle=sequence.solo&&timing?.solo?timing.returnAt-lead:
+      core.settleMs(event.attackerId,event.move,length);
     if(sequence.attackStarted&&!sequence.finished&&actionTime>=settle){
       sequence.finished=true;
       if(event.finished){
@@ -1234,6 +1367,16 @@
         attacker.orientation.rotation.z=direction*choreo.attackerLean;
       }
     }
+    const view=sequence.solo?cinematics.soloView(event,sequence.elapsed,nativeLength(event)):null;
+    if(defender&&view?.launch){
+      // Thrown into the sky, tumbling about its body centre (~1 unit up).
+      const l=view.launch,h=1.0,th=l.spin;
+      defender.pivot.position.x=defender.baseX+l.drift+h*Math.sin(th);
+      defender.pivot.position.y=l.y+h*(1-Math.cos(th));
+      defender.pivot.rotation.z=th;
+      return;
+    }
+    if(defender&&sequence.solo){defender.pivot.position.y=0;defender.pivot.rotation.z=0;}
     if(defender&&sequence.contact){
       defender.pivot.position.x=defender.baseX+opposite*
         (event.knockout?choreo.defenderKnock:choreo.defenderTravel);
@@ -1378,6 +1521,7 @@
     // howl joints at this point. Ground those final posed hind feet now.
     if(winner?.id==='bear'&&sequence.finished)winner.groundHindFeet();
     applyCamera(dt);
+    paintSolo(time);
     paintEffects();
     paintFocusLight();
     const event=sequence?.event;

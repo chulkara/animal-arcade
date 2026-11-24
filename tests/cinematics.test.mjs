@@ -211,6 +211,11 @@ test('original-video comparison: signature moves prepare before FBX contact and 
   const t=director.duration(event,1300);
   assert.ok(t.focusLead>=300,'Preparation must last long enough to be visible');
   assert.equal(t.actionLead,t.miracleLead+t.focusLead);
+  if(t.solo){ // solo attacks prepare with a title card instead
+   assert.equal(director.shot(event,t.actionLead-10,1300).beat,'TITLE');
+   assert.equal(director.shot(event,t.actionLead+t.contact+25,1300).beat,'CONTACT');
+   continue;
+  }
   assert.equal(director.shot(event,t.actionLead-10,1300).beat,'FOCUS');
   assert.equal(director.shot(event,t.actionLead+20,1300).beat,'INTRO');
   assert.equal(director.shot(event,t.actionLead+t.contact+25,1300).beat,'CONTACT');
@@ -304,7 +309,7 @@ test('Bear howl drives actual jaw/morph targets when available and has an origin
 });
 
 test('signature finish adds a rush cut, low technique sweep and ground shockwave',()=>{
- const evt={...base,attackerId:'bear',defenderId:'moose',move:'P'};
+ const evt={...base,attackerId:'bear',defenderId:'moose',move:'G'};
  const timing=director.duration(evt,1600);
  assert.equal(director.shot(evt,timing.actionLead+timing.contact*.85,1600).shot,'rush');
  assert.equal(director.shot({...evt,move:'T'},
@@ -473,4 +478,39 @@ test('key poses: neutral at the ends, distinct silhouettes at wind-up and contac
  assert.ok(director.keyPose('bear','P',P.windupEnd,P).spine1>.12,'High Paw Strike rears tall');
  assert.ok(director.keyPose('bear','P',P.contact,P).chest<-.1,'then drives the chest down');
  assert.ok(Object.values(director.keyPose('moose','G',500,null)).every(v=>v===0),'no keys → neutral');
+});
+
+test('solo attack (Bear High Paw Strike) follows the arcade reference film grammar',()=>{
+ director.setMeasuredContact('bear','P',983);
+ for(const attacker of [0,1]){
+  const evt={...base,attacker,defender:1-attacker,attackerId:'bear',defenderId:'moose',move:'P',damage:30,knockout:false,finished:false};
+  const t=director.duration(evt,3000);
+  assert.ok(t.solo&&t.titleIn<t.actionLead&&t.actionLead+t.contact<t.launchAt&&t.launchAt<t.landAt&&t.landAt<t.returnAt&&t.returnAt<t.finish);
+  const order=[];
+  for(let ms=0;ms<t.total;ms+=20){const b=director.shot(evt,ms,3000).beat;if(order.at(-1)!==b)order.push(b);}
+  assert.deepEqual(order,['FOCUS','TITLE','ATTACK','CONTACT','LAUNCH','IMPACT','REACTION']);
+  // the two animals never share the frame between the title and the return
+  const v=ms=>director.soloView(evt,ms,3000);
+  assert.equal(v(t.titleIn+300).showDefender,false);
+  assert.equal(v(t.actionLead+t.contact).showDefender,false);
+  assert.equal(v(t.launchAt+300).showAttacker,false);
+  assert.ok(v(t.finish-10).showAttacker&&v(t.finish-10).showDefender);
+  // aura during the title, fire behind the strike, white flash on contact
+  assert.ok(v(t.titleIn+400).aura>.9&&v(t.titleIn+400).fire===0);
+  assert.ok(v(t.actionLead+t.contact).fire>.9);
+  assert.ok(v(t.actionLead+t.contact).flash>.9);
+  // the victim is thrown away from the attacker and lands
+  const peak=v((t.launchAt+t.landAt)/2).launch;
+  assert.ok(peak.y>2);
+  assert.equal(Math.sign(peak.drift),attacker===0?1:-1);
+  assert.equal(v(t.landAt+10).launch.y,0);
+  // cameras: attacker alone framed on its slot, victim tracked through the arc
+  const sx=attacker===0?-2.02:2.02;
+  assert.equal(director.camera(evt,t.titleIn+300,3000).targetX,sx+(attacker===0?.3:-.3));
+  const lc=director.camera(evt,(t.launchAt+t.landAt)/2,3000);
+  assert.ok(lc.targetY>2,'launch camera looks up at the airborne victim');
+  assert.equal(director.panel(evt,t.titleIn+300,3000).sub,'LV.2 SIGNATURE');
+ }
+ assert.equal(director.duration({...base,attackerId:'bear',defenderId:'moose',move:'G'},1833).solo,undefined,'only listed moves are solo');
+ director.clearMeasuredContacts();
 });
