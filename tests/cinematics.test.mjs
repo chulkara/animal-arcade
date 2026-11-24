@@ -423,3 +423,12 @@ test('measured clip contact replaces the ratio guess and can be cleared',()=>{
  assert.equal(director.duration(evt,1600).contact,guess);
  assert.equal(director.setMeasuredContact('tiger','P',900),false);
 });
+
+test('after an ordinary exchange the camera settles back to the two-shot',()=>{
+ const evt={attacker:0,defender:1,attackerId:'bear',defenderId:'moose',move:'G',damage:30,finished:false,knockout:false};
+ const t=director.duration(evt,1833);
+ const held=director.camera(evt,t.finish+300,1833);
+ assert.equal(held.targetX,0);assert.equal(held.x,0);
+ const reacting=director.camera(evt,t.actionLead+t.contact+400,1833);
+ assert.notEqual(reacting.targetX,0,'reaction shot still favours the defender');
+});

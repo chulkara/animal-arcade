@@ -174,3 +174,7 @@
   column-gap:20px; row-gap:6px; padding:16px 30px !important; margin:0 !important;
 }
 .game.painted-enabled .ark-reference-layout .combat-finish :is(.combat-intermission,.combat-card-reward) { flex-basis:100%; text-align:center; margin:0; }
+/* After the first exchange the tools stay out of the arena entirely; hover
+   or keyboard focus in the top-left corner brings them back. */
+.game.painted-enabled .ark-reference-layout.ark-cinematic-done:not(.ark-bear-reviewing) .combat-footer { opacity:0; transition:opacity .2s; }
+.game.painted-enabled .ark-reference-layout.ark-cinematic-done:not(.ark-bear-reviewing) .combat-footer:is(:hover,:focus-within) { opacity:1; }

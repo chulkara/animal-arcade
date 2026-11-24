@@ -218,6 +218,12 @@ function camera(event,elapsed,nativeMs){
     y=event.move==='P'?1.65:2.1;
     z=10.8;targetY=1.3;zoom=1.00;
   }
+  // Once an ordinary exchange has finished, the result card and the next
+  // reels play over a neutral two-shot. Holding the defender close-up left
+  // the attacker cut off at the edge for the whole result pause.
+  const settled=!event.finished&&beat.beat==='REACTION'&&
+    beat.local>=beat.timing.finish-beat.timing.actionLead;
+  if(settled){x=0;targetX=0;y=2.8;z=12.2;targetY=1.23;zoom=1;}
   // Cine director framing guard: all four victory angles must keep the
   // entire standing animal inside a perspective viewport. Preserve each
   // distinct azimuth by dollying along the shot ray rather than forcing
