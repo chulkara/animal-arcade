@@ -75,8 +75,11 @@ Each turn both players secretly pick one action; both resolve simultaneously.
   Event queue (ordered, consumed by UI/3D/audio): `SLOT_MIRACLE`,
   `SLOT_CLASH`, `ANIM_CHARGE`, `ANIM_SHIELD_BLOCK`, `ANIM_SHIELD_SHATTER`,
   `ANIM_ATTACK_HIT`, `ANIM_MIRACLE_HIT`.
-- `src/engine/ai-opponent.js` (next) — reads visible Points, fatigue and
-  locks; e.g. baits Shields when the player holds 3 Points.
+- `src/engine/ai-opponent.js` — pure CPU: predicts the human's move from
+  visible state (Points, fatigue, locks, HP), simulates every pairing with the
+  real resolver (wheel outcomes enumerated at true odds) and picks by expected
+  value; difficulty easy/normal/hard = softmax temperature. Tests in
+  `tests/ai-opponent.test.mjs`.
 - Scene: keep the existing `arena3d-*` Three.js runtime and the PS2 forest.
   Standard clip names for any new animal: `Idle, Charge, Shield, Attack_1,
   Attack_2, Attack_3, Hit, Victory, Defeat` (GLB or FBX), mapped in
