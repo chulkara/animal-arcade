@@ -389,3 +389,35 @@
 @keyframes ark-solo-total{0%{transform:scale(1.6);opacity:0}15%{transform:scale(1);opacity:1}75%{opacity:1}100%{opacity:0}}
 @media (prefers-reduced-motion:reduce){.ark-cinema-lines{display:none}}
 .game.reduce-motion .ark-cinema-lines{display:none}
+
+/* ---- PS2-era arcade typography for the cinematics ----
+   Chunky slanted display face with a molten gradient fill, a heavy dark
+   outline and a hard drop shadow (instead of 8-bit pixel type). */
+@font-face{font-family:'Russo One';src:url('../assets/fonts/russo-one-latin-400.woff2') format('woff2');font-display:swap}
+.game .ark-cinema .ark-cinema-solo-title strong,
+.game .ark-cinema .ark-cinema-title strong,
+.game .ark-cinema .ark-cinema-win-stamp,
+.game.painted-enabled .ark-cinema .ark-cinema-win-stamp,
+.game .ark-cinema .ark-cinema-total,
+.game .ark-cinema .ark-cinema-dmg b{
+  font-family:'Russo One','Arial Black',sans-serif!important;font-weight:400!important;font-style:normal!important;
+  letter-spacing:.01em!important;text-transform:uppercase;
+  background:linear-gradient(180deg,#fffbe6 0%,#ffe48a 30%,#ffb52e 52%,#e0640c 72%,#a8340a 100%)!important;
+  -webkit-background-clip:text!important;background-clip:text!important;color:transparent!important;
+  -webkit-text-stroke:0!important;text-shadow:none!important;
+  filter:drop-shadow(2px 0 0 #241004) drop-shadow(-2px 0 0 #241004) drop-shadow(0 2px 0 #241004) drop-shadow(0 -2px 0 #241004)
+         drop-shadow(0 5px 0 #120601) drop-shadow(0 0 10px rgba(255,120,30,.35))!important}
+.game .ark-cinema .ark-cinema-solo-title strong{font-size:clamp(40px,6.6vw,96px)!important;transform:skewX(-9deg)}
+.game .ark-cinema .ark-cinema-solo-title small{font-family:'Russo One','Arial Black',sans-serif!important;
+  font-size:clamp(14px,1.7vw,24px)!important;letter-spacing:.08em!important;color:#fff3c4!important;transform:skewX(-9deg);
+  text-shadow:2px 2px 0 #3a1503,-1px -1px 0 #3a1503,1px -1px 0 #3a1503,-1px 1px 0 #3a1503!important}
+.game .ark-cinema .ark-cinema-win-stamp{transform-origin:50% 60%}
+.game .ark-cinema .ark-cinema-dmg b,.game .ark-cinema .ark-cinema-total{
+  background:linear-gradient(180deg,#ffffff 0%,#fff6d0 55%,#ffd25a 100%)!important;-webkit-background-clip:text!important;background-clip:text!important}
+/* Speed lines: thin streaks at the frame edges only, no milky centre. */
+.ark-cinema-lines{background:repeating-conic-gradient(from 3deg at 50% 50%,transparent 0deg 6deg,rgba(255,255,255,.7) 6.2deg 6.5deg,transparent 6.7deg 14deg)!important;
+  -webkit-mask:radial-gradient(circle at 50% 50%,transparent 0 40%,#000 70%)!important;mask:radial-gradient(circle at 50% 50%,transparent 0 40%,#000 70%)!important}
+.ark-cinema[data-solo="1"][data-beat="launch"] .ark-cinema-lines{opacity:.65!important}
+/* The solo film has its own flash, fire and lines; the older move overlays
+   (tunnel vignette, conic speed haze) would wash it out. */
+.ark-cinema[data-solo="1"] :is(.ark-cinema-tunnel,.ark-cinema-speed,.ark-cinema-flash){display:none!important}

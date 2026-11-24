@@ -163,56 +163,50 @@
       if(drop!=null)actor.knockoutLead=Math.max(0,Math.min(clip.duration*.6,drop-.18));
       console.info('[arena3d]',id,'knockout drop at',drop==null?'none':Math.round(drop*1000),'ms; lead',Math.round(actor.knockoutLead*1000));
     }
-    // Glowing aura for solo attacks: two back-faced shells pushed out along
-    // the skinned normals (inner hot orange, outer soft red), additive, so
-    // the animal reads as burning with power against sky or fire void.
-    actor.aura=[];
+    // Power aura for solo attacks, in the arcade's style: the animal's fur
+    // takes a deep ember tint (multiplied, so fur detail stays) and soft
+    // flame sprites lick upward off its body, born at random bones. No
+    // outline shells: they read as a cheap neon sticker.
+    actor.aura=[];actor.tintMats=null;
+    const flameBones=[...joint.values()].filter(b=>!/Jaw|Tongue|Eye|Lid|Ear|Tail|Digit/i.test(b.name));
     actor.setAura=(level,time=0)=>{
-      if(!actor.aura.length&&level>0){
-        model.traverse(o=>{
-          if(!o.isSkinnedMesh||o.name==='MouthBag'||o.userData.aura)return;
-          o.geometry.computeBoundingSphere();
-          const r=o.geometry.boundingSphere?.radius||1;
-          for(const [k,color,base] of [[.016,0xffa83e,.42],[.045,0xff6a1e,.2],[.085,0xff3c10,.09]]){
-            const mat=new THREE.MeshBasicMaterial({color,transparent:true,opacity:0,
-              side:THREE.BackSide,blending:THREE.AdditiveBlending,depthWrite:false,fog:false});
-            mat.userData.base=base;
-            mat.onBeforeCompile=shader=>{
-              shader.uniforms.uPush={value:r*k};
-              // Capture the bind-space normal before skinnormal_vertex poses
-              // it; the push happens before skinning, so it must be bind-space.
-              shader.vertexShader='uniform float uPush;\nvec3 auraN=vec3(0.0);\n'+shader.vertexShader
-                .replace('#include <beginnormal_vertex>','#include <beginnormal_vertex>\nauraN=objectNormal;')
-                .replace('#include <begin_vertex>','#include <begin_vertex>\ntransformed+=normalize(auraN+vec3(1e-6))*uPush;');
-            };
-            const shell=new THREE.SkinnedMesh(o.geometry,mat);
-            shell.userData.aura=true;shell.frustumCulled=false;shell.castShadow=false;shell.receiveShadow=false;
-            shell.position.copy(o.position);shell.quaternion.copy(o.quaternion);shell.scale.copy(o.scale);
-            o.parent.add(shell);shell.bind(o.skeleton,o.bindMatrix);
-            actor.aura.push(shell);
-          }
-        });
-      }
-      // The animal itself burns orange under the aura (reference look).
       if(!actor.tintMats){
         actor.tintMats=[];
         model.traverse(o=>{
-          if(!o.isMesh||o.userData.aura||o.name==='MouthBag')return;
+          if(!o.isMesh||o.name==='MouthBag')return;
           for(const m of [].concat(o.material))
-            if(m?.emissive&&!m.emissiveMap&&!actor.tintMats.includes(m)){
-              m.userData.baseEmissive=m.emissive.clone();m.userData.baseEmissiveI=m.emissiveIntensity??1;
-              actor.tintMats.push(m);
-            }
+            if(m?.color&&!actor.tintMats.includes(m)){m.userData.baseColor=m.color.clone();actor.tintMats.push(m);}
         });
       }
       for(const m of actor.tintMats){
-        if(level>0.001){m.emissive.setRGB(1,.34,.06);m.emissiveIntensity=.16*level;}
-        else{m.emissive.copy(m.userData.baseEmissive);m.emissiveIntensity=m.userData.baseEmissiveI;}
+        m.color.copy(m.userData.baseColor);
+        if(level>0.001)m.color.multiply(new THREE.Color(1,1-.36*level,1-.62*level));
       }
-      for(const shell of actor.aura){
-        shell.visible=level>0.001;
-        const flicker=.82+.18*Math.sin(time*.021+shell.id);
-        shell.material.opacity=shell.material.userData.base*level*flicker;
+      if(!actor.aura.length&&level>0&&flameBones.length&&scene){
+        const tex=flameSpriteTexture();
+        model.updateMatrixWorld(true);
+        const box=new THREE.Box3().setFromObject(model),size=box.getSize(new THREE.Vector3());
+        actor.flameScale=Math.max(.25,size.y*.42);
+        for(let i=0;i<46;i++){
+          const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,
+            blending:THREE.AdditiveBlending,depthWrite:false,fog:false,opacity:0}));
+          sp.userData={bone:flameBones[(i*7)%flameBones.length],phase:(i*.6180339)%1,
+            jx:(((i*37)%17)/17-.5),jz:(((i*53)%13)/13-.5),speed:.8+((i*29)%11)/22};
+          sp.renderOrder=5;scene.add(sp);actor.aura.push(sp);
+        }
+      }
+      const v=new THREE.Vector3(),fs=actor.flameScale||.5;
+      for(const sp of actor.aura){
+        const d=sp.userData;
+        if(level<=0.001||!actor.pivot.visible){sp.visible=false;continue;}
+        const life=((time*.0011*d.speed)+d.phase)%1;
+        d.bone.getWorldPosition(v);
+        sp.position.set(v.x+d.jx*fs*.35,v.y+life*fs*.9,v.z+d.jz*fs*.35);
+        const sc=fs*(.55+.5*Math.sin(life*Math.PI))*(1-.35*life);
+        sp.scale.set(sc*.7,sc,1);
+        sp.material.opacity=level*.5*Math.sin(life*Math.PI);
+        sp.material.rotation=d.jx*.6;
+        sp.visible=true;
       }
     };
     actor.native=(key,fadeSeconds=.15)=>{
@@ -733,7 +727,10 @@
     const heroTime=victor?elapsed-timing.victoryStart:0;
     // Hold a clean winning portrait instead of floating white bubbles
     // cluttering Bear's face throughout the final roar.
-    const cleanPortrait=victor&&heroTime>=cinematics.VICTORY_HOWL_START_MS;
+    // Solo attack films carry their own flame aura; the floating charge
+    // bubbles on top read as cheap, so they only appear for the landing dust.
+    const cleanPortrait=(victor&&heroTime>=cinematics.VICTORY_HOWL_START_MS)||
+      Boolean(timing?.solo&&!hitPhase);
     if(!miraclePhase&&!focusPhase&&!hitPhase&&!victor){
       fxGroup.visible=false;
       if(shockRing)shockRing.visible=false;
@@ -822,6 +819,51 @@
   // Fire void behind the attacker during a solo strike: a camera-facing
   // plane placed just beyond the animal, so the forest disappears and only
   // the burning animal remains (as in the reference footage).
+  let flameTex=null;
+  function flameSpriteTexture(){
+    if(flameTex)return flameTex;
+    const c=document.createElement('canvas');c.width=64;c.height=128;
+    const g=c.getContext('2d'),img=g.createImageData(64,128),d=img.data;
+    for(let y=0;y<128;y++)for(let x=0;x<64;x++){
+      const u=(x-32)/32,v=y/128;                     // v: 0 top, 1 base
+      const width=.18+.82*Math.pow(v,.7);             // teardrop: narrow tip, round base
+      const r=Math.abs(u)/width,core=Math.max(0,1-r)*Math.min(1,(1-v)*6)*Math.min(1,v*2.4);
+      const flick=.85+.15*Math.sin(x*.7+y*.31);
+      const a=Math.pow(core,1.4)*flick;
+      const k=(y*64+x)*4,hot=Math.pow(core,2.2);
+      d[k]=255;d[k+1]=Math.min(255,90+165*hot);d[k+2]=Math.min(255,20+140*hot*hot);d[k+3]=Math.min(255,a*255);
+    }
+    g.putImageData(img,0,0);
+    flameTex=new THREE.CanvasTexture(c);
+    if(THREE.SRGBColorSpace)flameTex.colorSpace=THREE.SRGBColorSpace;
+    return flameTex;
+  }
+  // Tileable value-noise fBm painted through a fire palette: rolling
+  // flame and smoke, like the arcade's burning backdrop.
+  function fireCanvas(){
+    const S=256,c=document.createElement('canvas');c.width=c.height=S;
+    const g=c.getContext('2d'),img=g.createImageData(S,S),d=img.data;
+    let seed=97;const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
+    const lattices=[4,8,16,32,64].map(p=>({p,v:Float32Array.from({length:p*p},rnd)}));
+    const sm=t=>t*t*(3-2*t);
+    const vn=(L,x,y)=>{const p=L.p,xi=Math.floor(x),yi=Math.floor(y),fx=sm(x-xi),fy=sm(y-yi);
+      const at=(a,b)=>L.v[((b%p+p)%p)*p+((a%p+p)%p)];
+      const A=at(xi,yi),B=at(xi+1,yi),C=at(xi,yi+1),D=at(xi+1,yi+1);
+      return A+(B-A)*fx+(C-A)*fy+(A-B-C+D)*fx*fy;};
+    const pal=[[0,[18,2,0]],[.32,[96,12,2]],[.5,[196,46,6]],[.66,[246,120,22]],[.8,[255,196,70]],[1,[255,246,196]]];
+    for(let y=0;y<S;y++)for(let x=0;x<S;x++){
+      let f=0,amp=.55,tot=0;
+      for(const L of lattices){f+=vn(L,x/S*L.p,y/S*L.p)*amp;tot+=amp;amp*=.52;}
+      f/=tot;
+      // warp the field upward into tongues
+      const t=Math.max(0,Math.min(1,(f-.16)*2.0));
+      let i=0;while(i<pal.length-2&&t>pal[i+1][0])i++;
+      const [t0,c0]=pal[i],[t1,c1]=pal[i+1],k=(t-t0)/(t1-t0),o=(y*S+x)*4;
+      for(let ch=0;ch<3;ch++)d[o+ch]=c0[ch]+(c1[ch]-c0[ch])*k;
+      d[o+3]=255;
+    }
+    g.putImageData(img,0,0);return c;
+  }
   let fireVoid=null;const backdropTex={};
   let forestRoot=null,plainsRoot=null,forestFog=null,plainsFog=null;
   function setStage(name){
@@ -832,44 +874,9 @@
     scene.fog=plains?plainsFog:forestFog;
   }
   function makeBackdropTexture(kind){
-    const c=document.createElement('canvas');c.width=c.height=256;
-    const g=c.getContext('2d');
-    let seed=kind==='fire'?7:11;const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
-    if(kind==='fire'){
-      // Billowing flames: big soft clouds of orange/yellow over dark smoke,
-      // blurred so they read as fire, not as bokeh dots.
-      g.fillStyle='#4a0d02';g.fillRect(0,0,256,256);
-      g.filter='blur(7px)';
-      const blob=(x,y,r,color)=>{for(const dx of [-256,0,256])for(const dy of [-256,0,256]){
-        const cx=x+dx,cy=y+dy;if(cx<-r||cx>256+r||cy<-r||cy>256+r)continue;
-        const gr=g.createRadialGradient(cx,cy,0,cx,cy,r);gr.addColorStop(0,color);gr.addColorStop(1,'rgba(0,0,0,0)');
-        g.fillStyle=gr;g.fillRect(cx-r,cy-r,r*2,r*2);}};
-      for(let i=0;i<40;i++)blob(rnd()*256,rnd()*256,38+rnd()*56,'rgba(240,92,18,.8)');
-      for(let i=0;i<26;i++)blob(rnd()*256,rnd()*256,24+rnd()*40,'rgba(255,150,40,.7)');
-      for(let i=0;i<14;i++)blob(rnd()*256,rnd()*256,14+rnd()*26,'rgba(255,226,140,.65)');
-      for(let i=0;i<9;i++)blob(rnd()*256,rnd()*256,18+rnd()*30,'rgba(60,10,2,.5)');
-      g.filter='none';
-    }else{
-      const grad=g.createLinearGradient(0,0,0,256);
-      grad.addColorStop(0,'#1f5fc0');grad.addColorStop(.6,'#4a92e2');grad.addColorStop(1,'#9cc8f0');
-      g.fillStyle=grad;g.fillRect(0,0,256,256);
-    // Soft cloud blobs drawn at every wrapped position so the texture tiles.
-    for(let i=0;i<60;i++){
-      const x=rnd()*256,y=kind==='fire'?rnd()*256:40+rnd()*170,r=kind==='fire'?10+rnd()*42:12+rnd()*30,hot=rnd();
-      const inner=kind!=='fire'?'rgba(255,255,255,.5)':
-        hot>.82?'rgba(255,236,160,.6)':hot>.5?'rgba(255,150,50,.5)':hot>.22?'rgba(230,70,15,.45)':'rgba(70,8,2,.55)';
-      for(const dx of [-256,0,256])for(const dy of (kind==='fire'?[-256,0,256]:[0])){
-        const cx=x+dx,cy=y+dy;
-        if(cx<-r||cx>256+r||cy<-r||cy>256+r)continue;
-        const grad=g.createRadialGradient(cx,cy,0,cx,cy,r);
-        grad.addColorStop(0,inner);grad.addColorStop(1,kind==='fire'?'rgba(90,10,0,0)':'rgba(255,255,255,0)');
-        g.fillStyle=grad;g.fillRect(cx-r,cy-r,r*2,r*2);
-      }
-    }
-    }
+    const c=fireCanvas();
     const t=new THREE.CanvasTexture(c);
-    t.wrapS=THREE.RepeatWrapping;t.wrapT=kind==='fire'?THREE.RepeatWrapping:THREE.ClampToEdgeWrapping;
-    t.repeat.set(kind==='fire'?1.4:2,kind==='fire'?1.4:1);
+    t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(1.2,.8);
     if(THREE.SRGBColorSpace)t.colorSpace=THREE.SRGBColorSpace;
     return t;
   }
@@ -890,7 +897,7 @@
     }
     setStage(view?.stage||null);
     const cam=filmCamera||camera;
-    const kind=view?.fire?'fire':view?.launch&&!view.launch.landed?'sky':null;
+    const kind=view?.fire?'fire':null;
     const subject=kind==='fire'?attacker:defender;
     if(!kind||!cam||!subject){if(fireVoid)fireVoid.visible=false;return;}
     if(!fireVoid){
@@ -910,8 +917,8 @@
     const side=h*Math.max(1,cam.aspect||1,16/9)*1.6;
     fireVoid.scale.set(side,side,1);
     if(kind==='fire'){
-      tex.offset.set(Math.sin(time*.0004)*.05,((time*.00045)%1));
-      fireVoid.material.color.setScalar(.9+.1*Math.sin(time*.025));
+      tex.offset.set(Math.sin(time*.0003)*.04,((time*.00042)%1));
+      fireVoid.material.color.setScalar(.92+.08*Math.sin(time*.02));
       fireVoid.material.opacity=view.fire;
     }else{
       tex.offset.set((time*.00004)%1,0);
@@ -952,7 +959,11 @@
     if(!renderer||!camera||!stage)return;
     const box=stage.getBoundingClientRect();
     if(box.width<1||box.height<1)return;
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.6));
+    // PS2-era image: render at roughly console resolution (≈600 lines) and
+    // let the browser scale it up, which gives the soft, slightly smeared
+    // look of a 2000s TV picture instead of razor-sharp modern WebGL.
+    const PS2_LINES=600;
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,1.6,PS2_LINES/box.height));
     renderer.setSize(Math.round(box.width),Math.round(box.height),false);
     const viewHeight=5.15,ratio=box.width/box.height;
     camera.left=-viewHeight*ratio/2;camera.right=viewHeight*ratio/2;

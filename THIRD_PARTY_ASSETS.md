@@ -14,3 +14,8 @@ The assets are licensed third-party work, not original Noah's Arkade models. The
 - Licence: per the user (2026-11-23), the original owner permits use for any
   purpose, including redistribution; the project is non-commercial for now.
   Keep a copy of the owner's written permission with the project.
+
+## Russo One font
+- File: `assets/fonts/russo-one-latin-400.woff2` (from the `@fontsource/russo-one` npm package).
+- Licence: SIL Open Font License 1.1 — `assets/fonts/RussoOne-OFL.txt`.
+- Used for the PS2-era arcade titles, damage numbers and win stamp in battle cinematics.

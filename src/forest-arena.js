@@ -230,37 +230,100 @@
     scene.fog=new THREE.Fog(0xcfe2d6,18,60);
     return root;
   }
+  // ── Tileable value-noise fBm (for painterly clouds, rock and dry grass) ──
+  function noiseField(size,seed){
+    const r=rng(seed),grid=new Float32Array(size*size);
+    for(let i=0;i<grid.length;i++)grid[i]=r();
+    const at=(x,y)=>grid[((y%size+size)%size)*size+((x%size+size)%size)];
+    const sm=t=>t*t*(3-2*t);
+    return (x,y)=>{const xi=Math.floor(x),yi=Math.floor(y),fx=sm(x-xi),fy=sm(y-yi);
+      const a=at(xi,yi),b=at(xi+1,yi),c=at(xi,yi+1),d=at(xi+1,yi+1);
+      return a+(b-a)*fx+(c-a)*fy+(a-b-c+d)*fx*fy;};
+  }
+  // fBm that tiles over [0,w)×[0,h): each octave's lattice period divides the size.
+  function fbm(seed,period=8,octaves=5){
+    const fields=[...Array(octaves)].map((_,o)=>({n:noiseField(period<<o,seed+o*131),p:period<<o}));
+    return (u,v)=>{let s=0,amp=.5,tot=0;
+      for(const f of fields){s+=f.n(u*f.p,v*f.p)*amp;tot+=amp;amp*=.5;}
+      return s/tot;};
+  }
+  const mix=(a,b,t)=>a+(b-a)*t;
+  const smooth=(e0,e1,x)=>{const t=Math.max(0,Math.min(1,(x-e0)/(e1-e0)));return t*t*(3-2*t);};
+  function paint(w,h,fn){
+    const c=canvas(w,h),g=c.getContext('2d'),img=g.createImageData(w,h),d=img.data;
+    for(let y=0;y<h;y++)for(let x=0;x<w;x++){const [r,gg,b,a=255]=fn(x/w,y/h,x,y);const k=(y*w+x)*4;
+      d[k]=r;d[k+1]=gg;d[k+2]=b;d[k+3]=a;}
+    g.putImageData(img,0,0);return c;
+  }
   // Open plains "stage" for solo attack shots (title card, strike, launch):
-  // big saturated sky, a low savanna horizon with a distant mesa, tan ground.
+  // a deep PS2-era sky with fat cumulus, layered mesas, dry savanna ground.
   // Hidden by default; the runtime swaps it in for the forest during a film.
   function plainsSkyCanvas(){
-    const c=canvas(1024,512),g=c.getContext('2d'),r=rng(0x9b17);
-    const grad=g.createLinearGradient(0,0,0,512);
-    grad.addColorStop(0,'#08348f');grad.addColorStop(.35,'#1b5fc4');grad.addColorStop(.47,'#3a84da');
-    grad.addColorStop(.5,'#88b7e2');grad.addColorStop(1,'#b9a66c');
-    g.fillStyle=grad;g.fillRect(0,0,1024,512);
-    for(let i=0;i<26;i++){
-      const x=r()*1024,y=60+r()*150,w=60+r()*170,h=18+r()*30;
-      for(let k=0;k<7;k++){
-        const cx=x+(r()-.5)*w,cy=y+(r()-.5)*h*.5,rad=h*(.7+r());
-        const cg=g.createRadialGradient(cx,cy,0,cx,cy,rad);
-        cg.addColorStop(0,'rgba(255,255,255,.9)');cg.addColorStop(.6,'rgba(250,252,255,.55)');cg.addColorStop(1,'rgba(255,255,255,0)');
-        g.fillStyle=cg;
-        for(const dx of [-1024,0,1024])g.fillRect(cx+dx-rad,cy-rad,rad*2,rad*2);
+    const n=fbm(0x51a,6,6),n2=fbm(0x99c,12,4);
+    return paint(1024,512,(u,v)=>{
+      // v: 0 = zenith, .5 = horizon. Deep blue that only pales right at the horizon.
+      const e=Math.max(0,.5-v)/.5;                       // elevation 0..1
+      let r=mix(150,14,Math.pow(e,.38)),g=mix(196,72,Math.pow(e,.42)),b=mix(232,196,Math.pow(e,.5));
+      if(v>.5){r=176;g=168;b=128;}
+      // cumulus band: squashed toward the horizon like a real dome
+      const band=smooth(.06,.2,e)*(1-smooth(.62,.85,e));
+      const cv=v*(1+(1-e)*.9);
+      const c=n(u*2,cv*2.6)+.22*n2(u*3,cv*5)-.06;
+      const cloud=smooth(.5,.64,c)*band;
+      if(cloud>0){
+        // lit tops, blue-grey undersides
+        const shade=smooth(.45,.8,n(u*2,(cv-.016)*2.6))-smooth(.45,.8,c)*.5;
+        const lit=mix(238,255,shade),under=[178,192,214];
+        const cr=mix(under[0],lit,.55+.45*shade),cg=mix(under[1],lit,.55+.45*shade),cb=mix(under[2],252,.6);
+        r=mix(r,cr,cloud);g=mix(g,cg,cloud);b=mix(b,cb,cloud);
       }
-    }
-    return c;
+      return [r,g,b];
+    });
   }
   function plainsHorizonCanvas(){
-    const c=canvas(2048,256),g=c.getContext('2d'),r=rng(0x77a1);
-    // distant blue-grey mesas, then a hazy band of savanna scrub
-    g.fillStyle='rgba(118,138,160,.95)';
-    for(const [x0,w,h] of [[180,520,92],[980,380,64],[1500,460,104]]){
-      g.beginPath();g.moveTo(x0,236);g.lineTo(x0+w*.12,236-h);g.lineTo(x0+w*.86,236-h*1.03);
-      g.lineTo(x0+w,236);g.closePath();g.fill();
+    const W=2048,H=256,c=canvas(W,H),g=c.getContext('2d'),r=rng(0x77a1),rock=fbm(0x3f1,16,4);
+    // three depths of flat-topped mesas, hazier with distance
+    const layers=[{haze:.7,y:236,top:[46,78],tone:[150,128,112]},{haze:.5,y:240,top:[36,64],tone:[146,110,84]}];
+    for(const L of layers){
+      // strata texture for this depth, then each mesa is a clipped cut of it
+      const tex=paint(W,H,(u,v)=>{
+        const strata=.5+.5*Math.sin(v*90+rock(u*3,v*.6)*7);
+        const lum=.74+.2*strata+.2*(rock(u*7,v*3)-.5);
+        const sky=[168,196,222];
+        return [0,1,2].map(ch=>mix(L.tone[ch]*lum,sky[ch],L.haze));
+      });
+      let x=-200;
+      while(x<W+200){
+        const w=220+r()*520,h=L.top[0]+r()*(L.top[1]-L.top[0]),slope=w*(.08+r()*.08);
+        g.save();g.beginPath();g.moveTo(x,L.y);g.lineTo(x+slope,L.y-h);
+        for(let k=1;k<=8;k++)g.lineTo(x+slope+(w-2*slope)*k/8,L.y-h+(r()-.5)*5);
+        g.lineTo(x+w,L.y);g.closePath();g.clip();
+        g.drawImage(tex,0,0);
+        // shade the right flank, light the left: simple sun from the left
+        const sh=g.createLinearGradient(x,0,x+w,0);
+        sh.addColorStop(0,'rgba(255,240,210,.10)');sh.addColorStop(.7,'rgba(0,0,0,0)');sh.addColorStop(1,'rgba(40,30,40,.22)');
+        g.fillStyle=sh;g.fillRect(x,L.y-h-4,w,h+8);
+        g.restore();
+        x+=w+(r()*300-40);
+      }
     }
-    g.fillStyle='rgba(126,128,82,.9)';
-    for(let x=0;x<2048;x+=3){const h=6+r()*10+Math.sin(x*.01)*4;g.fillRect(x,236-h,3,h+20);}
+    // hazy band of acacia scrub on the horizon line
+    for(let x=0;x<W;x+=2){const h=4+r()*7+Math.sin(x*.013)*3;g.fillStyle=`rgba(${96+r()*20|0},${98+r()*16|0},${62},.95)`;g.fillRect(x,246-h,2,h+12);}
+    for(let i=0;i<70;i++){const x=r()*W,y=244-r()*4,w=10+r()*16;g.fillStyle='rgba(70,78,46,.95)';
+      g.beginPath();g.ellipse(x,y-6,w,4,0,0,Math.PI*2);g.fill();g.fillRect(x-1,y-6,2,8);}
+    return c;
+  }
+  function savannaCanvas(){
+    const n=fbm(0x5a7,8,5),blade=rng(0x1b3);
+    const c=paint(256,256,(u,v)=>{
+      const a=n(u,v),b=n(u*2+.3,v*2+.7);
+      const dry=[176,152,96],green=[118,122,64],dirt=[150,112,74];
+      const t=smooth(.38,.62,a),q=smooth(.55,.75,b);
+      return [0,1,2].map(k=>mix(mix(dry[k],green[k],t*.7),dirt[k],q*.45)*(.86+.28*(n(u*8,v*8)-.5)));
+    });
+    const g=c.getContext('2d');
+    for(let i=0;i<2600;i++){const x=blade()*256,y=blade()*256,v=blade();
+      g.fillStyle=v<.5?'rgba(84,76,40,.45)':'rgba(222,204,150,.4)';g.fillRect(x,y,1,2+blade()*3);}
     return c;
   }
   function buildPlains(THREE,scene,{shadows=true}={}){
@@ -268,12 +331,12 @@
     const sky=new THREE.Mesh(new THREE.SphereGeometry(78,32,16),
       new THREE.MeshBasicMaterial({map:texture(THREE,plainsSkyCanvas()),side:THREE.BackSide,fog:false,depthWrite:false}));
     sky.renderOrder=-10;root.add(sky);
-    const ring=new THREE.Mesh(new THREE.CylinderGeometry(40,40,10,64,1,true),
+    const ring=new THREE.Mesh(new THREE.CylinderGeometry(42,42,6,64,1,true),
       new THREE.MeshBasicMaterial({map:texture(THREE,plainsHorizonCanvas()),side:THREE.BackSide,transparent:true,alphaTest:.02,fog:false,depthWrite:false}));
-    ring.position.y=10/2-1.8;ring.renderOrder=-9;root.add(ring);
+    ring.position.y=6/2-.75;ring.renderOrder=-9;root.add(ring);
     const geo=new THREE.PlaneGeometry(90,90,1,1);
     const ground=new THREE.Mesh(geo,new THREE.MeshLambertMaterial({
-      map:texture(THREE,grassTileCanvas(),{wrap:true,repeat:34}),color:0xb39c62}));
+      map:texture(THREE,savannaCanvas(),{wrap:true,repeat:16})}));
     ground.rotation.x=-Math.PI/2;ground.position.y=-.035;ground.receiveShadow=shadows;root.add(ground);
     scene.add(root);
     return root;
