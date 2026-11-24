@@ -212,9 +212,12 @@ function camera(event,elapsed,nativeMs){
       x=attackerX+facing*1.25;y=.78;z=6.25;
       targetY=.83;zoom=1.22;
     }else if(event.move==='P'){
-      // The high strike is introduced looking into the rising bear's face.
-      x=attackerX+facing*5.75;y=2.18;z=2.5;
-      targetY=2.02;zoom=1.29;
+      // The high strike is introduced from a front quarter at head height.
+      // The restaged wind-up keeps the Bear low during this beat, so the old
+      // tight, high framing (y 2.18, zoom 1.29, z 2.5) showed only a hump of
+      // back fur in the 8:42 PM recording. Pull back so head and forepaws read.
+      x=attackerX+facing*4.6;y=1.85;z=4.4;
+      targetY=1.3;zoom=1.08;
     }else{
       // Special remains the largest, most frontal moment.
       x=attackerX+facing*6.65;y=1.8;z=2.9;
@@ -255,8 +258,9 @@ function camera(event,elapsed,nativeMs){
   // Once an ordinary exchange has finished, the result card and the next
   // reels play over a neutral two-shot. Holding the defender close-up left
   // the attacker cut off at the edge for the whole result pause.
+  // Long native recoveries (Low Swipe is 4 s) must not hold the close-up.
   const settled=!event.finished&&beat.beat==='REACTION'&&
-    beat.local>=beat.timing.finish-beat.timing.actionLead;
+    beat.local>=Math.min(beat.timing.finish-beat.timing.actionLead,beat.timing.contact+1300);
   if(settled){x=0;targetX=0;y=2.8;z=12.2;targetY=1.23;zoom=1;}
   // Cine director framing guard: all four victory angles must keep the
   // entire standing animal inside a perspective viewport. Preserve each
