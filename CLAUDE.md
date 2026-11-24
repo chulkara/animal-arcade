@@ -11,8 +11,11 @@ or text.
 - Modules use the repo's UMD pattern: `(function(root,factory){…})` exporting
   to `module.exports` (Node tests) and a `window.*` global (browser).
 - 3D: Three.js 0.180 + FBXLoader from the jsDelivr CDN via the import map in
-  `index.html`. Private FBX animal rigs are loaded locally by the user and are
-  **never committed or published** (licence not verified).
+  `index.html`. Bear/Moose FBX rigs come from a pack the user confirmed is
+  licensed for non-professional use (this project qualifies). Building new
+  animations on these rigs is fine. Still keep the raw FBX/PNG files out of
+  the public repo and GitHub Pages unless the licence text also allows
+  redistribution; re-check the licence before any paid/commercial release.
 - Tests: Node's built-in runner — `node --test tests/*.test.mjs`.
   Browser smoke: `tests/browser.smoke.mjs` (Playwright/Chromium).
 - Local dev: `python3 -m http.server 4173`.
