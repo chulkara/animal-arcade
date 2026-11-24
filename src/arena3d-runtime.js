@@ -190,7 +190,7 @@
         const clip=asset.clips[move];
         actor.staged=clip&&cinematics?.staging?cinematics.staging('bear',move,
           cinematics.measuredContact('bear',move),clip.duration*1000):null;
-        actor.stagedAction=actor.staged?actor.current:null;
+        actor.stagedAction=actor.staged?actor.current:null;actor.stagedMove=move;
         return;
       }
       const code={G:'Guts',T:'Technique',P:'Power',S:'Special'}[move];
@@ -467,16 +467,17 @@
     const strikeAccent=()=>{
       const st=actor.staged,action=actor.stagedAction;
       if(!st||action!==actor.current||reduced())return;
-      const tc=action.time*1000,w=st.windupEnd,c=st.contact;
-      const sm=t=>{t=Math.max(0,Math.min(1,t));return t*t*(3-2*t);};
-      const gather=sm(tc/w)*(1-sm((tc-w)/Math.max(1,c-w)));
-      const snap=sm((tc-(c-140))/140)*(1-sm((tc-c-60)/320));
+      const tc=action.time*1000,c=st.contact;
+      const kp=cinematics.keyPose(id,actor.stagedMove,tc,st);
+      // Small chest heave as the blow lands, on top of the key poses.
       const heave=tc>c?Math.sin(Math.min(1,(tc-c)/420)*Math.PI)*Math.exp(-(tc-c)/600):0;
       updateFacing();
-      addPitch('RigSpine1',.11*gather-.07*snap);
-      addPitch('RigChest',.09*gather-.13*snap+.07*heave);
-      addPitch('RigNeck',-.06*gather-.05*snap+.06*heave);
-      addPitch('RigHead',-.05*gather-.10*snap+.03*heave);
+      addPitch('RigSpine1',kp.spine1);addPitch('RigSpine2',kp.spine2);
+      addPitch('RigChest',kp.chest+.07*heave);
+      addRot('RigChest',UP,kp.chestYaw);
+      addNeck(strikePitch,kp.neck+.06*heave);
+      addPitch('RigHead',kp.head+.03*heave);addRot('RigHead',UP,kp.headYaw);
+      addPitch('RigLFLeg1',kp.shoulderL);addPitch('RigRFLeg1',kp.shoulderR);
     };
     actor.tick=(delta)=>{
       resetApplied(actor);

@@ -452,3 +452,25 @@ test('after an ordinary exchange the camera settles back to the two-shot',()=>{
  const reacting=director.camera(evt,t.actionLead+t.contact+400,1833);
  assert.notEqual(reacting.targetX,0,'reaction shot still favours the defender');
 });
+
+test('key poses: neutral at the ends, distinct silhouettes at wind-up and contact',()=>{
+ const cases=[['G',1083,1833],['T',850,4000],['P',983,3000]];
+ for(const [move,c,len] of cases){
+  const st=director.staging('bear',move,c,len);
+  const zero=director.keyPose('bear',move,0,st);
+  assert.ok(Object.values(zero).every(v=>v===0),move+' starts neutral');
+  assert.ok(Object.values(director.keyPose('bear',move,len,st)).every(v=>v===0),move+' ends neutral');
+  const wind=director.keyPose('bear',move,st.windupEnd,st),hit=director.keyPose('bear',move,st.contact,st);
+  const diff=director.POSE_FIELDS.reduce((s,f)=>s+Math.abs(wind[f]-hit[f]),0);
+  assert.ok(diff>.4,move+' wind-up and contact shapes are clearly different');
+  // smooth: no jump across a key time
+  for(const t of [st.windupEnd,st.contact,st.holdEnd]){
+   const a=director.keyPose('bear',move,t-.5,st),b=director.keyPose('bear',move,t+.5,st);
+   for(const f of director.POSE_FIELDS)assert.ok(Math.abs(a[f]-b[f])<.01,move+' '+f+' continuous');
+  }
+ }
+ const P=director.staging('bear','P',983,3000);
+ assert.ok(director.keyPose('bear','P',P.windupEnd,P).spine1>.12,'High Paw Strike rears tall');
+ assert.ok(director.keyPose('bear','P',P.contact,P).chest<-.1,'then drives the chest down');
+ assert.ok(Object.values(director.keyPose('moose','G',500,null)).every(v=>v===0),'no keys → neutral');
+});

@@ -69,6 +69,57 @@ function setMeasuredContact(attackerId,move,ms){
   (MEASURED[attackerId]||(MEASURED[attackerId]={}))[move]=Math.round(ms);
   return true;
 }
+// Key poses layered on restaged native strikes: the silhouettes the eye
+// should catch at the wind-up and the blow. Radians, added to the source
+// clip's bones. Pitch: + = lean back / nose up. Yaw: + = turn toward the
+// animal's own left. Shoulders: + = forearm swung forward/up.
+// Times are clip ms relative to anchors: 0 (start), w (wind-up end),
+// c (contact) and h (end of the impact linger).
+const POSE_FIELDS=Object.freeze(['spine1','spine2','chest','neck','head','shoulderL','shoulderR','chestYaw','headYaw']);
+const KEY_POSES=Object.freeze({
+  bear:Object.freeze({
+    // Feral Charge: coil low with the head down, then a full-length lunge.
+    G:Object.freeze([
+      {at:['0',0]},
+      {at:['w',-.5],pose:{spine1:-.08,chest:-.08,neck:-.10,head:-.10,shoulderL:-.10,shoulderR:-.10}},
+      {at:['w',0],pose:{spine1:-.13,spine2:-.06,chest:-.10,neck:-.16,head:-.16,shoulderL:-.16,shoulderR:-.16}},
+      {at:['c',0],pose:{spine1:.05,spine2:.04,chest:.07,neck:.14,head:-.05,shoulderL:.30,shoulderR:.24}},
+      {at:['h',0],pose:{spine1:.04,spine2:.03,chest:.05,neck:.10,head:-.03,shoulderL:.22,shoulderR:.18}},
+      {at:['h',320]}
+    ]),
+    // Low Swipe: coil the chest away with the striking paw cocked, then rake across.
+    T:Object.freeze([
+      {at:['0',0]},
+      {at:['w',0],pose:{chestYaw:.30,headYaw:.16,chest:-.05,spine2:-.04,shoulderR:-.22}},
+      {at:['c',0],pose:{chestYaw:-.28,headYaw:-.20,chest:-.04,shoulderR:.38}},
+      {at:['h',0],pose:{chestYaw:-.34,headYaw:-.24,chest:-.03,shoulderR:.30}},
+      {at:['h',360]}
+    ]),
+    // High Paw Strike: rear taller with both forearms raised, then slam down.
+    P:Object.freeze([
+      {at:['0',0]},
+      {at:['w',-.35],pose:{spine1:.07,spine2:.04,chest:.05,shoulderL:.20,shoulderR:.20}},
+      {at:['w',0],pose:{spine1:.14,spine2:.07,chest:.09,neck:.08,head:.06,shoulderL:.38,shoulderR:.34}},
+      {at:['c',0],pose:{spine1:-.10,spine2:-.06,chest:-.13,neck:-.10,head:-.12,shoulderL:.10,shoulderR:.12}},
+      {at:['h',0],pose:{spine1:-.08,spine2:-.05,chest:-.10,neck:-.08,head:-.10}},
+      {at:['h',360]}
+    ])
+  })
+});
+function keyPose(attackerId,move,clipMs,st){
+  const keys=KEY_POSES[attackerId]?.[move];
+  const out=Object.fromEntries(POSE_FIELDS.map(f=>[f,0]));
+  if(!keys||!st||!Number.isFinite(clipMs))return out;
+  const anchor={'0':0,w:st.windupEnd,c:st.contact,h:st.holdEnd};
+  const at=k=>{const [a,off]=k.at;return anchor[a]+(Math.abs(off)<1&&off!==0?off*(a==='w'?st.windupEnd:st.contact):off);};
+  const times=keys.map(at);
+  if(clipMs<=times[0]||clipMs>=times.at(-1))return out;
+  let i=0;while(i<times.length-2&&clipMs>=times[i+1])i++;
+  const span=Math.max(1,times[i+1]-times[i]),u=Math.max(0,Math.min(1,(clipMs-times[i])/span)),e=u*u*(3-2*u);
+  const a=keys[i].pose||{},b=keys[i+1].pose||{};
+  for(const f of POSE_FIELDS)out[f]=(a[f]||0)+((b[f]||0)-(a[f]||0))*e;
+  return out;
+}
 function measuredContact(attackerId,move){return MEASURED[attackerId]?.[move];}
 // Restaging of native strikes (timing only; the source motion is kept).
 // Arcade weight comes from a slow, readable wind-up, a snapped strike, a
@@ -269,8 +320,9 @@ function camera(event,elapsed,nativeMs){
   }else{
     // Attack travel shot leaves visible screen-space for the victim.
     x=attackerX+facing*1.1;targetX=attackerX+facing*.72;
-    y=event.move==='P'?1.65:2.1;
-    z=10.8;targetY=1.3;zoom=1.00;
+    y=event.move==='P'?2.05:2.1;
+    // High Paw Strike's key pose rears the Bear to full height: frame its head.
+    z=event.move==='P'?12.2:10.8;targetY=event.move==='P'?1.9:1.3;zoom=1.00;
   }
   // Once an ordinary exchange has finished, the result card and the next
   // reels play over a neutral two-shot. Holding the defender close-up left
@@ -440,5 +492,5 @@ return Object.freeze({ATTACKS,MIRACLES,POSES,HIT_STOP_MS,
   VICTORY_LOWER_START_MS,VICTORY_LOWER_READY_MS,
   VICTORY_APPROACH_START_MS,VICTORY_APPROACH_END_MS,
   VICTORY_HOWL_START_MS,VICTORY_HOWL_CUE_MS,VICTORY_BANNER_MS,VICTORY_END_MS,
-  spec,miracle,duration,shot,camera,victoryApproach,bearHowl,hitStop,blocking,contactKeep,setMeasuredContact,clearMeasuredContacts,measuredContact,staging,MOOSE_CONTACT,panel});
+  spec,miracle,duration,shot,camera,victoryApproach,bearHowl,hitStop,blocking,contactKeep,setMeasuredContact,clearMeasuredContacts,measuredContact,staging,MOOSE_CONTACT,keyPose,KEY_POSES,POSE_FIELDS,panel});
 });
