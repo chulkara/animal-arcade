@@ -35,7 +35,8 @@
     ANIM_SHIELD_BLOCK:'ANIM_SHIELD_BLOCK',
     ANIM_SHIELD_SHATTER:'ANIM_SHIELD_SHATTER',
     ANIM_ATTACK_HIT:'ANIM_ATTACK_HIT',
-    ANIM_MIRACLE_HIT:'ANIM_MIRACLE_HIT'
+    ANIM_MIRACLE_HIT:'ANIM_MIRACLE_HIT',
+    ANIM_MIRACLE_FIZZLE:'ANIM_MIRACLE_FIZZLE' // failed Miracle: Points spent, nothing lands
   });
 
   function fail(message){throw new RangeError(message);}
@@ -118,12 +119,15 @@
       miracleHit[i]=value<RULES.miracleOdds;
       events.push(Object.freeze({type:EVENTS.SLOT_MIRACLE,player:i,tier:m.tier,success:miracleHit[i],roll:value}));
     });
+    // A failed Miracle fizzles: its Points are gone and it does not attack.
+    const fizzled=[0,1].map(i=>moves[i].type===MOVES.ATTACK&&moves[i].miracle&&!miracleHit[i]);
+    fizzled.forEach((f,i)=>{if(f)events.push(Object.freeze({type:EVENTS.ANIM_MIRACLE_FIZZLE,player:i,tier:moves[i].tier}));});
     // Rank: normal tiers 1..3, a successful Miracle outranks everything.
     const rank=i=>moves[i].type!==MOVES.ATTACK?0:miracleHit[i]?4:moves[i].tier;
 
     // 2) Decide which single attack (if any) lands.
     let lands=null; // index of the attacker whose blow connects
-    const attacking=[0,1].filter(i=>moves[i].type===MOVES.ATTACK);
+    const attacking=[0,1].filter(i=>moves[i].type===MOVES.ATTACK&&!fizzled[i]);
     if(attacking.length===2){
       if(rank(0)===rank(1)){
         const value=roll(rng);

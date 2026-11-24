@@ -11,11 +11,9 @@ or text.
 - Modules use the repo's UMD pattern: `(function(root,factory){…})` exporting
   to `module.exports` (Node tests) and a `window.*` global (browser).
 - 3D: Three.js 0.180 + FBXLoader from the jsDelivr CDN via the import map in
-  `index.html`. Bear/Moose FBX rigs come from a pack the user confirmed is
-  licensed for non-professional use (this project qualifies). Building new
-  animations on these rigs is fine. Still keep the raw FBX/PNG files out of
-  the public repo and GitHub Pages unless the licence text also allows
-  redistribution; re-check the licence before any paid/commercial release.
+  `index.html`. Bear/Moose FBX rigs and textures: the owner allows use for
+  anything, including redistribution (confirmed by the user 2026-11-23), so
+  they may be committed and published. The game is non-commercial for now.
 - Tests: Node's built-in runner — `node --test tests/*.test.mjs`.
   Browser smoke: `tests/browser.smoke.mjs` (Playwright/Chromium).
 - Local dev: `python3 -m http.server 4173`.
@@ -59,8 +57,9 @@ Each turn both players secretly pick one action; both resolve simultaneously.
   the attacker is in Desperation (HP ≤ 40% of max). Slow slot wheel, 1-in-3
   success. Success = 100 damage, ignores Shields (no chip/shatter rules apply,
   it simply lands) and wins any clash against a non-Miracle attack. Two
-  successful Miracles → 50/50 slot clash. A failed Miracle falls back to the
-  normal attack of the chosen Tier.
+  successful Miracles → 50/50 slot clash. A failed Miracle **fizzles**: its
+  Points are spent and nothing lands (event `ANIM_MIRACLE_FIZZLE`), so the
+  opponent's Charge/attack proceeds as if the Miracle player did nothing.
 
 ### Decisions made where the brief was silent (change here + tests if wrong)
 - Max HP 180 (same as the current prototype); Desperation = HP ≤ 72.

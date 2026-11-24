@@ -8,3 +8,9 @@ The assets are licensed third-party work, not original Noah's Arkade models. The
 - Full license: https://creativecommons.org/licenses/by/4.0/.
 
 **Status:** Model binaries are packaged for local preview but not yet committed to this public development branch. Keep these credits when packaging models for the game. See `docs/tiger-model-swap.md`.
+
+## Bear and Moose 3D models, textures and animations
+- Source: "Animated Animals 1.0" Bear and Moose packs (local "Motion Lab V2" extracts).
+- Licence: per the user (2026-11-23), the original owner permits use for any
+  purpose, including redistribution; the project is non-commercial for now.
+  Keep a copy of the owner's written permission with the project.

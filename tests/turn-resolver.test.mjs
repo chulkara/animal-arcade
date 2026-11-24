@@ -129,13 +129,17 @@ test('Miracle success beats an equal-tier attack without a clash, and a higher t
  assert.equal(eq.p2.hp,80);
 });
 
-test('Failed Miracle falls back to the normal attack of that tier',()=>{
+test('Failed Miracle fizzles: Points spent, nothing lands, the opponent acts freely',()=>{
  const vsShield=resolveTurn(P({points:3}),P(),A(3,true),S,{rng:seq(.34)});
- assert.deepEqual(types(vsShield),[E.SLOT_MIRACLE,E.ANIM_SHIELD_SHATTER,E.ANIM_ATTACK_HIT]);
- assert.equal(vsShield.events[0].success,false);assert.equal(vsShield.p2.hp,140);
- const vsEqual=resolveTurn(P({points:3}),P({points:3}),A(3,true),A(3),{rng:seq(.9,.7)});
- assert.deepEqual(types(vsEqual),[E.SLOT_MIRACLE,E.SLOT_CLASH,E.ANIM_ATTACK_HIT]);
- assert.equal(vsEqual.p1.hp,100,'player 2 won the clash');
+ assert.deepEqual(types(vsShield),[E.SLOT_MIRACLE,E.ANIM_MIRACLE_FIZZLE,E.ANIM_SHIELD_UP]);
+ assert.equal(vsShield.p2.hp,180);assert.equal(vsShield.p1.points,0);assert.equal(vsShield.p2.shieldLockTurns,0);
+ const vsCharge=resolveTurn(P({points:3}),P(),A(3,true),C,{rng:seq(.9)});
+ assert.equal(vsCharge.p2.points,1,'charger is not interrupted');assert.equal(vsCharge.p2.hp,180);
+ const vsAttack=resolveTurn(P({points:3}),P({points:1}),A(3,true),A(1),{rng:seq(.9)});
+ assert.deepEqual(types(vsAttack),[E.SLOT_MIRACLE,E.ANIM_MIRACLE_FIZZLE,E.ANIM_ATTACK_HIT]);
+ assert.equal(vsAttack.p1.hp,160,'the lower-tier attack lands because the Miracle fizzled');
+ const both=resolveTurn(P({points:3}),P({points:3}),A(3,true),A(3,true),{rng:seq(.9,.9)});
+ assert.equal(both.p1.hp,180);assert.equal(both.p2.hp,180);
 });
 
 test('Both Miracles succeed: 50/50 clash for 100 damage; wheels play p1 then p2',()=>{
@@ -146,9 +150,9 @@ test('Both Miracles succeed: 50/50 clash for 100 damage; wheels play p1 then p2'
  assert.equal(r.p1.hp,80);
 });
 
-test('One Miracle succeeds, the other fails: the success wins outright',()=>{
+test('One Miracle succeeds, the other fizzles: the success lands',()=>{
  const r=resolveTurn(P({points:3}),P({points:3}),A(3,true),A(3,true),{rng:seq(.9,.1)});
- assert.deepEqual(types(r),[E.SLOT_MIRACLE,E.SLOT_MIRACLE,E.ANIM_MIRACLE_HIT]);
+ assert.deepEqual(types(r),[E.SLOT_MIRACLE,E.SLOT_MIRACLE,E.ANIM_MIRACLE_FIZZLE,E.ANIM_MIRACLE_HIT]);
  assert.equal(r.p1.hp,80);
 });
 
