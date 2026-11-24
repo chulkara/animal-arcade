@@ -363,8 +363,8 @@
   -webkit-background-clip:text;background-clip:text;color:transparent;
   filter:drop-shadow(0 3px 0 #4a1703) drop-shadow(0 0 2px #4a1703) drop-shadow(0 0 16px rgba(255,120,30,.55))}
 .ark-cinema-dmg{position:absolute;inset:0;z-index:5;pointer-events:none}
-.ark-cinema-dmg b{position:absolute;font:400 clamp(34px,5vw,72px)/1 'Tiny5','Pixelify Sans',monospace;color:#fff;
-  -webkit-text-stroke:2px #2b1a0a;text-shadow:0 4px 0 #2b1a0a;opacity:0;transform:scale(.4)}
+.ark-cinema-dmg b{position:absolute;font:700 clamp(34px,5vw,72px)/1 'Pixelify Sans',monospace;color:#fff;
+  text-shadow:3px 0 #2b1a0a,-3px 0 #2b1a0a,0 3px #2b1a0a,0 -3px #2b1a0a,3px 3px #2b1a0a,-3px 3px #2b1a0a,0 6px 0 #2b1a0a;opacity:0;transform:scale(.4)}
 .ark-cinema-dmg b:first-child{left:56%;top:30%}
 .ark-cinema-dmg b:last-child{left:44%;top:44%}
 .ark-cinema[data-pops="1"] .ark-cinema-dmg b:first-child,
@@ -375,3 +375,17 @@
 @media (prefers-reduced-motion:reduce){.ark-cinema-solo-flash{display:none}}
 .ark-reference-layout[data-solo-film="1"] :is(.ark-arena-hud,.fight-deck,.combat-controls,.combat-message,.fight-clash){
   opacity:0!important;transition:opacity .12s;pointer-events:none}
+/* Radial speed lines behind the launched victim (reference launch shot). */
+.ark-cinema-lines{position:absolute;inset:-20%;z-index:4;pointer-events:none;opacity:0;
+  background:repeating-conic-gradient(from 3deg at 50% 50%,transparent 0deg 5deg,rgba(255,255,255,.55) 5.4deg 6deg,transparent 6.4deg 13deg);
+  -webkit-mask:radial-gradient(circle at 50% 50%,transparent 0 24%,#000 46%);mask:radial-gradient(circle at 50% 50%,transparent 0 24%,#000 46%)}
+.ark-cinema[data-solo="1"][data-beat="launch"] .ark-cinema-lines{opacity:.9;animation:ark-solo-lines .18s steps(2) infinite}
+@keyframes ark-solo-lines{to{transform:rotate(4deg)}}
+/* Total damage, centred, when the film cuts back to the arena. */
+.ark-cinema-total{position:absolute;left:0;right:0;top:44%;z-index:5;text-align:center;pointer-events:none;opacity:0;
+  font:700 clamp(44px,7vw,104px)/1 'Pixelify Sans',monospace;color:#fff;
+  text-shadow:4px 0 #2b1a0a,-4px 0 #2b1a0a,0 4px #2b1a0a,0 -4px #2b1a0a,4px 4px #2b1a0a,-4px 4px #2b1a0a,0 8px 0 #2b1a0a}
+.ark-cinema[data-solo="1"][data-beat="reaction"] .ark-cinema-total{opacity:1;animation:ark-solo-total .9s ease-out both}
+@keyframes ark-solo-total{0%{transform:scale(1.6);opacity:0}15%{transform:scale(1);opacity:1}75%{opacity:1}100%{opacity:0}}
+@media (prefers-reduced-motion:reduce){.ark-cinema-lines{display:none}}
+.game.reduce-motion .ark-cinema-lines{display:none}

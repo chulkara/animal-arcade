@@ -267,7 +267,7 @@ function shot(event,elapsed,nativeMs){
 function soloView(event,elapsed,nativeMs){
   const timing=duration(event,nativeMs),sp=soloSpec(event);
   const none=Object.freeze({active:false,showAttacker:true,showDefender:true,
-    flash:0,aura:0,fire:0,launch:null,pops:0,roar:0});
+    flash:0,aura:0,fire:0,launch:null,pops:0,roar:0,stage:null});
   if(!timing.solo||!sp)return none;
   const t=clamp(Number(elapsed)||0,0,timing.total);
   if(t<timing.miracleLead||t>=timing.finish)return none;
@@ -293,7 +293,10 @@ function soloView(event,elapsed,nativeMs){
   // The attacker roars at the lens under its title card.
   const roar=t<timing.titleIn||t>=timing.actionLead?0:
     ease((t-timing.titleIn-120)/220)*(1-ease((t-(timing.actionLead-340))/240));
-  return Object.freeze({active:true,roar,
+  // Which set the shot is on: the open plains stage for the title, the rise
+  // and the victim's launch/landing; the fire void during the strike.
+  const stage=fire>0?'fire':t>=timing.titleIn&&t<timing.returnAt?'plains':null;
+  return Object.freeze({active:true,roar,stage,
     showAttacker:!(t>=timing.launchAt&&t<timing.returnAt),
     showDefender:!(t>=timing.titleIn&&t<timing.launchAt),
     flash,aura,fire,launch,
@@ -330,8 +333,8 @@ function camera(event,elapsed,nativeMs){
       // The victim alone, thrown into the sky; low lens looking up.
       const l=view.launch||{y:0,drift:0};
       // Steep enough that blue sky, not the hazy horizon band, fills the frame.
-      targetX=defenderX+l.drift;targetY=1.3+l.y*.95;
-      x=targetX+facing*1.6;y=.25;z=6.0;zoom=1.0;
+      targetX=defenderX+l.drift;targetY=.9+l.y;
+      x=targetX+facing*1.8;y=.3;z=8.0;zoom=1.0;
     }else if(beat.shot==='landing'){
       const l=view.launch||{drift:0};
       targetX=defenderX+l.drift;targetY=.8;x=targetX+facing*.8;y=2.6;z=9.2;zoom=1.0;

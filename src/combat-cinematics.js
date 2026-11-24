@@ -48,6 +48,8 @@ function createOverlay(){
   '<div class="ark-cinema-solo-flash"></div>'+
   '<div class="ark-cinema-solo-title"><small data-ark-solo-rank></small><strong data-ark-solo-name></strong></div>'+
   '<div class="ark-cinema-dmg" data-ark-dmg><b data-ark-dmg-a></b><b data-ark-dmg-b></b></div>'+
+  '<div class="ark-cinema-total" data-ark-dmg-total></div>'+
+  '<div class="ark-cinema-lines"></div>'+
   '<div class="ark-cinema-win-stamp" data-ark-cinema-winner></div>'+
   '<div class="ark-cinema-symbols">'+
   Array.from({length:14},(_,i)=>'<span style="--n:'+i+'"></span>').join('')+'</div>'+
@@ -132,7 +134,8 @@ function draw(time){
    if(name)name.textContent=panel.solo?panel.title:'';
    if(panel.solo){
      // Two hits then the total, like the reference's flying numbers.
-     const dmg=Math.max(0,Math.round(event.damage||0));
+     const dmg=Math.max(0,Math.round(event.damage||event.previewDamage||0));
+     const total=overlay.querySelector('[data-ark-dmg-total]');if(total)total.textContent=dmg?String(dmg):'';
      const first=dmg>1?Math.round(dmg*.4):dmg,second=dmg-first;
      const a=overlay.querySelector('[data-ark-dmg-a]'),b=overlay.querySelector('[data-ark-dmg-b]');
      if(a)a.textContent=first?String(first):'';if(b)b.textContent=second?String(second):'';

@@ -173,7 +173,7 @@
           if(!o.isSkinnedMesh||o.name==='MouthBag'||o.userData.aura)return;
           o.geometry.computeBoundingSphere();
           const r=o.geometry.boundingSphere?.radius||1;
-          for(const [k,color,base] of [[.012,0xffa53a,.55],[.034,0xff5218,.28]]){
+          for(const [k,color,base] of [[.016,0xffa83e,.42],[.045,0xff6a1e,.2],[.085,0xff3c10,.09]]){
             const mat=new THREE.MeshBasicMaterial({color,transparent:true,opacity:0,
               side:THREE.BackSide,blending:THREE.AdditiveBlending,depthWrite:false,fog:false});
             mat.userData.base=base;
@@ -192,6 +192,22 @@
             actor.aura.push(shell);
           }
         });
+      }
+      // The animal itself burns orange under the aura (reference look).
+      if(!actor.tintMats){
+        actor.tintMats=[];
+        model.traverse(o=>{
+          if(!o.isMesh||o.userData.aura||o.name==='MouthBag')return;
+          for(const m of [].concat(o.material))
+            if(m?.emissive&&!m.emissiveMap&&!actor.tintMats.includes(m)){
+              m.userData.baseEmissive=m.emissive.clone();m.userData.baseEmissiveI=m.emissiveIntensity??1;
+              actor.tintMats.push(m);
+            }
+        });
+      }
+      for(const m of actor.tintMats){
+        if(level>0.001){m.emissive.setRGB(1,.34,.06);m.emissiveIntensity=.16*level;}
+        else{m.emissive.copy(m.userData.baseEmissive);m.emissiveIntensity=m.userData.baseEmissiveI;}
       }
       for(const shell of actor.aura){
         shell.visible=level>0.001;
@@ -533,8 +549,8 @@
       const lvl=reduced()?0:(actor.roarLevel||0);
       if(lvl>0.001){
         updateFacing();
-        addPitch('RigNeck1',.10*lvl);addPitch('RigHead',.16*lvl);addPitch('RigChest',.05*lvl);
-        addPitch('RigJaw',-.22*lvl);
+        addPitch('RigNeck1',.16*lvl);addPitch('RigHead',.26*lvl);addPitch('RigChest',.07*lvl);
+        addPitch('RigJaw',-.2*lvl);
       }
       if(actor.mouthLight)actor.mouthLight.intensity=2.0*lvl;
       // Hind-foot correction runs AFTER victoryGesture and applyBlocking
@@ -603,7 +619,11 @@
     // PS2-era forest arena (sky dome, tree-line panorama, billboard trees,
     // grass with a worn clearing). Scenery stays behind the fighters and off to
     // the sides so no cinematic camera is ever blocked. See forest-arena.js.
-    if(forest)window.NoahsForestArena.build(THREE,scene,{shadows:true});
+    if(forest){
+      forestRoot=window.NoahsForestArena.build(THREE,scene,{shadows:true});
+      plainsRoot=window.NoahsForestArena.buildPlains?.(THREE,scene,{shadows:true})||null;
+      forestFog=scene.fog;
+    }
     else{
       // Real ground geometry gives the animals a shared shadow plane
       // that changes perspective with each movie cut. Previously both
@@ -803,18 +823,38 @@
   // plane placed just beyond the animal, so the forest disappears and only
   // the burning animal remains (as in the reference footage).
   let fireVoid=null;const backdropTex={};
+  let forestRoot=null,plainsRoot=null,forestFog=null,plainsFog=null;
+  function setStage(name){
+    if(!forestRoot||!plainsRoot)return;
+    const plains=name==='plains'||name==='fire';
+    forestRoot.visible=!plains;plainsRoot.visible=plains;
+    if(plains&&!plainsFog)plainsFog=new THREE.Fog(0xd6e6ef,26,75);
+    scene.fog=plains?plainsFog:forestFog;
+  }
   function makeBackdropTexture(kind){
     const c=document.createElement('canvas');c.width=c.height=256;
     const g=c.getContext('2d');
     let seed=kind==='fire'?7:11;const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
-    if(kind==='fire'){g.fillStyle='#2a0602';g.fillRect(0,0,256,256);}
-    else{
+    if(kind==='fire'){
+      // Billowing flames: big soft clouds of orange/yellow over dark smoke,
+      // blurred so they read as fire, not as bokeh dots.
+      g.fillStyle='#4a0d02';g.fillRect(0,0,256,256);
+      g.filter='blur(7px)';
+      const blob=(x,y,r,color)=>{for(const dx of [-256,0,256])for(const dy of [-256,0,256]){
+        const cx=x+dx,cy=y+dy;if(cx<-r||cx>256+r||cy<-r||cy>256+r)continue;
+        const gr=g.createRadialGradient(cx,cy,0,cx,cy,r);gr.addColorStop(0,color);gr.addColorStop(1,'rgba(0,0,0,0)');
+        g.fillStyle=gr;g.fillRect(cx-r,cy-r,r*2,r*2);}};
+      for(let i=0;i<40;i++)blob(rnd()*256,rnd()*256,38+rnd()*56,'rgba(240,92,18,.8)');
+      for(let i=0;i<26;i++)blob(rnd()*256,rnd()*256,24+rnd()*40,'rgba(255,150,40,.7)');
+      for(let i=0;i<14;i++)blob(rnd()*256,rnd()*256,14+rnd()*26,'rgba(255,226,140,.65)');
+      for(let i=0;i<9;i++)blob(rnd()*256,rnd()*256,18+rnd()*30,'rgba(60,10,2,.5)');
+      g.filter='none';
+    }else{
       const grad=g.createLinearGradient(0,0,0,256);
       grad.addColorStop(0,'#1f5fc0');grad.addColorStop(.6,'#4a92e2');grad.addColorStop(1,'#9cc8f0');
       g.fillStyle=grad;g.fillRect(0,0,256,256);
-    }
-    // Soft blobs drawn at every wrapped position so the texture tiles seamlessly.
-    for(let i=0;i<(kind==='fire'?150:60);i++){
+    // Soft cloud blobs drawn at every wrapped position so the texture tiles.
+    for(let i=0;i<60;i++){
       const x=rnd()*256,y=kind==='fire'?rnd()*256:40+rnd()*170,r=kind==='fire'?10+rnd()*42:12+rnd()*30,hot=rnd();
       const inner=kind!=='fire'?'rgba(255,255,255,.5)':
         hot>.82?'rgba(255,236,160,.6)':hot>.5?'rgba(255,150,50,.5)':hot>.22?'rgba(230,70,15,.45)':'rgba(70,8,2,.55)';
@@ -826,9 +866,10 @@
         g.fillStyle=grad;g.fillRect(cx-r,cy-r,r*2,r*2);
       }
     }
+    }
     const t=new THREE.CanvasTexture(c);
     t.wrapS=THREE.RepeatWrapping;t.wrapT=kind==='fire'?THREE.RepeatWrapping:THREE.ClampToEdgeWrapping;
-    t.repeat.set(kind==='fire'?3:2,kind==='fire'?3:1);
+    t.repeat.set(kind==='fire'?1.4:2,kind==='fire'?1.4:1);
     if(THREE.SRGBColorSpace)t.colorSpace=THREE.SRGBColorSpace;
     return t;
   }
@@ -847,6 +888,7 @@
       actor?.setAura?.(actor===attacker&&view?view.aura:0,time||0);
       if(actor)actor.roarLevel=actor===attacker&&view?view.roar:0;
     }
+    setStage(view?.stage||null);
     const cam=filmCamera||camera;
     const kind=view?.fire?'fire':view?.launch&&!view.launch.landed?'sky':null;
     const subject=kind==='fire'?attacker:defender;
@@ -868,7 +910,7 @@
     const side=h*Math.max(1,cam.aspect||1,16/9)*1.6;
     fireVoid.scale.set(side,side,1);
     if(kind==='fire'){
-      tex.offset.set(Math.sin(time*.0004)*.06,-((time*.00028)%1));
+      tex.offset.set(Math.sin(time*.0004)*.05,((time*.00045)%1));
       fireVoid.material.color.setScalar(.9+.1*Math.sin(time*.025));
       fireVoid.material.opacity=view.fire;
     }else{

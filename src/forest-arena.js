@@ -230,6 +230,54 @@
     scene.fog=new THREE.Fog(0xcfe2d6,18,60);
     return root;
   }
+  // Open plains "stage" for solo attack shots (title card, strike, launch):
+  // big saturated sky, a low savanna horizon with a distant mesa, tan ground.
+  // Hidden by default; the runtime swaps it in for the forest during a film.
+  function plainsSkyCanvas(){
+    const c=canvas(1024,512),g=c.getContext('2d'),r=rng(0x9b17);
+    const grad=g.createLinearGradient(0,0,0,512);
+    grad.addColorStop(0,'#08348f');grad.addColorStop(.35,'#1b5fc4');grad.addColorStop(.47,'#3a84da');
+    grad.addColorStop(.5,'#88b7e2');grad.addColorStop(1,'#b9a66c');
+    g.fillStyle=grad;g.fillRect(0,0,1024,512);
+    for(let i=0;i<26;i++){
+      const x=r()*1024,y=60+r()*150,w=60+r()*170,h=18+r()*30;
+      for(let k=0;k<7;k++){
+        const cx=x+(r()-.5)*w,cy=y+(r()-.5)*h*.5,rad=h*(.7+r());
+        const cg=g.createRadialGradient(cx,cy,0,cx,cy,rad);
+        cg.addColorStop(0,'rgba(255,255,255,.9)');cg.addColorStop(.6,'rgba(250,252,255,.55)');cg.addColorStop(1,'rgba(255,255,255,0)');
+        g.fillStyle=cg;
+        for(const dx of [-1024,0,1024])g.fillRect(cx+dx-rad,cy-rad,rad*2,rad*2);
+      }
+    }
+    return c;
+  }
+  function plainsHorizonCanvas(){
+    const c=canvas(2048,256),g=c.getContext('2d'),r=rng(0x77a1);
+    // distant blue-grey mesas, then a hazy band of savanna scrub
+    g.fillStyle='rgba(118,138,160,.95)';
+    for(const [x0,w,h] of [[180,520,92],[980,380,64],[1500,460,104]]){
+      g.beginPath();g.moveTo(x0,236);g.lineTo(x0+w*.12,236-h);g.lineTo(x0+w*.86,236-h*1.03);
+      g.lineTo(x0+w,236);g.closePath();g.fill();
+    }
+    g.fillStyle='rgba(126,128,82,.9)';
+    for(let x=0;x<2048;x+=3){const h=6+r()*10+Math.sin(x*.01)*4;g.fillRect(x,236-h,3,h+20);}
+    return c;
+  }
+  function buildPlains(THREE,scene,{shadows=true}={}){
+    const root=new THREE.Group();root.name='plains-stage';root.visible=false;
+    const sky=new THREE.Mesh(new THREE.SphereGeometry(78,32,16),
+      new THREE.MeshBasicMaterial({map:texture(THREE,plainsSkyCanvas()),side:THREE.BackSide,fog:false,depthWrite:false}));
+    sky.renderOrder=-10;root.add(sky);
+    const ring=new THREE.Mesh(new THREE.CylinderGeometry(40,40,10,64,1,true),
+      new THREE.MeshBasicMaterial({map:texture(THREE,plainsHorizonCanvas()),side:THREE.BackSide,transparent:true,alphaTest:.02,fog:false,depthWrite:false}));
+    ring.position.y=10/2-1.8;ring.renderOrder=-9;root.add(ring);
+    const geo=new THREE.PlaneGeometry(90,90,1,1);
+    const ground=new THREE.Mesh(geo,new THREE.MeshLambertMaterial({
+      map:texture(THREE,grassTileCanvas(),{wrap:true,repeat:34}),color:0xb39c62}));
+    ground.rotation.x=-Math.PI/2;ground.position.y=-.035;ground.receiveShadow=shadows;root.add(ground);
+    scene.add(root);
+    return root;
+  }
   // A flat painting of the same forest for the no-3D fallback arena (CSS background).
   let cssCache='';
   function cssBackdrop(){
@@ -248,7 +296,7 @@
     }catch{cssCache='';}
     return cssCache;
   }
-  window.NoahsForestArena=Object.freeze({build,cssBackdrop});
+  window.NoahsForestArena=Object.freeze({build,buildPlains,cssBackdrop});
 })();
 // The no-3D fallback arena uses the same painted forest as its backdrop.
 document.addEventListener('DOMContentLoaded',()=>{

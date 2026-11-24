@@ -22,6 +22,8 @@
      defenderId:animals[defender].id,move,technique:move,
      special:false,miracleName:null,miracleBonus:0,
      damage:0,remainingHp:animals[defender].hp,
+     // Display-only numbers so the review shows the damage pops; HP is untouched.
+     previewDamage:{G:30,T:24,P:46}[move],
      finished:index===2,knockout:index===2
    })));
  }
