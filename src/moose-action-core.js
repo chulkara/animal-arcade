@@ -14,13 +14,13 @@ const MOVES=Object.freeze({
  Guts:Object.freeze({label:'Antler charge',base:'Run',frames:Object.freeze([
   key(0),key(240,{travel:-.24,lift:-.03,pitch:.15,headPitch:.26,neck:.16}),
   key(640,{travel:.56,lift:.03,pitch:.1,headPitch:.25,neck:.13,chest:.06}),
-  key(840,{travel:.87,lift:0,pitch:.17,headPitch:.31,neck:.20}),
+  key(840,{travel:.87,lift:-.02,pitch:.2,headPitch:.4,neck:.27,chest:.08}),
   key(1110,{travel:.52,pitch:.04,headPitch:.06}),key(1450)
  ])}),
  Technique:Object.freeze({label:'Cross-antler sweep',base:'Idle',frames:Object.freeze([
   key(0),key(210,{lateral:-.11,yaw:-.16,headYaw:-.35,roll:-.07}),
   key(420,{lateral:-.3,travel:.1,yaw:-.42,headYaw:-.78,roll:-.1,neck:.1}),
-  key(710,{lateral:.11,travel:.36,yaw:.33,headYaw:.73,roll:.1,chest:.14}),
+  key(710,{lateral:.13,travel:.36,yaw:.42,headYaw:.88,roll:.14,chest:.16}),
   key(970,{lateral:.16,travel:.29,yaw:.12,headYaw:.22,roll:.03}),
   key(1300)
  ])}),
@@ -39,7 +39,7 @@ const MOVES=Object.freeze({
     leftHindHip:.30,rightHindHip:.34,leftHindKnee:-.17,rightHindKnee:-.19,
     leftHindHock:.11,rightHindHock:.10,leftHindAnkle:-.07,rightHindAnkle:-.06,
     leftHoof:.91,rightHoof:.86,hindPlant:1}),
-  key(850,{travel:-.03,lift:.22,pitch:-.35,pelvis:-.18,
+  key(850,{travel:-.03,lift:.27,pitch:-.42,pelvis:-.18,
     leftHindHip:.43,rightHindHip:.40,leftHindKnee:-.31,rightHindKnee:-.30,
     leftHindHock:.19,rightHindHock:.17,leftHindAnkle:-.11,rightHindAnkle:-.10,
     leftHoof:1.13,rightHoof:1.07,hindPlant:1}),
@@ -48,10 +48,10 @@ const MOVES=Object.freeze({
     leftHindHip:-.11,rightHindHip:-.10,leftHindKnee:.25,rightHindKnee:.22,
     leftHindHock:-.10,rightHindHock:-.09,
     leftHoof:.64,rightHoof:.57,hindPlant:.80}),
-  key(1220,{travel:.31,lift:-.055,pitch:.19,pelvis:.16,
+  key(1220,{travel:.31,lift:-.055,pitch:.24,pelvis:.16,
     leftHindHip:-.30,rightHindHip:-.28,leftHindKnee:.55,rightHindKnee:.51,
     leftHindHock:-.28,rightHindHock:-.26,leftHindAnkle:.09,rightHindAnkle:.08,
-    leftHoof:-.10,rightHoof:-.09,headPitch:.13,hindPlant:.70}),
+    leftHoof:-.10,rightHoof:-.09,headPitch:.22,neck:.08,hindPlant:.70}),
   key(1440,{travel:.16,lift:-.07,pitch:.055,pelvis:.10,
     leftHindHip:-.14,rightHindHip:-.13,leftHindKnee:.25,rightHindKnee:.23,
     leftHindHock:-.10,rightHindHock:-.09,hindPlant:.50}),

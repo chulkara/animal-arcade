@@ -552,7 +552,9 @@
     const fill=new THREE.DirectionalLight(0xb9d7d6,1.4);
     fill.position.set(5,3,-4);scene.add(fill);
     // Warm procedural key light for charged attacks and the winner.
-    focusLight=new THREE.PointLight(0xffbb72,0,10,1.7);
+    // Short reach: it lights the attacker's face, not the downed loser, whose
+    // pale belly fur turned white under sun + hemisphere + this light.
+    focusLight=new THREE.PointLight(0xffbb72,0,5.5,1.9);
     focusLight.position.set(0,2.0,2);scene.add(focusLight);
     // PS2-era forest arena (sky dome, tree-line panorama, billboard trees,
     // grass with a worn clearing). Scenery stays behind the fighters and off to
@@ -760,7 +762,7 @@
     const beat=cinematics.shot(event,sequence.elapsed,nativeLength(event));
     const target=beat.beat==='FOCUS'?
       ({G:1.85,T:2.20,P:3.45,S:3.90}[event.move]||2.5):
-      beat.beat==='VICTORY'?2.0:beat.beat==='CONTACT'?1.6:0;
+      beat.beat==='VICTORY'?1.1:beat.beat==='CONTACT'?1.2:0;
     const colors={G:0xe0c19b,T:0x9ff0d1,P:0xffaa70,S:0xffd680};
     focusLight.color.setHex(colors[event.move]||0xffbb72);
     focusLight.intensity+=(target-focusLight.intensity)*.14;
