@@ -12,14 +12,14 @@ const ZERO=Object.freeze(Object.fromEntries(FIELDS.map(k=>[k,0])));
 const key=(ms,pose={})=>Object.freeze({ms,...ZERO,...pose});
 const MOVES=Object.freeze({
  Guts:Object.freeze({label:'Antler charge',base:'Run',frames:Object.freeze([
-  key(0),key(240,{travel:-.15,pitch:.09,headPitch:.16,neck:.11}),
+  key(0),key(240,{travel:-.24,lift:-.03,pitch:.15,headPitch:.26,neck:.16}),
   key(640,{travel:.56,lift:.03,pitch:.1,headPitch:.25,neck:.13,chest:.06}),
   key(840,{travel:.87,lift:0,pitch:.17,headPitch:.31,neck:.20}),
   key(1110,{travel:.52,pitch:.04,headPitch:.06}),key(1450)
  ])}),
  Technique:Object.freeze({label:'Cross-antler sweep',base:'Idle',frames:Object.freeze([
   key(0),key(210,{lateral:-.11,yaw:-.16,headYaw:-.35,roll:-.07}),
-  key(420,{lateral:-.24,travel:.15,yaw:-.32,headYaw:-.60,neck:.08}),
+  key(420,{lateral:-.3,travel:.1,yaw:-.42,headYaw:-.78,roll:-.1,neck:.1}),
   key(710,{lateral:.11,travel:.36,yaw:.33,headYaw:.73,roll:.1,chest:.14}),
   key(970,{lateral:.16,travel:.29,yaw:.12,headYaw:.22,roll:.03}),
   key(1300)

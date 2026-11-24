@@ -196,6 +196,9 @@
       const code={G:'Guts',T:'Technique',P:'Power',S:'Special'}[move];
       const base=window.NoahsMooseActionCore.MOVES[code].base.toLowerCase();
       actor.native(base);actor.proc=code;actor.procElapsed=0;
+      // Same wind-up / snap / linger / recover timing as the director uses.
+      actor.procStaging=cinematics?.staging?cinematics.staging('moose',move,
+        cinematics.MOOSE_CONTACT[move],window.NoahsMooseActionCore.MOVES[code].frames.at(-1).ms):null;
     };
     actor.pose=(pose)=>{
       const set=(name,axis,value)=>{
@@ -493,8 +496,9 @@
       // so the animated roar's weight shift does not overwrite grounding.
       if(actor.proc){
         actor.procElapsed+=reduced()?0:delta*1000;
+        const clipMs=actor.procStaging?actor.procStaging.clipAt(actor.procElapsed):actor.procElapsed;
         const sample=window.NoahsMooseActionCore.sampleMove(actor.proc,
-          actor.procElapsed,{reducedMotion:reduced()});
+          clipMs,{reducedMotion:reduced()});
         actor.pose(sample.pose);
       }
     };

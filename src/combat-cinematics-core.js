@@ -80,8 +80,17 @@ const STAGING=Object.freeze({
     // Low Swipe's source clip spends 3 of its 4 s recovering; play that fast.
     T:Object.freeze({windup:.55,windupSpeed:.7,strikeSpeed:1.6,holdMs:150,holdSpeed:.4,recoverSpeed:2.6}),
     P:Object.freeze({windup:.62,windupSpeed:.68,strikeSpeed:1.75,holdMs:170,holdSpeed:.35,recoverSpeed:1.7})
+  }),
+  // The Moose's attacks are our own keyframes; same arcade shape.
+  moose:Object.freeze({
+    G:Object.freeze({windup:.35,windupSpeed:.62,strikeSpeed:1.45,holdMs:140,holdSpeed:.4,recoverSpeed:1.5}),
+    T:Object.freeze({windup:.6,windupSpeed:.65,strikeSpeed:1.6,holdMs:130,holdSpeed:.4,recoverSpeed:1.5}),
+    P:Object.freeze({windup:.7,windupSpeed:.75,strikeSpeed:1.5,holdMs:160,holdSpeed:.35,recoverSpeed:1.5}),
+    S:Object.freeze({windup:.4,windupSpeed:.7,strikeSpeed:1.35,holdMs:170,holdSpeed:.35,recoverSpeed:1.5})
   })
 });
+// Authored contact frames of the Moose's keyframed attacks (clip time).
+const MOOSE_CONTACT=Object.freeze({G:830,T:680,P:1220,S:1330});
 function staging(attackerId,move,clipContactMs,clipLengthMs){
   const st=STAGING[attackerId]?.[move];
   if(!st||!Number.isFinite(clipContactMs)||!Number.isFinite(clipLengthMs)||
@@ -93,22 +102,27 @@ function staging(attackerId,move,clipContactMs,clipLengthMs){
     Object.freeze({from:c,to:h,speed:st.holdSpeed}),
     Object.freeze({from:h,to:clipLengthMs,speed:st.recoverSpeed})
   ]);
+  const clipAt=realMs=>{let real=0;
+    for(const seg of segments){const span=(seg.to-seg.from)/seg.speed;
+      if(realMs<=real+span)return seg.from+(realMs-real)*seg.speed;real+=span;}
+    return clipLengthMs;};
   const realAt=clipMs=>{let real=0;
     for(const seg of segments){const end=Math.min(seg.to,clipMs);
       if(end>seg.from)real+=(end-seg.from)/seg.speed;if(clipMs<=seg.to)break;}
     return real;};
   const speedAt=clipMs=>(segments.find(seg=>clipMs<seg.to)||segments.at(-1)).speed;
   return Object.freeze({segments,windupEnd:w,contact:c,holdEnd:h,
-    realContact:Math.round(realAt(c)),realLength:Math.round(realAt(clipLengthMs)),realAt,speedAt});
+    realContact:Math.round(realAt(c)),realLength:Math.round(realAt(clipLengthMs)),realAt,clipAt,speedAt});
 }
 function clearMeasuredContacts(){for(const key of Object.keys(MEASURED))delete MEASURED[key];}
 function duration(event,nativeMs){
   if(!ATTACKS[event?.attackerId]?.[event?.move])throw new RangeError('Invalid battle event');
-  const measured=MEASURED[event.attackerId]?.[event.move];
+  const measured=MEASURED[event.attackerId]?.[event.move]??
+    (event.attackerId==='moose'?MOOSE_CONTACT[event.move]:undefined);
   const staged=Number.isFinite(nativeMs)?staging(event.attackerId,event.move,measured,nativeMs):null;
   if(staged)return timeline(event,staged.realLength,staged.realContact);
   const attack=length(event,nativeMs);
-  const contact=event.attackerId==='moose'?{G:830,T:680,P:1220,S:1330}[event.move]:
+  const contact=event.attackerId==='moose'?MOOSE_CONTACT[event.move]:
     Number.isFinite(measured)&&Number.isFinite(nativeMs)?
       clamp(measured,180,Math.min(attack+180,2400)):
     clamp(Math.round(attack*{G:.58,T:.68,P:.74,S:.69}[event.move]),
@@ -426,5 +440,5 @@ return Object.freeze({ATTACKS,MIRACLES,POSES,HIT_STOP_MS,
   VICTORY_LOWER_START_MS,VICTORY_LOWER_READY_MS,
   VICTORY_APPROACH_START_MS,VICTORY_APPROACH_END_MS,
   VICTORY_HOWL_START_MS,VICTORY_HOWL_CUE_MS,VICTORY_BANNER_MS,VICTORY_END_MS,
-  spec,miracle,duration,shot,camera,victoryApproach,bearHowl,hitStop,blocking,contactKeep,setMeasuredContact,clearMeasuredContacts,measuredContact,staging,panel});
+  spec,miracle,duration,shot,camera,victoryApproach,bearHowl,hitStop,blocking,contactKeep,setMeasuredContact,clearMeasuredContacts,measuredContact,staging,MOOSE_CONTACT,panel});
 });

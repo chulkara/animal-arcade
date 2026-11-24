@@ -437,7 +437,9 @@ test('High Paw Strike restaging: slower wind-up, snapped strike, lingering impac
  assert.equal(director.duration(evt,3000).contact,st.realContact,'director uses real (warped) contact');
  assert.equal(director.duration(evt,3000).attack,st.realLength);
  director.clearMeasuredContacts();
- assert.equal(director.staging('moose','G',900,1833),null,'only listed moves are restaged');
+ assert.equal(director.staging('bear','S',900,1833),null,'only listed moves are restaged');
+ const mo=director.staging('moose','G',830,1450);
+ assert.equal(Math.round(mo.clipAt(mo.realContact)),830,'moose real→clip mapping lands on the authored contact frame');
  const low=director.staging('bear','T',850,4000);
  assert.ok(low.realLength<2500,'Low Swipe no longer idles through a 4 s recovery');
 });
