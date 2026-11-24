@@ -76,6 +76,9 @@ function measuredContact(attackerId,move){return MEASURED[attackerId]?.[move];}
 // playback speed; real time follows from them. Only clips listed here change.
 const STAGING=Object.freeze({
   bear:Object.freeze({
+    G:Object.freeze({windup:.6,windupSpeed:.72,strikeSpeed:1.6,holdMs:140,holdSpeed:.4,recoverSpeed:1.45}),
+    // Low Swipe's source clip spends 3 of its 4 s recovering; play that fast.
+    T:Object.freeze({windup:.55,windupSpeed:.7,strikeSpeed:1.6,holdMs:150,holdSpeed:.4,recoverSpeed:2.6}),
     P:Object.freeze({windup:.62,windupSpeed:.68,strikeSpeed:1.75,holdMs:170,holdSpeed:.35,recoverSpeed:1.7})
   })
 });

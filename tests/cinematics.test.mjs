@@ -414,9 +414,9 @@ test('knockout drives the loser back and keeps it there',()=>{
 });
 
 test('measured clip contact replaces the ratio guess and can be cleared',()=>{
- const evt={attacker:0,defender:1,attackerId:'bear',defenderId:'moose',move:'G',damage:10};
+ const evt={attacker:0,defender:1,attackerId:'bear',defenderId:'moose',move:'S',damage:10};
  const guess=director.duration(evt,1833).contact;
- assert.ok(director.setMeasuredContact('bear','G',900));
+ assert.ok(director.setMeasuredContact('bear','S',900));
  assert.equal(director.duration(evt,1833).contact,900);
  assert.equal(director.duration(evt,undefined).contact,director.duration(evt).contact,'placeholder path ignores measurements');
  director.clearMeasuredContacts();
@@ -437,7 +437,9 @@ test('High Paw Strike restaging: slower wind-up, snapped strike, lingering impac
  assert.equal(director.duration(evt,3000).contact,st.realContact,'director uses real (warped) contact');
  assert.equal(director.duration(evt,3000).attack,st.realLength);
  director.clearMeasuredContacts();
- assert.equal(director.staging('bear','G',900,1833),null,'only listed moves are restaged');
+ assert.equal(director.staging('moose','G',900,1833),null,'only listed moves are restaged');
+ const low=director.staging('bear','T',850,4000);
+ assert.ok(low.realLength<2500,'Low Swipe no longer idles through a 4 s recovery');
 });
 
 test('after an ordinary exchange the camera settles back to the two-shot',()=>{
