@@ -414,14 +414,30 @@ test('knockout drives the loser back and keeps it there',()=>{
 });
 
 test('measured clip contact replaces the ratio guess and can be cleared',()=>{
- const evt={attacker:0,defender:1,attackerId:'bear',defenderId:'moose',move:'P',damage:10};
- const guess=director.duration(evt,1600).contact;
- assert.ok(director.setMeasuredContact('bear','P',900));
- assert.equal(director.duration(evt,1600).contact,900);
+ const evt={attacker:0,defender:1,attackerId:'bear',defenderId:'moose',move:'G',damage:10};
+ const guess=director.duration(evt,1833).contact;
+ assert.ok(director.setMeasuredContact('bear','G',900));
+ assert.equal(director.duration(evt,1833).contact,900);
  assert.equal(director.duration(evt,undefined).contact,director.duration(evt).contact,'placeholder path ignores measurements');
  director.clearMeasuredContacts();
- assert.equal(director.duration(evt,1600).contact,guess);
+ assert.equal(director.duration(evt,1833).contact,guess);
  assert.equal(director.setMeasuredContact('tiger','P',900),false);
+});
+
+test('High Paw Strike restaging: slower wind-up, snapped strike, lingering impact, shorter overall',()=>{
+ const st=director.staging('bear','P',983,3000);
+ assert.ok(st);
+ const windupReal=st.realAt(st.windupEnd),strikeReal=st.realContact-windupReal;
+ assert.ok(windupReal>st.windupEnd*1.3,'wind-up plays slower than the source');
+ assert.ok(strikeReal<(st.contact-st.windupEnd)*.7,'strike plays faster than the source');
+ assert.ok(st.realLength<3000,'recovery is brisker so the move is shorter overall');
+ assert.equal(st.speedAt(st.contact+50),st.segments[2].speed,'impact linger');
+ director.setMeasuredContact('bear','P',983);
+ const evt={attacker:0,defender:1,attackerId:'bear',defenderId:'moose',move:'P',damage:30};
+ assert.equal(director.duration(evt,3000).contact,st.realContact,'director uses real (warped) contact');
+ assert.equal(director.duration(evt,3000).attack,st.realLength);
+ director.clearMeasuredContacts();
+ assert.equal(director.staging('bear','G',900,1833),null,'only listed moves are restaged');
 });
 
 test('after an ordinary exchange the camera settles back to the two-shot',()=>{

@@ -49,7 +49,7 @@
         '<button type="button" data-ark3d-turn="'+id+'">TURN '+id.toUpperCase()+' 90°</button>'+
         '<button type="button" data-ark3d-unload="'+id+'">REMOVE</button></div></div>').join('')+
       '<p class="ark-fbx-status" data-ark3d-status role="status"></p>'+
-      '<p class="ark-fbx-legal">Local preview only. The supplied models have unverified public/commercial redistribution rights and are not shipped by this site. Extract ZIPs before choosing a folder.</p>';
+      '<p class="ark-fbx-legal">Choose the extracted Bear and Moose folders. Models load locally in this browser session.</p>';
     game.append(panel);
     status(message);
     panel.querySelector('[data-ark3d-close]')?.focus();
@@ -172,7 +172,8 @@
       const next=mixer.clipAction(clip,model);
       const previous=actor.current;
       if(previous&&previous!==next)previous.fadeOut(fadeSeconds);
-      next.reset();next.enabled=true;next.setEffectiveWeight(1);
+      next.reset();next.enabled=true;next.setEffectiveWeight(1);next.timeScale=1;
+      actor.staged=null;actor.stagedAction=null;
       if(name==='knockout'&&actor.knockoutLead)next.time=actor.knockoutLead;
       const oneShot=!['idle','run','walk','breathing','jump','victory','angry'].includes(name);
       next.setLoop(oneShot?THREE.LoopOnce:THREE.LoopRepeat,oneShot?1:Infinity);
@@ -182,7 +183,16 @@
     };
     actor.move=(move)=>{
       if(!['G','T','P','S'].includes(move))return;
-      if(id==='bear'){actor.native(move);return;}
+      if(id==='bear'){
+        actor.native(move);
+        // Restage timing only for moves the director lists (wind-up / snap /
+        // linger / recover). Same table drives the cinematic timeline.
+        const clip=asset.clips[move];
+        actor.staged=clip&&cinematics?.staging?cinematics.staging('bear',move,
+          cinematics.measuredContact('bear',move),clip.duration*1000):null;
+        actor.stagedAction=actor.staged?actor.current:null;
+        return;
+      }
       const code={G:'Guts',T:'Technique',P:'Power',S:'Special'}[move];
       const base=window.NoahsMooseActionCore.MOVES[code].base.toLowerCase();
       actor.native(base);actor.proc=code;actor.procElapsed=0;
@@ -398,8 +408,40 @@
         morph.mesh.morphTargetInfluences[morph.index]=
           morph.base+(1-morph.base)*howl.jawOpen;
     };
+    const strikePitch=new THREE.Vector3(),strikeFacing=new THREE.Vector3(),strikeQ=new THREE.Quaternion();
+    const addPitch=(name,angle)=>{
+      const bone=joint.get(name);
+      if(!bone||!Number.isFinite(angle)||Math.abs(angle)<.0001)return;
+      if(!actor.additive.has(bone))actor.additive.set(bone,bone.quaternion.clone());
+      bone.updateWorldMatrix(true,false);
+      const local=strikePitch.clone().applyQuaternion(bone.getWorldQuaternion(strikeQ).invert()).normalize();
+      bone.quaternion.multiply(new THREE.Quaternion().setFromAxisAngle(local,angle));
+      bone.updateWorldMatrix(false,true);
+    };
+    // Exaggeration layered on the restaged source clip: gather weight back
+    // in the wind-up, drive the chest and head down through the blow, then a
+    // chest heave as it lands. Positive = lean back / nose up.
+    const strikeAccent=()=>{
+      const st=actor.staged,action=actor.stagedAction;
+      if(!st||action!==actor.current||reduced())return;
+      const tc=action.time*1000,w=st.windupEnd,c=st.contact;
+      const sm=t=>{t=Math.max(0,Math.min(1,t));return t*t*(3-2*t);};
+      const gather=sm(tc/w)*(1-sm((tc-w)/Math.max(1,c-w)));
+      const snap=sm((tc-(c-140))/140)*(1-sm((tc-c-60)/320));
+      const heave=tc>c?Math.sin(Math.min(1,(tc-c)/420)*Math.PI)*Math.exp(-(tc-c)/600):0;
+      orientation.updateMatrixWorld(true);
+      strikeFacing.set(0,0,1).applyQuaternion(orientation.getWorldQuaternion(strikeQ));
+      strikeFacing.y=0;strikeFacing.normalize();
+      strikePitch.copy(strikeFacing).cross(new THREE.Vector3(0,1,0)).normalize();
+      addPitch('RigSpine1',.11*gather-.07*snap);
+      addPitch('RigChest',.09*gather-.13*snap+.07*heave);
+      addPitch('RigNeck',-.06*gather-.05*snap+.06*heave);
+      addPitch('RigHead',-.05*gather-.10*snap+.03*heave);
+    };
     actor.tick=(delta)=>{
       resetApplied(actor);
+      if(actor.staged&&actor.stagedAction===actor.current)
+        actor.current.timeScale=actor.staged.speedAt(actor.current.time*1000);
       mixer.update(reduced()?0:delta);
       // Root travel is staged explicitly on pivot, not by imported FBX.
       // Preserve vertical lift and all bone articulation for the strike.
@@ -408,6 +450,7 @@
         entry.bone.position.x=entry.x;
         entry.bone.position.z=entry.z;
       }
+      strikeAccent();
       // Hind-foot correction runs AFTER victoryGesture and applyBlocking
       // so the animated roar's weight shift does not overwrite grounding.
       if(actor.proc){

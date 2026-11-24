@@ -69,16 +69,50 @@ function setMeasuredContact(attackerId,move,ms){
   (MEASURED[attackerId]||(MEASURED[attackerId]={}))[move]=Math.round(ms);
   return true;
 }
+function measuredContact(attackerId,move){return MEASURED[attackerId]?.[move];}
+// Restaging of native strikes (timing only; the source motion is kept).
+// Arcade weight comes from a slow, readable wind-up, a snapped strike, a
+// lingering impact and a brisk recovery. Segments are in CLIP time with a
+// playback speed; real time follows from them. Only clips listed here change.
+const STAGING=Object.freeze({
+  bear:Object.freeze({
+    P:Object.freeze({windup:.62,windupSpeed:.68,strikeSpeed:1.75,holdMs:170,holdSpeed:.35,recoverSpeed:1.7})
+  })
+});
+function staging(attackerId,move,clipContactMs,clipLengthMs){
+  const st=STAGING[attackerId]?.[move];
+  if(!st||!Number.isFinite(clipContactMs)||!Number.isFinite(clipLengthMs)||
+    clipContactMs<=0||clipContactMs>=clipLengthMs)return null;
+  const w=clipContactMs*st.windup,c=clipContactMs,h=Math.min(clipLengthMs,c+st.holdMs);
+  const segments=Object.freeze([
+    Object.freeze({from:0,to:w,speed:st.windupSpeed}),
+    Object.freeze({from:w,to:c,speed:st.strikeSpeed}),
+    Object.freeze({from:c,to:h,speed:st.holdSpeed}),
+    Object.freeze({from:h,to:clipLengthMs,speed:st.recoverSpeed})
+  ]);
+  const realAt=clipMs=>{let real=0;
+    for(const seg of segments){const end=Math.min(seg.to,clipMs);
+      if(end>seg.from)real+=(end-seg.from)/seg.speed;if(clipMs<=seg.to)break;}
+    return real;};
+  const speedAt=clipMs=>(segments.find(seg=>clipMs<seg.to)||segments.at(-1)).speed;
+  return Object.freeze({segments,windupEnd:w,contact:c,holdEnd:h,
+    realContact:Math.round(realAt(c)),realLength:Math.round(realAt(clipLengthMs)),realAt,speedAt});
+}
 function clearMeasuredContacts(){for(const key of Object.keys(MEASURED))delete MEASURED[key];}
 function duration(event,nativeMs){
   if(!ATTACKS[event?.attackerId]?.[event?.move])throw new RangeError('Invalid battle event');
-  const attack=length(event,nativeMs);
   const measured=MEASURED[event.attackerId]?.[event.move];
+  const staged=Number.isFinite(nativeMs)?staging(event.attackerId,event.move,measured,nativeMs):null;
+  if(staged)return timeline(event,staged.realLength,staged.realContact);
+  const attack=length(event,nativeMs);
   const contact=event.attackerId==='moose'?{G:830,T:680,P:1220,S:1330}[event.move]:
     Number.isFinite(measured)&&Number.isFinite(nativeMs)?
       clamp(measured,180,Math.min(attack+180,2400)):
     clamp(Math.round(attack*{G:.58,T:.68,P:.74,S:.69}[event.move]),
       180,Math.min(attack+180,2400));
+  return timeline(event,attack,contact);
+}
+function timeline(event,attack,contact){
   const miracleLead=event.miracleName?850:0;
   // The reference takes time to prepare a signature move. Our previous
   // edit triggered the native FBX on frame one, so no strike had a buildup.
@@ -385,5 +419,5 @@ return Object.freeze({ATTACKS,MIRACLES,POSES,HIT_STOP_MS,
   VICTORY_LOWER_START_MS,VICTORY_LOWER_READY_MS,
   VICTORY_APPROACH_START_MS,VICTORY_APPROACH_END_MS,
   VICTORY_HOWL_START_MS,VICTORY_HOWL_CUE_MS,VICTORY_BANNER_MS,VICTORY_END_MS,
-  spec,miracle,duration,shot,camera,victoryApproach,bearHowl,hitStop,blocking,contactKeep,setMeasuredContact,clearMeasuredContacts,panel});
+  spec,miracle,duration,shot,camera,victoryApproach,bearHowl,hitStop,blocking,contactKeep,setMeasuredContact,clearMeasuredContacts,measuredContact,staging,panel});
 });
