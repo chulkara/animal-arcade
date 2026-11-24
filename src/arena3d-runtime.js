@@ -409,14 +409,54 @@
           morph.base+(1-morph.base)*howl.jawOpen;
     };
     const strikePitch=new THREE.Vector3(),strikeFacing=new THREE.Vector3(),strikeQ=new THREE.Quaternion();
-    const addPitch=(name,angle)=>{
+    const addRot=(name,worldAxis,angle)=>{
       const bone=joint.get(name);
       if(!bone||!Number.isFinite(angle)||Math.abs(angle)<.0001)return;
       if(!actor.additive.has(bone))actor.additive.set(bone,bone.quaternion.clone());
       bone.updateWorldMatrix(true,false);
-      const local=strikePitch.clone().applyQuaternion(bone.getWorldQuaternion(strikeQ).invert()).normalize();
+      const local=worldAxis.clone().applyQuaternion(bone.getWorldQuaternion(strikeQ).invert()).normalize();
       bone.quaternion.multiply(new THREE.Quaternion().setFromAxisAngle(local,angle));
       bone.updateWorldMatrix(false,true);
+    };
+    const addPitch=(name,angle)=>addRot(name,strikePitch,angle);
+    const UP=new THREE.Vector3(0,1,0);
+    const neckBones=['RigNeck','RigNeck1','RigNeck2','RigNeck3'].filter(n=>joint.has(n));
+    const addNeck=(axis,angle)=>{for(const n of neckBones)addRot(n,axis,angle/Math.max(1,neckBones.length));};
+    const updateFacing=()=>{
+      orientation.updateMatrixWorld(true);
+      strikeFacing.set(0,0,1).applyQuaternion(orientation.getWorldQuaternion(strikeQ));
+      strikeFacing.y=0;strikeFacing.normalize();
+      strikePitch.copy(strikeFacing).cross(UP).normalize();
+    };
+    // Defender hit reactions layered on the single stock hit clip, shaped by
+    // the blow: a head-on charge throws the head back, a swipe snaps it
+    // sideways, an overhead strike drives head and chest down and buckles the
+    // forelegs. A fast impulse (peak ~70 ms) then a short settle.
+    actor.react=null;
+    actor.hitReact=(move,strength)=>{actor.react={age:0,move,strength};};
+    const reactAccent=delta=>{
+      const r=actor.react;
+      if(!r||reduced()){orientation.position.y=0;return;}
+      r.age+=delta*1000;
+      if(r.age>900){actor.react=null;orientation.position.y=0;return;}
+      const a=r.age/70,k=a*Math.exp(1-a)*r.strength;           // impulse 0→1→0
+      const settle=Math.sin(Math.min(1,r.age/520)*Math.PI)*Math.exp(-r.age/420)*r.strength*.35;
+      updateFacing();
+      if(r.move==='T'){
+        addRot('RigHead',UP,.42*k-.12*settle);addNeck(UP,.26*k);
+        addRot('RigHead',strikeFacing,.18*k);
+        addPitch('RigChest',.06*k);
+      }else if(r.move==='P'||r.move==='S'){
+        addPitch('RigHead',-.34*k+.1*settle);addNeck(strikePitch,-.28*k);
+        addPitch('RigChest',-.12*k);addPitch('RigSpine1',-.06*k);
+        addPitch('RigLFLeg1',.16*k);addPitch('RigRFLeg1',.16*k);
+        orientation.position.y=-.11*k;
+        return;
+      }else{
+        addPitch('RigHead',.38*k-.1*settle);addNeck(strikePitch,.26*k);
+        addPitch('RigChest',.12*k);addPitch('RigSpine1',.07*k);
+      }
+      orientation.position.y=-.04*k;
     };
     // Exaggeration layered on the restaged source clip: gather weight back
     // in the wind-up, drive the chest and head down through the blow, then a
@@ -429,10 +469,7 @@
       const gather=sm(tc/w)*(1-sm((tc-w)/Math.max(1,c-w)));
       const snap=sm((tc-(c-140))/140)*(1-sm((tc-c-60)/320));
       const heave=tc>c?Math.sin(Math.min(1,(tc-c)/420)*Math.PI)*Math.exp(-(tc-c)/600):0;
-      orientation.updateMatrixWorld(true);
-      strikeFacing.set(0,0,1).applyQuaternion(orientation.getWorldQuaternion(strikeQ));
-      strikeFacing.y=0;strikeFacing.normalize();
-      strikePitch.copy(strikeFacing).cross(new THREE.Vector3(0,1,0)).normalize();
+      updateFacing();
       addPitch('RigSpine1',.11*gather-.07*snap);
       addPitch('RigChest',.09*gather-.13*snap+.07*heave);
       addPitch('RigNeck',-.06*gather-.05*snap+.06*heave);
@@ -451,6 +488,7 @@
         entry.bone.position.z=entry.z;
       }
       strikeAccent();
+      reactAccent(reduced()?0:delta);
       // Hind-foot correction runs AFTER victoryGesture and applyBlocking
       // so the animated roar's weight shift does not overwrite grounding.
       if(actor.proc){
@@ -474,6 +512,7 @@
       actor.resetHowlFace?.();
       resetApplied(actor);actor.proc=null;actor.procElapsed=0;
       actor.soleRest=null;
+      actor.react=null;orientation.position.y=0;
       pivot.position.set(actor.baseX,0,0);pivot.rotation.set(0,0,0);if(actor.mouthLight)actor.mouthLight.intensity=0;
       orientation.rotation.set(0,(slot===0?Math.PI/2:-Math.PI/2)+yaw[id],0);
       actor.native('idle');
@@ -1064,6 +1103,7 @@
     if(sequence.attackStarted&&!sequence.contact&&actionTime>=contact){
       sequence.contact=true;
       defender?.native(event.knockout?'knockout':'hit');
+      defender?.hitReact?.(event.move,({G:.85,T:.7,P:1,S:1.15}[event.move]||.8)*(event.knockout?1.2:1));
       const pelvis=defender?.joint?.get('RigPelvis');
       if(event.knockout&&pelvis&&THREE)
         sequence.pelvisStand=pelvis.getWorldPosition(new THREE.Vector3()).y;
