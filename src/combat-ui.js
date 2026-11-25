@@ -19,6 +19,7 @@
   const COUNTDOWN_MS=flowApi?flowApi.LIMIT_MS:10000;
   const ADVANCE_MIN_MS=1300;   // never jump on before the hit has been seen
   const ADVANCE_MAX_MS=10500;  // safety cap if a cinematic never reports done
+  let lastFilmElapsed=-1;
   // The arcade cuts from the film's return straight back to the reels.
   const RESULT_HOLD_MS=350;    // after the cinematic, the result line stays up this long
   let countdownKey='',countdownLeft=COUNTDOWN_MS,countdownAt=0,lastShownSecond=-1;
@@ -65,6 +66,12 @@
       if(!box)continue;
       const v=flowApi.view({...flow,elapsed:Math.max(0,flow.elapsed)},i,values);
       const at=v.index%values.length;
+      // Drum roll: each new symbol slides down into the window from above
+      // (the old one leaves below), restarted on every step of the reel.
+      if(box.dataset.at!==String(at)){
+        const first=box.dataset.at===undefined;box.dataset.at=String(at);
+        if(!first&&v.spinning){box.classList.remove('is-rolling');void box.offsetWidth;box.classList.add('is-rolling');}
+      }
       const cur=box.querySelector('[data-reel-current]');
       if(cur){cur.textContent=token(values[at]);cur.dataset.mark=values[at]==='MARK'?'true':'false';cur.dataset.v=String(values[at]);}
       const prev=box.querySelector('[data-reel-prev]'),nxt=box.querySelector('[data-reel-next]');
@@ -169,6 +176,10 @@
       if(filmDone&&!filmDoneAt)filmDoneAt=performance.now();
       const held=filmDoneAt?performance.now()-filmDoneAt:0;
       if(paused()){advanceSince=performance.now()-Math.min(waited,ADVANCE_MIN_MS);if(filmDoneAt)filmDoneAt=performance.now();}
+      // The safety cap is for a film that never reports done, not a slow
+      // one: while the film clock is still moving, keep pushing it back.
+      else if(!filmDone&&cine&&cine.elapsed!==lastFilmElapsed){lastFilmElapsed=cine.elapsed;
+        if(waited>ADVANCE_MAX_MS-2000)advanceSince=performance.now()-(ADVANCE_MAX_MS-2000);}
       else if((filmDone&&held>=RESULT_HOLD_MS&&waited>=ADVANCE_MIN_MS)||waited>=ADVANCE_MAX_MS){next();return;}
       advanceTimer=window.setTimeout(tick,120);
     };
@@ -283,8 +294,12 @@
   }
   // Developer tools (film review, 3D setup, Forestfall) live in a drawer,
   // closed by default so they never sit over the arena; remembered locally.
-  function devOpen(){try{return localStorage.getItem('arkade.devDrawer')==='open';}catch{return false;}}
-  function setDevOpen(on){try{localStorage.setItem('arkade.devDrawer',on?'open':'closed');}catch{}}
+  // In-memory only: a drawer left open once (to load the 3D files) must not
+  // keep five buttons over every later match. It also closes itself as soon
+  // as one of its tools is used.
+  let devOn=false;
+  function devOpen(){return devOn;}
+  function setDevOpen(on){devOn=Boolean(on);}
   function actorLabel(s){return s.mode==='SOLO'&&s.actor===1?'CPU':'PLAYER '+(s.actor+1);}
   function actorName(s,i){return s.mode==='SOLO'&&i===1?'CPU':'PLAYER '+(i+1);}
   // Health drains from its previous width (paused by CSS while the attack
@@ -296,14 +311,18 @@
     const f=s.animals[i],a=animal[f.id];
     const remaining=Math.round(f.hp/f.maxHp*100);
     if(prevBattle!==battle){prevBattle=battle;prevPct=[100,100];}
-    const from=prevPct[i];prevPct[i]=remaining;
+    // The struck side keeps its pre-hit health (number and bar) until the
+    // attack film lands; combat-cinematics then releases the drain.
+    const e=s.lastEvent,struck=e?.kind==='HIT'&&e.defender===i&&['RESULT','FINISHED'].includes(s.phase);
+    const before=struck?Math.min(f.maxHp,f.hp+(e.damage||0)):f.hp;
+    const from=struck?Math.round(before/f.maxHp*100):prevPct[i];prevPct[i]=remaining;
     return `<div class="ark-arena-hud-player ark-arena-hud-player-${i}" aria-label="${actorName(s,i)} ${a.label}, ${SHOW(f.hp)} of ${SHOW(f.maxHp)} health">
       <div class="ark-hud-nameplate">
         <span class="ark-hud-side">${actorName(s,i)}</span>
         <strong>${a.label}</strong>
-        <span class="ark-hud-health-value">${SHOW(f.hp)} / ${SHOW(f.maxHp)}</span>
+        <span class="ark-hud-health-value${struck?' is-struck':''}">${struck?`<i class="hp-before">${SHOW(before)}</i>`:''}<i class="hp-after">${SHOW(f.hp)}</i> / ${SHOW(f.maxHp)}</span>
       </div>
-      <div class="ark-hud-meter" aria-hidden="true"><span style="--from:${from}%;width:${remaining}%"></span></div>
+      <div class="ark-hud-meter${struck?' is-struck':''}" aria-hidden="true"><span style="--from:${from}%;width:${remaining}%"></span></div>
       <div class="ark-hud-techniques" aria-hidden="true">
         <span>G ${s.selected[i].technique==='G'?'◆':'·'}</span>
         <span>T ${s.selected[i].technique==='T'?'◆':'·'}</span>
@@ -448,7 +467,7 @@
     }
     if(s.phase==='POWER'&&e?.kind==='TIE'){
       const [a,b]=(e.powers||[]).map(token);
-      if(a!==undefined)out.push(`<div class="fight-clash is-tie" aria-hidden="true"><span class="fight-clash-l">${a}</span><span class="fight-clash-r">${b}</span></div>`);
+      if(a!==undefined)out.push(`<div class="fight-clash is-tie" aria-hidden="true"><span class="fight-clash-l"><i>${a}</i></span><span class="fight-clash-r"><i>${b}</i></span></div>`);
       out.push(`<div class="fight-callout fight-callout-tie" aria-hidden="true"><b>TIEBREAKER</b><small>CHARGE ×${e.charge}</small></div>`);
     }else if(s.phase==='POWER'&&s.selected.every(x=>x.power===null)){
       out.push(`<div class="fight-callout fight-callout-small" aria-hidden="true"><b>POWER UP!</b></div>`);
@@ -469,7 +488,10 @@
     if(s.phase==='FINISHED'&&s.session.complete&&!rewardClaimed){
       rewardClaimed=true;matchReward=window.NoahsCards?.grantBattleReward()||null;
     }
-    return `<section class="panel combat-panel ark-reference-layout screen-copy" aria-label="Interactive animal battle">
+    const filmedHit=['RESULT','FINISHED'].includes(s.phase)&&s.lastEvent?.kind==='HIT'&&Boolean(window.NoahsCinematics);
+    const hitKey=filmedHit?window.NoahsArena3DCore?.battleEvent?.(s)?.key:null;
+    const hold=filmedHit&&hitKey!=null&&window.__arkHpReleased!==hitKey;
+    return `<section class="panel combat-panel ark-reference-layout screen-copy" aria-label="Interactive animal battle"${filmedHit?' data-hit-film="1"':''}${hold?' data-hp-hold="1"':''}>
       <div class="section-eyebrow">NOAH'S ARKADE · COMBAT LAB</div>
       <div class="combat-heading"><h1 class="panel-title">WILD DUEL</h1>
         <span>${s.mode==='SOLO'?
@@ -504,9 +526,9 @@
       <p class="combat-disclaimer">Original prototype combat tuning. Private FBX creatures render only after local import; battles remain playable with the illustrated fallback.</p>
       <div class="combat-footer" data-dev-open="${devOpen()?'true':'false'}">
         <span>${s.mode==='DUEL'?'P1: L-SHIFT / SPACE / F · P2: R-SHIFT / ENTER / J':'STOP: SPACE / SHIFT / F'} · ESC = BACK</span>
-        <button type="button" data-combat-quit>← BACK TO ARENA</button>
         <button type="button" data-dev-toggle aria-expanded="${devOpen()?'true':'false'}">DEV ${devOpen()?'▾':'▸'}</button>
         <div class="ark-dev-drawer">
+        <button type="button" data-combat-quit>← BACK TO ARENA</button>
         <button type="button" data-bear-review-quick>BEAR CINEMATIC REVIEW</button>
         <div class="ark-forestfall-import" aria-label="Forestfall special move video">
           <button type="button" data-forestfall-choose>LOAD FORESTFALL VIDEO</button>
@@ -527,6 +549,10 @@
       if(footer){footer.dataset.devOpen=on?'true':'false';
         const t=footer.querySelector('[data-dev-toggle]');t.setAttribute('aria-expanded',String(on));t.textContent='DEV '+(on?'▾':'▸');}
       return;
+    }
+    if(target.closest('.ark-dev-drawer button:not([data-forestfall-choose])')){
+      setDevOpen(false);const footer=target.closest('.combat-footer');
+      if(footer){footer.dataset.devOpen='false';const t=footer.querySelector('[data-dev-toggle]');if(t){t.setAttribute('aria-expanded','false');t.textContent='DEV ▸';}}
     }
     const reel=target.closest('[data-reel-player]');
     if(reel){stopSlot(Number(reel.dataset.reelPlayer));return;}

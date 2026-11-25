@@ -117,6 +117,44 @@ Each turn both players secretly pick one action; both resolve simultaneously.
   `finish+150`, `RESULT_HOLD_MS` 350.
 - Moose optional `walk: Loco_Walk.FBX` so its victory approach walks.
 
+- **Iteration 4 (2026-11-25, 3:14 PM recording + forwarded review).**
+  - *Deferred HP drain.* combat-ui `hud()` renders the struck side's pre-hit
+    number (`.hp-before`) and `--from` width; the section carries
+    `data-hp-hold="1"` until combat-cinematics `draw()` reaches
+    `timing.landAt`, then removes it (restarting `ark-hp-drain`) and records
+    `window.__arkHpReleased=event.key` so re-renders don't hold again.
+  - *Filmed-hit chrome.* `data-hit-film` (RESULT/FINISHED HIT) hides THE
+    STRIKE LANDS/NEXT/instructions, the expedition pill and heading; from
+    the title (`data-film-past`) the bottom slot deck stays hidden until the
+    next turn. `.combat-message` is visually hidden but kept for screen readers.
+  - *Tie clash.* Values are wrapped in `<i>` octagons (raw text in the span
+    was the "pixel debris" over the Bear's head); slide in, butt heads, bounce apart.
+  - *DEV drawer.* In-memory only (not localStorage), closes itself after a
+    tool is used; BACK TO ARENA moved inside it (Esc still works).
+  - *Ground dot.* The title roar's mouth light was never positioned (sat at
+    the world origin on the dirt); it now follows the jaw.
+  - *Contact two-shot.* `shot()` CONTACT → `'contact'`; `soloView.contact`;
+    victim visible from contactAt; runtime places the attacker against the
+    victim (`bodyHalf`) and `applyContact` frames both from live bounds, 15°
+    Dutch tilt, 40 ms flash, hit-stop freezes the rigs. Fire void ends at
+    contact so the blow lands in the forest.
+  - *Launch/landing.* Technique lifts off from the ground; Power still enters
+    high and upside-down (reference) but capped at 2.05 so it is in frame on
+    frame one. `redSky` is graded: holds through the flight, fades over
+    `SOLO_MS.redFade` 400 ms on the landing (`setStage(level)` cross-fades a
+    second red sky dome + material/fog lerp). Get-up 700 ms. Title white-out
+    110 ms. Lunge stops 2.7 units from the face (no cropped cheek).
+  - *Moose.* Title: antler toss + forehoof rake (`roarClock`). Special leap:
+    forelegs fold (new `leftFrontKnee/rightFrontKnee` fields → RigL/RFLeg2).
+    Strike shots pulled back ×1.16 for the antlers. Victory: bugle on the
+    howl beat, then plants and rears about its hind feet (`victoryRear`,
+    applied in applyBlocking; the Power pose's own pitch is a roll on this
+    rig) with a second bellow; `mooseBellow` audio cue (same synth, lower).
+  - *Spin cameras.* During POWER (ATTACK!) `spinCamera()` holds wide 0.7 s
+    then cuts 1.5 s close-ups of each animal, which growls (`roarLevel`).
+  - *Reel drums.* `.is-rolling` restarts per step (symbol drops in with a
+    smear); lock springs past centre under a starburst.
+
 ## Delivering work to the user
 - The user runs the game on his Mac from `~/Desktop/animal-arcade`.
 - Deliver commits as a git bundle whose ref is the branch name

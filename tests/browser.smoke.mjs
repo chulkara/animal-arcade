@@ -194,7 +194,8 @@ await run('combat-duel-390x844',{width:390,height:844},async page=>{
     await page.keyboard.press('y');await page.keyboard.press('j');
   }
   assert.ok(await page.locator('[data-combat-next], [data-combat-next-bout], [data-combat-rematch]').count()>0);
-  await page.locator('[data-combat-quit]').click();
+  // BACK TO ARENA lives in the DEV drawer now; the drawer closes after use
+  await page.openDev();await page.locator('[data-combat-quit]').click();
   assert.equal(await page.locator('#game').getAttribute('data-screen'),'BATTLE_STAGE');
 });
 
@@ -508,14 +509,31 @@ await run('battle-feel-desktop-1440x900',{width:1440,height:900},async page=>{
   assert.ok(await page.locator('[data-combat-next], [data-combat-next-bout], [data-combat-rematch]').count()>0);
   assert.equal(await page.locator('.combat-battlefield.battlefield-impact').count(),1);
   assert.equal(await page.locator('.battlefield-damage').count(),1);
+  if(await page.locator('[data-combat-next]').count()){
+    // Health holds at its pre-hit value through the clash and the film and
+    // drains only when the victim lands; no pill / STRIKE LANDS over it.
+    const held=await page.evaluate(()=>{const r=document.querySelector('.ark-reference-layout'),
+      v=r.querySelector('.ark-hud-health-value.is-struck');
+      return {hold:r.dataset.hpHold,before:v&&getComputedStyle(v.querySelector('.hp-before')).display!=='none',
+        after:v&&getComputedStyle(v.querySelector('.hp-after')).display!=='none'};});
+    assert.equal(held.hold,'1','HP is held during the clash');
+    assert.ok(held.before&&!held.after,'pre-hit number shown until the landing');
+    assert.equal(await page.locator('.combat-series').isVisible(),false,'no expedition pill over the hit');
+    assert.equal(await page.locator('.combat-reel-label').evaluate(el=>getComputedStyle(el).visibility),'hidden','no THE STRIKE LANDS before the strike');
+    await page.waitForFunction(()=>!document.querySelector('.ark-reference-layout')?.dataset.hpHold,null,{timeout:15000});
+    assert.equal(await page.locator('.ark-hud-health-value.is-struck .hp-after').evaluate(el=>getComputedStyle(el).display!=='none'),true,'drained after the landing');
+    assert.equal(await page.locator('.ark-reference-layout[data-film-past="1"] .fight-deck').evaluate(el=>getComputedStyle(el).opacity),'0','bottom HUD stays away until the next turn');
+  }
   const an=await page.locator('.combat-striker .combat-fighter-art')
     .evaluate(el=>getComputedStyle(el).animationName);
   assert.notEqual(an,'none','The original animal portrait should animate on attack');
   assert.equal(await page.locator('.ark-cinema').count(),1,'The new cinematic stage should be mounted');
   assert.ok(['focus','title','intro','attack','contact','launch','impact','reaction','miracle','victory','done']
     .includes(await page.locator('.ark-cinema').getAttribute('data-beat')));
-  await page.locator('.combat-message').waitFor({state:'visible',timeout:8000});
-  assert.match(await page.locator('.combat-message').innerText(),/FERAL CHARGE|LOW SWIPE|HIGH PAW STRIKE|RAGING REAR|ANTLER CHARGE|CROSS-ANTLER SWEEP|TWO-HOOF STOMP|LEAPING ANTLER DRIVE/);
+  // the move summary is not drawn over a filmed hit (the film names the
+  // move) but stays in the page as a status for screen readers
+  await page.locator('.combat-message').waitFor({state:'attached',timeout:8000});
+  assert.match(await page.locator('.combat-message').textContent(),/FERAL CHARGE|LOW SWIPE|HIGH PAW STRIKE|RAGING REAR|ANTLER CHARGE|CROSS-ANTLER SWEEP|TWO-HOOF STOMP|LEAPING ANTLER DRIVE/);
   await page.evaluate(()=>window.NoahsCinematics.sync());
   assert.equal(await page.locator('.combat-battlefield .ark-cinema').count(),1,
     'Repeated director sync must not leave ghost move titles');
@@ -654,7 +672,8 @@ await run('private-3d-dialog-mobile-390x844',{width:390,height:844},async page=>
   const status=await page.evaluate(()=>window.NoahsArena3D.getStatus());
   assert.equal(status.bear,false);
   assert.equal(status.moose,false);
-  await page.locator('[data-ark3d-open]').click();
+  assert.equal(await page.locator('.combat-footer').getAttribute('data-dev-open'),'false','the DEV drawer closes itself once a tool is used');
+  await page.openDev();await page.locator('[data-ark3d-open]').click();
   assert.equal(await page.locator('.ark-fbx-dialog').count(),1);
   assert.equal(await page.locator('[data-ark3d-folder]').count(),2);
   assert.equal(await page.locator('[data-bear-review-start]').count(),1);

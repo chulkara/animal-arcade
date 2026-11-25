@@ -483,20 +483,27 @@ test('solo attack (Bear High Paw Strike) follows the arcade reference film gramm
   const order=[];
   for(let ms=0;ms<t.total;ms+=20){const b=director.shot(evt,ms,3000).beat;if(order.at(-1)!==b)order.push(b);}
   assert.deepEqual(order,['FOCUS','TITLE','ATTACK','CONTACT','LAUNCH','IMPACT','REACTION']);
-  // the two animals never share the frame between the title and the return
+  // the victim is off screen from the title to the blow; at contact both
+  // animals share one tilted two-shot through the hit-stop
   const v=ms=>director.soloView(evt,ms,3000);
   assert.equal(v(t.titleIn+300).showDefender,false);
-  assert.equal(v(t.actionLead+t.contact).showDefender,false);
+  assert.equal(v(t.actionLead+t.contact-5).showDefender,false);
+  const hit=v(t.actionLead+t.contact+5);
+  assert.ok(hit.showDefender&&hit.showAttacker&&hit.contact===1,'two-fighter contact frame');
+  const cc=director.camera(evt,t.actionLead+t.contact+5,3000);
+  assert.equal(cc.shot,'contact');assert.ok(cc.snap&&Math.abs(cc.angle)>.2,'hard cut, Dutch-tilted');
   assert.equal(v(t.launchAt+300).showAttacker,false);
   assert.ok(v(t.finish-10).showAttacker&&v(t.finish-10).showDefender);
   // reference shot order inside the strike
   const shots=[];for(let ms=t.actionLead;ms<t.launchAt;ms+=10){const n=director.shot(evt,ms,3000).shot;if(shots.at(-1)!==n)shots.push(n);}
-  assert.deepEqual(shots,['soloRise','soloRear','soloFire','lunge']);
+  assert.deepEqual(shots,['soloRise','soloRear','soloFire','lunge','contact']);
   // aura during the title, fire behind the strike, glint before the lunge, flash after it
   assert.ok(v(t.titleIn+400).aura>.9&&v(t.titleIn+400).fire===0);
-  assert.ok(v(t.actionLead+t.contact).fire>.9);
+  assert.ok(v(t.actionLead+t.contact-1).fire>.9);
+  assert.equal(v(t.actionLead+t.contact+5).fire,0,'the contact two-shot is in the forest, not the fire void');
   assert.ok(v(t.actionLead+t.lungeAt-50).glint>.9,'claw glint at the top of the swing');
-  assert.ok(v(t.actionLead+t.contact+20).flash>.9,'white flash right on the hit');
+  assert.ok(v(t.actionLead+t.contact+10).flash>.9,'white flash right on the hit');
+  assert.ok(v(t.actionLead+t.contact+50).flash<.05,'a crisp ~40 ms flash, not a milky fade');
   assert.ok(v(t.actionLead+t.contact-1).lunge>.9,'lunges into the lens before the flash');
   assert.ok(v(t.actionLead-1).flash>.9,'title closes to white');
   assert.equal(v(t.actionLead+t.contact+120).flash,0,'impact flash is crisp (a couple of frames)');
@@ -511,7 +518,7 @@ test('solo attack (Bear High Paw Strike) follows the arcade reference film gramm
   // the victim is already airborne and turning over on the launch's first frame
   const first=v(t.launchAt).launch;
   assert.ok(first.y>1&&Math.abs(first.spin)>1.5,'tumbling from frame one');
-  assert.ok(first.y>2,'enters high, near the top of the frame (reference 19.9)');
+  assert.ok(first.y>2&&first.y<=2.05,'enters high but inside the frame (reference 19.9; never an empty first frame)');
   const peak=v((t.launchAt+t.landAt)/2).launch;
   assert.ok(peak.y<first.y,'and drops away into the distance');
   assert.equal(Math.sign(peak.drift),attacker===0?1:-1);
@@ -557,8 +564,14 @@ test('each move has its own impact: hit-stop, tilt and launch; victims land lyin
  for(const m of ['G','T','P']){
   const first=director.soloView(mk(m),T[m].launchAt,3000).launch,last=director.soloView(mk(m),T[m].landAt-1,3000).launch;
   assert.ok(last.drift>first.drift+3,'travels away');
-  assert.ok(first.y>last.y,'drops in from above');
+  if(m==='T')assert.ok(first.y<.05,'Technique leaves the ground from where it stood in the contact shot');
+  if(m==='P')assert.ok(first.y>last.y,'Power drops in from above');
  }
+ // red sky holds through the flight and fades back to daylight on the landing
+ const red=ms=>director.soloView(mk('P'),ms,3000).redSky;
+ assert.equal(red(T.P.launchAt+100),1);
+ assert.ok(red(T.P.landAt+150)>.2&&red(T.P.landAt+150)<1,'continuous fade, not a hard cut');
+ assert.equal(red(T.P.landAt+director.SOLO_MS.redFade+10),0);
  const tiltP=director.camera(mk('P'),T.P.actionLead+T.P.contact-10,3000).angle;
  assert.ok(Math.abs(tiltP)>.25,'Power impact frame is Dutch-tilted');
  assert.equal(director.camera(mk('G'),T.G.actionLead+T.G.contact-10,3000).angle,0);

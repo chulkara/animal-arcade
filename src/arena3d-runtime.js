@@ -299,6 +299,8 @@
       set('RigTail',X,pose.tail*.6);
       set('RigLFLeg1',X,pose.leftHoof*.56);
       set('RigRFLeg1',X,pose.rightHoof*.56);
+      set('RigLFLeg2',X,(pose.leftFrontKnee||0)*.8);
+      set('RigRFLeg2',X,(pose.rightFrontKnee||0)*.8);
       set('RigLBLeg1',X,pose.leftHindHip*.85);
       set('RigRBLeg1',X,pose.rightHindHip*.85);
       set('RigLBLeg2',X,pose.leftHindKnee*.8);
@@ -509,6 +511,39 @@
       strikeFacing.y=0;strikeFacing.normalize();
       strikePitch.copy(strikeFacing).cross(UP).normalize();
     };
+    // Moose win (it has no roar or rear-up clip of its own): it bugles with
+    // its head thrown up as it walks in (same beat as the Bear's howl), then
+    // plants and rears up on its hind legs with its own Power rear-up,
+    // bellowing again at the top. Absolute in victory time; no drift.
+    actor.mooseVictory=(t)=>{
+      if(id!=='moose')return;
+      const R0=2300,ms=t-R0;
+      if(ms>=0&&!actor.vicPlanted){actor.vicPlanted=true;actor.native('idle',.3);}
+      if(ms<0)actor.vicPlanted=false;
+      actor.victoryLift=0;actor.victoryRear=0;
+      if(reduced())return;
+      let rearPeak=0;
+      if(ms>=0){
+        // Legs from its own Power stomp (crouch → forehooves up → down),
+        // held at the top while it bellows. The body pitch itself is applied
+        // in applyBlocking about the hind feet (victoryRear); the pose's own
+        // pitch/roll turn about the wrong axis on a 90°-yawed rig.
+        const m=ms<850?ms:ms<1500?850:Math.min(1440,850+(ms-1500)*.75);
+        const pose={...window.NoahsMooseActionCore.sampleMove('Power',m).pose,travel:0,lateral:0,pitch:0,roll:0,yaw:0,lift:0};
+        const keepX=pivot.position.x,keepZ=pivot.position.z;
+        actor.pose(pose);pivot.position.x=keepX;pivot.position.z=keepZ;
+        const ease=x=>{x=Math.max(0,Math.min(1,x));return x*x*(3-2*x);};
+        rearPeak=ease((ms-380)/420)*(1-ease((ms-1500)/420));
+        actor.victoryRear=.7*rearPeak;
+      }
+      const howl=ms<0?cinematics.bearHowl(t):null;
+      const up=Math.max(howl?.active?-howl.headPitch*1.5:0,.5*rearPeak);
+      const jaw=Math.max(howl?.active?howl.jawOpen:0,rearPeak);
+      if(up>.001||jaw>.001){
+        updateFacing();
+        addNeck(strikePitch,.45*up);addPitch('RigHead',.55*up);addPitch('RigJaw',-.32*jaw);
+      }
+    };
     // Defender hit reactions layered on the single stock hit clip, shaped by
     // the blow: a head-on charge throws the head back, a swipe snaps it
     // sideways, an overhead strike drives head and chest down and buckles the
@@ -600,8 +635,25 @@
         updateFacing();
         addPitch('RigNeck1',.16*lvl);addPitch('RigHead',.26*lvl);addPitch('RigChest',.07*lvl);
         addPitch('RigJaw',-.2*lvl);
+        if(id==='moose'){
+          // The Moose is not a statue under its title: it tosses its antlers
+          // side to side and rakes the ground with a forehoof.
+          actor.roarClock=(actor.roarClock||0)+delta;const w=actor.roarClock;
+          addRot('RigHead',UP,.3*lvl*Math.sin(w*7.2));addNeck(UP,.2*lvl*Math.sin(w*7.2-.5));
+          addPitch('RigHead',-.12*lvl*Math.max(0,Math.sin(w*14.4)));
+          const rake=Math.max(0,Math.sin(w*8.5));
+          addPitch('RigRFLeg1',.32*rake*lvl);addPitch('RigRFLeg2',-.55*rake*lvl);
+        }
+      }else actor.roarClock=0;
+      // The title roar's mouth light must sit in the mouth: it was never
+      // positioned, so it lit a pale disc on the ground at the world origin
+      // in every title shot. Leave it to the victory howl while that runs.
+      if(actor.mouthLight&&!(actor.howlJaw>0.01)){
+        actor.mouthLight.intensity=2.0*lvl;
+        if(lvl>0.001&&jawBone)actor.mouthLight.position.copy(jawBone.getWorldPosition(new THREE.Vector3())
+          .addScaledVector(strikeFacing,.06).addScaledVector(UP,.04));
+        else if(lvl<=0.001)actor.mouthLight.intensity=0;
       }
-      if(actor.mouthLight)actor.mouthLight.intensity=2.0*lvl;
       // The inner-mouth bag only exists for an open jaw; closed, it can poke
       // out under the chin when the head is lifted (seen in the strike lunge).
       if(actor.mouthBag===undefined)actor.mouthBag=model.getObjectByName('MouthBag')||null;
@@ -938,7 +990,7 @@
   let forestRoot=null,forestFog=null;
   // The film never leaves the arena (the reference's plains *is* its arena).
   // Only the victim's launch is re-lit: a red sky and a red-washed stage.
-  let stageMats=null,stageRed=false,skyMesh=null,skyMap=null,redSkyTex=null,fogBase=null;
+  let stageMats=null,stageRed=0,skyMesh=null,skyMap=null,redSkyTex=null,fogBase=null;
   function redSkyCanvas(){
     const W=256,H=256,c=document.createElement('canvas');c.width=W;c.height=H;
     const g=c.getContext('2d'),img=g.createImageData(W,H),d=img.data;
@@ -961,25 +1013,36 @@
     const t=new THREE.CanvasTexture(c);if(THREE.SRGBColorSpace)t.colorSpace=THREE.SRGBColorSpace;
     return t;
   }
-  function setStage(name){
+  // Graded 0..1 (not on/off): the red launch light fades back to daylight
+  // over the landing shot instead of hard-cutting orange → green.
+  let redSkyMesh=null;
+  function setStage(level){
     if(!forestRoot)return;
     if(!stageMats){
       stageMats=[];
       skyMesh=forestRoot.getObjectByName('forest-sky');skyMap=skyMesh?.material.map||null;
       forestRoot.traverse(o=>{if(!o.isMesh||o===skyMesh)return;
         for(const m of [].concat(o.material))
-          if(m?.color&&!stageMats.includes(m)){m.userData.stageBase=m.color.clone();stageMats.push(m);}});
+          if(m?.color&&!stageMats.includes(m)){m.userData.stageBase=m.color.clone();
+            m.userData.stageRed=m.color.clone().multiply(new THREE.Color(1,.34,.26));stageMats.push(m);}});
       fogBase=scene.fog?.color?.clone()||null;
     }
-    const red=name==='red';
-    if(red===stageRed)return;stageRed=red;
-    const wash=new THREE.Color(1,.34,.26);
-    for(const m of stageMats){m.color.copy(m.userData.stageBase);if(red)m.color.multiply(wash);}
-    if(skyMesh){
-      if(red&&!redSkyTex)redSkyTex=redSkyCanvas();
-      skyMesh.material.map=red?redSkyTex:skyMap;skyMesh.material.needsUpdate=true;
+    const k=Math.max(0,Math.min(1,Number(level)||0));
+    if(Math.abs(k-stageRed)<.015&&!(k===0&&stageRed!==0)&&!(k===1&&stageRed!==1))return;
+    stageRed=k;
+    for(const m of stageMats)m.color.copy(m.userData.stageBase).lerp(m.userData.stageRed,k);
+    if(skyMesh&&k>0&&!redSkyMesh){
+      if(!redSkyTex)redSkyTex=redSkyCanvas();
+      // A second dome just inside the sky carries the red sky; its opacity
+      // is the cross-fade (swapping the one texture could only cut).
+      redSkyMesh=new THREE.Mesh(skyMesh.geometry,new THREE.MeshBasicMaterial({map:redSkyTex,transparent:true,
+        opacity:0,depthWrite:false,fog:false,side:skyMesh.material.side}));
+      redSkyMesh.position.copy(skyMesh.position);redSkyMesh.quaternion.copy(skyMesh.quaternion);
+      redSkyMesh.scale.copy(skyMesh.scale).multiplyScalar(.995);
+      redSkyMesh.renderOrder=(skyMesh.renderOrder||0)+1;skyMesh.parent.add(redSkyMesh);
     }
-    if(scene.fog&&fogBase)scene.fog.color.copy(red?new THREE.Color(0xb8463a):fogBase);
+    if(redSkyMesh){redSkyMesh.material.opacity=k;redSkyMesh.visible=k>0;}
+    if(scene.fog&&fogBase)scene.fog.color.copy(fogBase).lerp(new THREE.Color(0xb8463a),k);
   }
   function makeBackdropTexture(kind){
     const c=fireCanvas();
@@ -1081,7 +1144,12 @@
       actor?.setAura?.(actor===attacker&&(view?.active||victor)?(victor?1:view.aura):0,time||0);
       if(actor)actor.roarLevel=actor===attacker&&view?view.roar:0;
     }
-    setStage(view?.stage==='red'?'red':null);
+    // the animal in the spin close-up growls (head up, jaw parted / antler toss)
+    if(!sequence&&spinFeature&&!reduced()){
+      const a=spinFeature.age;
+      spinFeature.actor.roarLevel=.55*Math.min(1,a/260)*(a>1150?Math.max(0,1-(a-1150)/300):1);
+    }
+    setStage(view?.stage==='red'?view.redSky:0);
     if(forestRoot)forestRoot.visible=!(view?.fire>.55);
     paintGlint(view,attacker,time||0);
     paintLaunchShadow(view,defender);
@@ -1522,7 +1590,7 @@
       // lying pose to idle squashed the body flat), then settle into idle.
       const ko=defender?.currentKey==='knockout'?defender.current:null;
       if(ko){ko.paused=false;ko.enabled=true;ko.clampWhenFinished=true;ko.setLoop(THREE.LoopOnce,1);
-        ko.timeScale=-Math.max(1.5,ko.getClip().duration/.6);ko.play();sequence.rising=ko;}
+        ko.timeScale=-Math.max(1,ko.getClip().duration/(cinematics.SOLO_MS.getUp/1000));ko.play();sequence.rising=ko;}
       else defender?.native('idle',.25);
     }
     if(sequence.rising&&sequence.rising.time<=.03){
@@ -1587,6 +1655,7 @@
     const actionElapsed=sequence.elapsed-timing.actionLead;
     // Before a signature hit, hold weight low and settle into the pose.
     if(actionElapsed<0){
+      if(attacker)bodyHalf(attacker);if(defender)bodyHalf(defender); // measured standing
       const progress=Math.max(0,Math.min(1,
         (sequence.elapsed-timing.miracleLead)/Math.max(1,timing.focusLead)));
       if(attacker?.id==='bear'){
@@ -1609,8 +1678,18 @@
         attacker.pivot.position.z=approach.depth;
         // (orientation is left to victoryGesture: zeroing one Euler axis of
         // its leaned 90°-yaw quaternion is gimbal-locked and rolled the Bear.)
-        attacker.pivot.position.y=0;
-        attacker.pivot.rotation.y=-facing*approach.turn;
+        attacker.pivot.position.y=attacker.victoryLift||0;
+        attacker.pivot.rotation.set(0,-facing*approach.turn,0);
+        // Moose rear-up: pitch the whole body nose-up about its hind feet.
+        if(attacker.victoryRear>.001){
+          const hindLocal=new THREE.Vector3(-facing*bodyHalf(attacker)*.8,0,0);
+          attacker.pivot.updateMatrixWorld(true);
+          const before=attacker.pivot.localToWorld(hindLocal.clone());
+          attacker.pivot.rotateOnAxis(new THREE.Vector3(0,0,1),facing*attacker.victoryRear);
+          attacker.pivot.updateMatrixWorld(true);
+          const after=attacker.pivot.localToWorld(hindLocal.clone());
+          attacker.pivot.position.add(before.sub(after));
+        }
       }
       return;
     }
@@ -1630,6 +1709,13 @@
       }
     }
     const view=sequence.solo?cinematics.soloView(event,sequence.elapsed,nativeLength(event)):null;
+    // Contact two-shot: put the attacker's strike against the victim (a cut,
+    // so the jump in position is never seen), for the hit-stop only.
+    if(view?.contact&&attacker&&defender){
+      const reach=(bodyHalf(attacker)+bodyHalf(defender))*.82;
+      attacker.pivot.position.x=defender.pivot.position.x-direction*reach;
+      attacker.pivot.position.z=0;
+    }
     if(defender&&view?.launch){
       const l=view.launch;
       if(!l.landed){
@@ -1663,13 +1749,29 @@
         defender.orientation.rotation.z=opposite*choreo.defenderLean;
     }
   }
+  // While the ATTACK! (power) reels spin, the arcade cuts between close-ups
+  // of each animal growling at the lens: wide for 0.7 s, then 1.5 s each.
+  let spinKey='',spinAt=0,spinFeature=null;
+  function spinCamera(){
+    spinFeature=null;
+    const st=window.NoahsCombat?.getState?.();
+    if(!st||st.phase!=='POWER'||screen()!=='BATTLE_PLAY'||bearReview||!actors[0]?.model||!actors[1]?.model)return null;
+    const key=[st.session?.bout,st.round,st.tieCharge].join(':'),now=performance.now();
+    if(key!==spinKey){spinKey=key;spinAt=now;}
+    const t=now-spinAt;if(t<700)return null;
+    const k=Math.floor((t-700)/1500)%2,age=(t-700)%1500;
+    const actor=actors[k],H=cinematics.SOLO_SCALE?.[actor.id]||1,X=k===0?-2.02:2.02,f=k===0?1:-1;
+    spinFeature={actor,age};
+    // low 3/4 front, the head and forequarters filling the frame
+    return {x:X+f*3.1*H,y:1.05*H,z:3.3*H,targetX:X+f*.55*H,targetY:1.2*H,zoom:1,beat:'SPIN',shot:'spin'+k};
+  }
   function applyCamera(dt){
     if(!camera||!THREE||!cameraLook)return;
     const live=window.NoahsCinematics?.getState();
     const event=live?.event||sequence?.event;
     const time=live?.elapsed??sequence?.elapsed??0;
     const wants=(!reduced()&&event&&cinematics)?
-      cinematics.camera(event,time,nativeLength(event)):null;
+      cinematics.camera(event,time,nativeLength(event)):(!reduced()?spinCamera():null);
     const fit=layout?.scale?.x??1;
     const focusX=(wants?.targetX??0)*fit;
     // Camera azimuth must survive portrait-stage scaling. Scaling the
@@ -1709,7 +1811,8 @@
       const heroFactor=Math.min(1.75,1/fit);
       filmCamera.zoom=Math.min(2.2,(wants?.zoom??1)*heroFactor);
       filmCamera.updateProjectionMatrix();
-      if(wants?.lunge>0)applyLunge(event,wants.lunge);
+      if(wants?.shot==='contact')applyContact(event);
+      else if(wants?.lunge>0)applyLunge(event,wants.lunge);
       if(wants?.angle&&!reduced())filmCamera.rotateZ(wants.angle);
       if(wants?.beat==='VICTORY')fitVictoryInFrame(event,wants);
       applyThump(sequence?.elapsed??0);
@@ -1778,6 +1881,29 @@
   }
   // The strike ends with the attacker driving its face into the lens: dolly
   // from the shot's framing to just in front of the live head bone.
+  // Half body length (nose to tail along the facing axis), measured once in
+  // the idle stance from the live skeleton bounds.
+  function bodyHalf(actor){
+    if(actor.bodyHalfLen)return actor.bodyHalfLen;
+    const box=new THREE.Box3().setFromObject(actor.model),size=box.getSize(new THREE.Vector3());
+    actor.bodyHalfLen=Math.max(.5,Math.min(3,Math.max(size.x,size.z)/2));
+    return actor.bodyHalfLen;
+  }
+  // Frame both fighters at the blow from the live bones: 3/4 from the lens
+  // side, a touch behind the attacker, wide enough for both heads and feet.
+  function applyContact(event){
+    const a=actors[event.attacker],d=actors[event.defender];
+    if(!a?.model||!d?.model||!filmCamera)return;
+    const box=new THREE.Box3().setFromObject(a.model).union(new THREE.Box3().setFromObject(d.model));
+    const c=box.getCenter(new THREE.Vector3()),size=box.getSize(new THREE.Vector3());
+    const away=event.attacker===0?1:-1;
+    const vfov=THREE.MathUtils.degToRad(filmCamera.fov)/Math.max(1,filmCamera.zoom);
+    const hfov=2*Math.atan(Math.tan(vfov/2)*filmCamera.aspect);
+    const need=Math.max((size.x*1.08)/(2*Math.tan(hfov/2)),(size.y*1.25)/(2*Math.tan(vfov/2)));
+    const dir=new THREE.Vector3(-away*.42,.18,1).normalize();
+    filmCamera.position.copy(c).addScaledVector(dir,need+size.z*.5);
+    filmCamera.lookAt(c.x,c.y*.9,c.z);
+  }
   function applyLunge(event,u){
     const actor=actors[event.attacker];
     const head=actor?.joint?.get('RigHead')||actor?.joint?.get('RigNeck');
@@ -1791,7 +1917,7 @@
     const toCam=filmCamera.position.clone().sub(h).normalize();
     const dir=fwd.multiplyScalar(.75).add(toCam.multiplyScalar(.25)).normalize();
     // a touch below the head looking up into the face (roaring at the lens)
-    const end=h.clone().addScaledVector(dir,2.0*scale);end.y-=.04*scale;
+    const end=h.clone().addScaledVector(dir,2.7*scale);end.y-=.04*scale;
     const e=u*u*(3-2*u);
     filmCamera.position.lerp(end,e);
     filmCamera.lookAt(cameraLook.clone().lerp(h,e));
@@ -1850,6 +1976,9 @@
     if(winner?.id==='bear'&&sequence.finished){
       const start=cinematics.duration(sequence.event,nativeLength(sequence.event)).victoryStart;
       winner.victoryGesture(sequence.elapsed-start,Boolean(sequence.roarPlayed));
+    }else if(winner?.id==='moose'&&sequence.finished){
+      const start=cinematics.duration(sequence.event,nativeLength(sequence.event)).victoryStart;
+      if(sequence.elapsed>=start)winner.mooseVictory(sequence.elapsed-start);
     }
     applyBlocking();
     // The finishing actor has already received native FBX and additive

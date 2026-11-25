@@ -18,7 +18,7 @@ function cleanup(){
  // DOM node. Each new Bear review appended another .ark-cinema, leaving
  // LOW SWIPE painted over Guts, Power and even the final victory.
  if(stage)delete stage.dataset.cineBeat;
- const filmRoot=ui.querySelector('.ark-reference-layout');if(filmRoot)delete filmRoot.dataset.soloFilm;
+ const filmRoot=ui.querySelector('.ark-reference-layout');if(filmRoot){delete filmRoot.dataset.soloFilm;delete filmRoot.dataset.hpHold;}
  overlay?.remove();
  ui.querySelectorAll('.combat-battlefield .ark-cinema').forEach(node=>node.remove());
  timer=0;lastBeat='';lastShot='';howlCued=false;winCued=false;
@@ -120,6 +120,16 @@ function draw(time){
    Math.min(timing.total,Math.max(0,now-sequence.started));
  if(film3d?.key===event.key)sequence.started=now-elapsed;
  sequence.elapsed=elapsed;
+ // Health holds at its pre-hit value through the clash and the film and
+ // drains only when the victim lands (combat-ui renders data-hp-hold).
+ // From the title on, the bottom slot HUD stays away until the next turn.
+ const hpRoot=ui.querySelector('.ark-reference-layout');
+ if(hpRoot&&!rehearsal&&hpRoot.dataset.hitFilm){
+   const releaseAt=timing.landAt??(timing.actionLead+timing.contact);
+   if(elapsed>=releaseAt){delete hpRoot.dataset.hpHold;window.__arkHpReleased=event.key;}
+   else if(window.__arkHpReleased!==event.key)hpRoot.dataset.hpHold='1';
+   if(elapsed>=(timing.titleIn??timing.actionLead))hpRoot.dataset.filmPast='1';
+ }
  const panel=api.panel(event,elapsed,length);
  const beat=panel.beat;
  if(lastBeat!==beat){
@@ -216,9 +226,14 @@ function draw(time){
    api.bearHowl(p.local):null;
  overlay.dataset.howlPhase=howl?.phase||'none';
  if(p.beat==='VICTORY'&&!reduce()&&!window.NoahsForestfall?.getStatus?.().playing){
-   if(event.attackerId==='bear'&&p.local>=api.VICTORY_HOWL_CUE_MS&&!howlCued){
-     window.NoahsAudio?.cue('bearHowl');
+   if(p.local>=api.VICTORY_HOWL_CUE_MS&&!howlCued){
+     if(event.attackerId==='moose')window.NoahsAudio?.cue('mooseBellow');
+     else window.NoahsAudio?.cue('bearHowl');
      howlCued=true;
+   }
+   // the Moose bellows again at the top of its rear-up (runtime mooseVictory)
+   if(event.attackerId==='moose'&&p.local>=2300+640&&!sequence.rearCued){
+     window.NoahsAudio?.cue('mooseBellow');sequence.rearCued=true;
    }
    if(p.local>=api.VICTORY_BANNER_MS&&!winCued){
      window.NoahsAudio?.cue('cinemaWin');

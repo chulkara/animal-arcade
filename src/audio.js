@@ -57,9 +57,11 @@
   }
   // Original layered animal vocal: rough breath noise beneath a falling
   // low register tone. Synthesized locally, with no sampled game audio.
-  function bearHowl(){
+  // One original synthesized vocal, two voices: the Bear's howl and a
+  // lower, longer Moose bellow (f0 and formant down, a slower rise).
+  function bearHowl(f0=113,duration=1.65,formantHz=440,rise=1.34){
     if(!ctx||effective(settings.sfx)<=0)return;
-    const t=ctx.currentTime+.06,duration=1.65;
+    const t=ctx.currentTime+.06;
     const out=ctx.createGain();
     out.gain.setValueAtTime(.00001,t);
     out.gain.exponentialRampToValueAtTime(Math.max(.00001,effective(settings.sfx)*.19),t+.23);
@@ -67,12 +69,12 @@
     out.gain.exponentialRampToValueAtTime(.00001,t+duration);
     out.connect(ctx.destination);
     const formant=ctx.createBiquadFilter();
-    formant.type='bandpass';formant.frequency.value=440;formant.Q.value=.75;
+    formant.type='bandpass';formant.frequency.value=formantHz;formant.Q.value=.75;
     formant.connect(out);
-    for(const [f,ratio,type] of [[113,1,'sawtooth'],[118,.40,'triangle'],[224,.20,'sawtooth']]){
+    for(const [f,ratio,type] of [[f0,1,'sawtooth'],[f0*1.044,.40,'triangle'],[f0*1.98,.20,'sawtooth']]){
       const o=ctx.createOscillator(),vol=ctx.createGain();
       o.type=type;o.frequency.setValueAtTime(f,t);
-      o.frequency.linearRampToValueAtTime(f*1.34,t+.37);
+      o.frequency.linearRampToValueAtTime(f*rise,t+.37*duration/1.65);
       o.frequency.linearRampToValueAtTime(f*.70,t+duration);
       vol.gain.value=ratio;
       o.connect(vol);vol.connect(formant);
@@ -127,6 +129,7 @@
         tone(880,.74,'sine',.09,.43);
         burst(.28,.08,3200,.30);break;
       case 'bearHowl':bearHowl();break;
+      case 'mooseBellow':bearHowl(78,1.95,320,1.5);break;
       case 'cinemaRush':
         burst(.29,.15,4200);
         tone(190,.22,'sawtooth',.065);
