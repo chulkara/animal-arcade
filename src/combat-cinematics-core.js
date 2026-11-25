@@ -82,8 +82,8 @@ const LAUNCH_MS=Object.freeze({blast:720,skid:640,roll:700});
 const DISPLAY_SCALE=50;
 // Body height relative to the Bear, so framing fits each animal.
 const SOLO_SCALE=Object.freeze({bear:1,moose:1.18});
-const SOLO_MS=Object.freeze({titleIn:220,lead:2000,lunge:170,
-  hitStop:110,launchDelay:170,launch:720,land:1500,ret:520,pop:950,koHold:1250,downHold:450,getUp:400,whiteOut:220,impact:240});
+const SOLO_MS=Object.freeze({titleIn:1100,lead:2880,lunge:170,
+  hitStop:110,launchDelay:170,launch:720,land:1500,ret:300,pop:950,koHold:1250,downHold:450,getUp:400,whiteOut:220,impact:240});
 const reducedShake=v=>Number.isFinite(v)?v:0;
 // event.film===false forces the older shared-frame grammar (the fallback for
 // animals without a film entry; also how the tests keep covering it).
@@ -245,7 +245,7 @@ function timeline(event,attack,contact,windup){
     return Object.freeze({solo:true,strike:sp.strike,launch:sp.launch,hitStop:sp.hitStop,attack,contact,windup,
       cutAt,fireStart,lungeAt,miracleLead,focusLead:SOLO_MS.lead,actionLead,titleIn,
       launchAt,landAt,returnAt,finish,victoryStart,
-      total:event.finished?victoryStart+VICTORY_END_MS:finish+480});
+      total:event.finished?victoryStart+VICTORY_END_MS:finish+150});
   }
   // The reference takes time to prepare a signature move. Our previous
   // edit triggered the native FBX on frame one, so no strike had a buildup.

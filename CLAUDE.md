@@ -104,6 +104,19 @@ Each turn both players secretly pick one action; both resolve simultaneously.
 - Open question for the user: the live game still uses the G/T/P + 10–50
   reel rules; the Charge/Shield/Attack rules v2 engine is built but unwired.
 
+- **Power clash beat (2026-11-25, from the 2:41 PM real-match recording).**
+  `.fight-clash` (combat-ui.js markup, arcade-hud.css): two octagon plates
+  slide in from the edges, hold, the winner swells to 1.8× and slams onto
+  the loser, whose plate breaks into 8 `.fight-shard`s. 1.1 s, covered by
+  `SOLO_MS.titleIn` 1100 so it plays before the film title. fight-deck.css
+  still paints the winner *span* yellow; arcade-hud.css resets it - keep the
+  colour on the `i`. Every keyframe that touches opacity must state it at
+  each stop, or the winner fades across the whole animation.
+- The 2D `.battlefield-damage` number is hidden: it spoiled the film's own
+  damage pop. Tail after a film is short: `SOLO_MS.ret` 300, total
+  `finish+150`, `RESULT_HOLD_MS` 350.
+- Moose optional `walk: Loco_Walk.FBX` so its victory approach walks.
+
 ## Delivering work to the user
 - The user runs the game on his Mac from `~/Desktop/animal-arcade`.
 - Deliver commits as a git bundle whose ref is the branch name

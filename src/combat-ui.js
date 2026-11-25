@@ -19,7 +19,8 @@
   const COUNTDOWN_MS=flowApi?flowApi.LIMIT_MS:10000;
   const ADVANCE_MIN_MS=1300;   // never jump on before the hit has been seen
   const ADVANCE_MAX_MS=10500;  // safety cap if a cinematic never reports done
-  const RESULT_HOLD_MS=1600;   // after the cinematic, the result line stays up this long
+  // The arcade cuts from the film's return straight back to the reels.
+  const RESULT_HOLD_MS=350;    // after the cinematic, the result line stays up this long
   let countdownKey='',countdownLeft=COUNTDOWN_MS,countdownAt=0,lastShownSecond=-1;
   let advanceTimer=0,advanceKey='',advanceSince=0,filmDoneAt=0;
   const animal=window.NoahsRoster.ANIMALS;
@@ -454,7 +455,10 @@
     }
     if(['RESULT','FINISHED'].includes(s.phase)&&e?.kind==='HIT'){
       const p=s.selected.map(x=>token(x.power));
-      out.push(`<div class="fight-clash" data-winner="${e.attacker}" aria-hidden="true"><span class="fight-clash-l">${p[0]}</span><span class="fight-clash-r">${p[1]}</span></div>`);
+      // Reference clash: both octagons slam in, hold, the winner swells and
+      // slams across, the loser shatters into spinning shards.
+      const shards=Array.from({length:8},(_,k)=>`<em class="fight-shard" style="--k:${k}"></em>`).join('');
+      out.push(`<div class="fight-clash" data-winner="${e.attacker}" aria-hidden="true"><span class="fight-clash-l"><i>${p[0]}</i>${e.attacker===1?shards:''}</span><span class="fight-clash-r"><i>${p[1]}</i>${e.attacker===0?shards:''}</span></div>`);
     }
     return out.join('');
   }

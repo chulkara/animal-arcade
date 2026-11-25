@@ -42,7 +42,8 @@
       // names, so we also discover compatible roar/growl/howl FBXs below.
       roar:'StandHind_Roar_01.FBX'
     }),
-    moose:Object.freeze({})
+    // The Moose walks at the lens when it wins, like the Bear.
+    moose:Object.freeze({walk:'Loco_Walk.FBX'})
   });
   function basename(path){
     return String(path||'').replace(/\\/g,'/').split('/').pop().trim().toLowerCase();

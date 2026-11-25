@@ -158,3 +158,51 @@
 .game.painted-enabled .ark-reference-layout .fight-callout-fight b{font-size:clamp(80px,10vw,150px)!important}
 .game.painted-enabled .ark-reference-layout .fight-callout small{font:400 clamp(14px,1.4vw,20px)/1 'Russo One',sans-serif!important;letter-spacing:.14em!important;color:#fff!important;text-shadow:2px 2px 0 #000!important}
 .game.painted-enabled .ark-reference-layout .fight-callout-small{display:none!important} /* the deck banner already says it */
+
+/* ---------- power clash (reference): slam in, hold, winner swells and
+   slams across, loser shatters. 1.1 s, before the attack film's title. ---------- */
+.game .ark-reference-layout .battlefield-damage{display:none!important} /* the film's own number replaces it */
+.game.painted-enabled .ark-reference-layout .fight-clash{top:30%;left:50%!important;right:auto!important;translate:none!important;
+  transform:translateX(-50%);gap:clamp(40px,6vw,110px);--slam:calc(clamp(120px,11vw,170px) + clamp(40px,6vw,110px));display:flex;justify-content:center}
+.game.painted-enabled .ark-reference-layout .fight-clash::after{display:none}
+.game.painted-enabled .ark-reference-layout .fight-clash span{
+  --oct:polygon(22% 0,78% 0,100% 22%,100% 78%,78% 100%,22% 100%,0 78%,0 22%);
+  position:relative;width:clamp(120px,11vw,170px);height:clamp(120px,11vw,170px);clip-path:none;background:none;box-shadow:none;
+  filter:drop-shadow(0 6px 0 rgba(0,0,0,.65));overflow:visible}
+.game.painted-enabled .ark-reference-layout .fight-clash span i{
+  position:absolute;inset:0;display:grid;place-items:center;clip-path:var(--oct);font:400 clamp(56px,5.6vw,88px)/1 'Russo One',sans-serif;font-style:normal;color:#111;
+  background:linear-gradient(180deg,#ffffff 0%,#dfe4ea 18%,#a7b0bc 46%,#7c8592 54%,#c9d0d8 80%,#f4f6f8 100%);
+  box-shadow:inset 0 0 0 5px #000;text-shadow:0 2px 0 rgba(255,255,255,.6)}
+.game.painted-enabled .ark-reference-layout .fight-clash[data-winner="0"] .fight-clash-l i,
+.game.painted-enabled .ark-reference-layout .fight-clash[data-winner="1"] .fight-clash-r i{
+  background:radial-gradient(circle at 50% 35%,#fffbe0 0,#ffe45a 30%,#f2a90c 70%,#9a5a00 100%);color:#fff;
+  text-shadow:3px 0 0 #000,-3px 0 0 #000,0 3px 0 #000,0 -3px 0 #000,0 5px 0 #000}
+.game.painted-enabled .ark-reference-layout .fight-clash[data-winner="0"] .fight-clash-r,
+.game.painted-enabled .ark-reference-layout .fight-clash[data-winner="1"] .fight-clash-l{filter:drop-shadow(0 6px 0 rgba(0,0,0,.65))}
+/* fight-deck.css paints the winner span itself yellow; the octagon i carries the colour now */
+.game.painted-enabled .ark-reference-layout .fight-clash[data-winner] :is(.fight-clash-l,.fight-clash-r){background:none}
+/* slam in from the screen edges (0–16 %), hold (to 50 %) */
+.game.painted-enabled .ark-reference-layout .fight-clash .fight-clash-l{animation:ark-clash-in-l 1.1s cubic-bezier(.2,.9,.3,1.2) both}
+.game.painted-enabled .ark-reference-layout .fight-clash .fight-clash-r{animation:ark-clash-in-r 1.1s cubic-bezier(.2,.9,.3,1.2) both}
+@keyframes ark-clash-in-l{0%{transform:translateX(-55vw)}16%,100%{transform:none}}
+@keyframes ark-clash-in-r{0%{transform:translateX(55vw)}16%,100%{transform:none}}
+/* the winner swells to 1.8× and slams across onto the loser (50–68 %):
+   one animation on the whole plate (slide in → hold → swell → slam) */
+.game.painted-enabled .ark-reference-layout .fight-clash[data-winner="0"] .fight-clash-l{z-index:2;animation:ark-win-l 1.1s cubic-bezier(.3,.8,.3,1) both}
+.game.painted-enabled .ark-reference-layout .fight-clash[data-winner="1"] .fight-clash-r{z-index:2;animation:ark-win-r 1.1s cubic-bezier(.3,.8,.3,1) both}
+@keyframes ark-win-l{0%{transform:translateX(-55vw);opacity:1}16%,50%{transform:none}60%{transform:scale(1.8)}68%,90%{transform:translateX(var(--slam)) scale(1.7);opacity:1}100%{transform:translateX(var(--slam)) scale(1.7);opacity:0}}
+@keyframes ark-win-r{0%{transform:translateX(55vw);opacity:1}16%,50%{transform:none}60%{transform:scale(1.8)}68%,90%{transform:translateX(calc(-1 * var(--slam))) scale(1.7);opacity:1}100%{transform:translateX(calc(-1 * var(--slam))) scale(1.7);opacity:0}}
+/* the loser's plate vanishes as it is struck; 8 metal shards spin away */
+.game.painted-enabled .ark-reference-layout .fight-clash[data-winner="0"] .fight-clash-r i,
+.game.painted-enabled .ark-reference-layout .fight-clash[data-winner="1"] .fight-clash-l i{animation:ark-lose 1.1s steps(1) both;filter:grayscale(.6) brightness(.7)}
+@keyframes ark-lose{0%,67%{opacity:1}68%,100%{opacity:0}}
+.game.painted-enabled .ark-reference-layout .fight-shard{
+  --a:calc(var(--k) * 45deg + 20deg);position:absolute;left:50%;top:50%;width:34%;height:30%;margin:-15% 0 0 -17%;
+  background:linear-gradient(160deg,#ffffff,#b9c0c9 55%,#6d7480);
+  clip-path:polygon(0 30%,60% 0,100% 55%,40% 100%);opacity:0;animation:ark-shard 1.1s cubic-bezier(.15,.7,.3,1) both}
+@keyframes ark-shard{0%,67%{opacity:0;transform:none}
+  68%{opacity:1;transform:rotate(var(--a)) translateX(10%) rotate(0deg)}
+  100%{opacity:0;transform:rotate(var(--a)) translateX(380%) rotate(540deg)}}
+@media (prefers-reduced-motion:reduce){.game .ark-reference-layout .fight-clash :is(span,i,.fight-shard){animation:none!important}.game .ark-reference-layout .fight-shard{display:none}}
+.game.reduce-motion .ark-reference-layout .fight-clash :is(span,i,.fight-shard){animation:none!important}
+.game.reduce-motion .ark-reference-layout .fight-shard{display:none}
