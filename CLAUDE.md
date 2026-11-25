@@ -89,6 +89,21 @@ Each turn both players secretly pick one action; both resolve simultaneously.
 - UI: HUD (HP, Point pips, move buttons respecting fatigue/locks/Miracle
   eligibility) and a slot-wheel overlay that plays `SLOT_*` events in order.
 
+## Arcade turn flow + HUD (2026-11-25)
+- `src/engine/match-state-machine.js` (`NoahsMatchFlow`, pure, tested in
+  `tests/match-flow.test.mjs`): both reels spin at once, each player locks
+  with their own button (P1: Left Shift / Space / F (+G/Y); P2: Right Shift /
+  Enter / J), a LOCKED shutter masks a pick until both lock, 5 s flame timer
+  auto-locks. Commits go to the existing `combat-engine.js` in P1→P2 order, so
+  rules/damage are unchanged. Space/Shift never skip a playing film.
+- `src/arcade-hud.css` (loaded last): lime health bars that drain when the
+  HUD returns, metal octagon reels with G/T/P/✦ emblems, flame countdown,
+  glossy cabinet button, "SET YOUR ATTACK!" / "ATTACK!" banners.
+- Dev tools (film review, 3D setup, Forestfall) sit in a DEV drawer, closed by
+  default (`localStorage['arkade.devDrawer']`).
+- Open question for the user: the live game still uses the G/T/P + 10–50
+  reel rules; the Charge/Shield/Attack rules v2 engine is built but unwired.
+
 ## Delivering work to the user
 - The user runs the game on his Mac from `~/Desktop/animal-arcade`.
 - Deliver commits as a git bundle whose ref is the branch name

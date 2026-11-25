@@ -11,7 +11,12 @@
   const REEL_STEP_MS=96;
   // Arcade flow: a countdown stops the reel for you, and after a hit plays out the
   // next exchange starts by itself (Enter / click skips ahead).
-  const COUNTDOWN_MS=10000;
+  // Arcade turn flow (both reels spin at once, each player locks with their
+  // own button, masked until both lock, 5 s flame timer) lives in the pure
+  // src/engine/match-state-machine.js; rules stay in the combat engine.
+  const flowApi=window.NoahsMatchFlow;
+  let flow=null,flowKey='',flowAt=0,committing=false;
+  const COUNTDOWN_MS=flowApi?flowApi.LIMIT_MS:10000;
   const ADVANCE_MIN_MS=1300;   // never jump on before the hit has been seen
   const ADVANCE_MAX_MS=10500;  // safety cap if a cinematic never reports done
   const RESULT_HOLD_MS=1600;   // after the cinematic, the result line stays up this long
@@ -42,7 +47,61 @@
   function token(value){
     return value==='MARK'?'✦':String(value??'—');
   }
+  function flowPhase(s){return s?.phase==='ATTACK'?'TYPE_SPIN':'NUMBER_SPIN';}
+  function flowStateKey(s){return [s.session?.bout,s.round,s.phase,s.tieCharge].join(':');}
+  function ensureFlow(s,now){
+    const key=flowStateKey(s);
+    if(flow&&flowKey===key)return flow;
+    flowKey=key;flowAt=now;committing=false;
+    flow=flowApi.start({mode:s.mode,phase:flowPhase(s),seed:s.round*3+s.tieCharge});
+    return flow;
+  }
+  function paintFlow(){
+    const s=current(),values=activeValues();
+    if(!flow||!s||!values)return;
+    for(const i of [0,1]){
+      const box=ui.querySelector('[data-reel-player="'+i+'"]');
+      if(!box)continue;
+      const v=flowApi.view({...flow,elapsed:Math.max(0,flow.elapsed)},i,values);
+      const at=v.index%values.length;
+      const cur=box.querySelector('[data-reel-current]');
+      if(cur){cur.textContent=token(values[at]);cur.dataset.mark=values[at]==='MARK'?'true':'false';cur.dataset.v=String(values[at]);}
+      const prev=box.querySelector('[data-reel-prev]'),nxt=box.querySelector('[data-reel-next]');
+      if(prev)prev.textContent=token(values[(at+values.length-1)%values.length]);
+      if(nxt)nxt.textContent=token(values[(at+1)%values.length]);
+      box.classList.toggle('is-shuttered',v.shutter);
+      box.classList.toggle('is-spinning-live',v.spinning&&flow.elapsed>=0);
+    }
+  }
+  function lockPlayer(player){
+    if(window.NoahsArena3D?.getReviewState?.()?.active)return;
+    const s=current();
+    if(!flow||!s||screen()!=='BATTLE_PLAY'||!['ATTACK','POWER'].includes(s.phase))return;
+    const before=flow.locks[player];
+    flow=flowApi.lock(flow,player,activeValues());
+    if(flow.locks[player]!=null&&before==null){
+      window.NoahsAudio?.cue('arcadeStop');
+      paintFlow();
+      if(flow.ready)commitFlow();
+    }
+  }
+  function commitFlow(){
+    if(committing||!flow?.ready)return;
+    committing=true;stopTimer();
+    const s=current(),before=s.phase;
+    let result=null;
+    for(const c of flowApi.commits(flow))result=battle.stop(c.value);
+    const event=result?.lastEvent;
+    const newHit=event?.kind==='HIT'&&before==='POWER'&&result.phase!=='POWER';
+    if(newHit)window.NoahsAudio?.cue('cinemaIntro');
+    else if(before==='POWER'&&event?.kind==='TIE')window.NoahsAudio?.cue('tie');
+    open();
+    window.dispatchEvent(new CustomEvent('arkade:reelstop',{
+      detail:{phase:before,value:flow.locks[0],actor:0,round:s.round,hit:newHit}
+    }));
+  }
   function updateReel(){
+    if(flowApi&&flow){paintFlow();return;}
     const values=activeValues();
     if(!values)return;
     const index=slotIndex%values.length;
@@ -118,6 +177,29 @@
     if(screen()!=='BATTLE_PLAY'||document.hidden){interval=null;return;}
     const values=activeValues();
     if(!values){interval=null;return;}
+    if(flowApi&&flow){
+      const s=current();
+      // cap each frame's share: a long main-thread stall never eats the clock
+      const dt=paused()?0:Math.min(100,Math.max(0,time-flowAt));flowAt=time;
+      const step=Math.floor(Math.max(0,flow.elapsed)/flowApi.STEP_MS);
+      flow=flowApi.tick(flow,dt,values);
+      if(Math.floor(Math.max(0,flow.elapsed)/flowApi.STEP_MS)!==step&&step%3===0)window.NoahsAudio?.cue('reelTick');
+      paintFlow();
+      const node=ui.querySelector('[data-combat-countdown]');
+      if(node){
+        node.hidden=false;
+        const secs=flowApi.secondsLeft({...flow,elapsed:Math.max(0,flow.elapsed)});
+        if(secs!==lastShownSecond){
+          lastShownSecond=secs;node.querySelector('b').textContent=String(secs);
+          node.dataset.urgent=secs<=2?'true':'false';
+          if(secs<=3&&secs>0)window.NoahsAudio?.cue('reelTick');
+        }
+        node.style.setProperty('--left',String(Math.max(0,1-Math.max(0,flow.elapsed)/flowApi.LIMIT_MS)));
+      }
+      if(flow.ready){commitFlow();return;}
+      if(s)interval=requestAnimationFrame(frame);
+      return;
+    }
     // Derive the reel from elapsed time, not frame count. An overloaded
     // phone cannot silently make the power slot run at a different speed.
     const next=reelOffset+Math.floor(Math.max(0,time-reelStart)/REEL_STEP_MS);
@@ -135,6 +217,10 @@
     scheduleAdvance();
     const s=current();
     if(screen()!=='BATTLE_PLAY'||!s||!['ATTACK','POWER'].includes(s.phase)||document.hidden)return;
+    if(flowApi){
+      ensureFlow(s,performance.now());lastShownSecond=-1;
+      paintFlow();interval=requestAnimationFrame(frame);return;
+    }
     reelOffset=(s.round+s.actor*2+(s.phase==='POWER'?1:0)+s.tieCharge)%activeValues().length;
     reelStart=performance.now();
     slotIndex=reelOffset;
@@ -142,7 +228,14 @@
     updateCountdown(reelStart);
     interval=requestAnimationFrame(frame);
   }
-  function stopSlot(){
+  function stopSlot(player){
+    if(flowApi){
+      const s=current();
+      if(s&&['ATTACK','POWER'].includes(s.phase))ensureFlow(s,performance.now());
+      // No player given (stop button, scripts): the first human still spinning.
+      if(!Number.isInteger(player))player=flow?.locks?.[0]==null||s?.mode!=='DUEL'?0:1;
+      lockPlayer(player);return;
+    }
     // Film rehearsal is intentionally separate from the scored slot battle.
     if(window.NoahsArena3D?.getReviewState?.()?.active)return;
     const s=current();
@@ -187,18 +280,27 @@
     if(!battle)return;
     matchReward=null;rewardClaimed=false;battle.reset();open();
   }
+  // Developer tools (film review, 3D setup, Forestfall) live in a drawer,
+  // closed by default so they never sit over the arena; remembered locally.
+  function devOpen(){try{return localStorage.getItem('arkade.devDrawer')==='open';}catch{return false;}}
+  function setDevOpen(on){try{localStorage.setItem('arkade.devDrawer',on?'open':'closed');}catch{}}
   function actorLabel(s){return s.mode==='SOLO'&&s.actor===1?'CPU':'PLAYER '+(s.actor+1);}
   function actorName(s,i){return s.mode==='SOLO'&&i===1?'CPU':'PLAYER '+(i+1);}
+  // Health drains from its previous width (paused by CSS while the attack
+  // film plays, so it drains when the HUD returns at the landing).
+  let prevPct=[100,100],prevBattle=null;
   function hud(s,i){
     const f=s.animals[i],a=animal[f.id];
     const remaining=Math.round(f.hp/f.maxHp*100);
+    if(prevBattle!==battle){prevBattle=battle;prevPct=[100,100];}
+    const from=prevPct[i];prevPct[i]=remaining;
     return `<div class="ark-arena-hud-player ark-arena-hud-player-${i}" aria-label="${actorName(s,i)} ${a.label}, ${f.hp} of ${f.maxHp} health">
       <div class="ark-hud-nameplate">
         <span class="ark-hud-side">${actorName(s,i)}</span>
         <strong>${a.label}</strong>
         <span class="ark-hud-health-value">${f.hp} / ${f.maxHp}</span>
       </div>
-      <div class="ark-hud-meter" aria-hidden="true"><span style="width:${remaining}%"></span></div>
+      <div class="ark-hud-meter" aria-hidden="true"><span style="--from:${from}%;width:${remaining}%"></span></div>
       <div class="ark-hud-techniques" aria-hidden="true">
         <span>G ${s.selected[i].technique==='G'?'◆':'·'}</span>
         <span>T ${s.selected[i].technique==='T'?'◆':'·'}</span>
@@ -262,9 +364,16 @@
   const TECH_LABEL={G:'GUTS',T:'TECHNIQUE',P:'POWER'};
   function slot(s,i,type){
     const sel=s.selected[i],val=type==='ATTACK'?sel.technique:sel.power;
-    const live=s.phase===type&&s.actor===i&&val===null&&!(s.mode==='SOLO'&&i===1);
+    const live=flowApi?s.phase===type&&val===null&&!(s.mode==='SOLO'&&i===1):
+      s.phase===type&&s.actor===i&&val===null&&!(s.mode==='SOLO'&&i===1);
     const kind=type==='ATTACK'?'attack':'power';
     const cap=type==='ATTACK'?'ATTACK':'POWER';
+    if(live&&flowApi)return `<button type="button" class="combat-reel fight-slot fight-slot-${kind} is-live" aria-label="${actorName(s,i)} ${type==='ATTACK'?'attack':'power'} reel: tap to lock" data-reel-type="${s.phase}" data-reel-player="${i}">
+        <span class="combat-reel-neighbor" data-reel-prev aria-hidden="true">—</span>
+        <span data-reel-current aria-live="off">—</span>
+        <span class="combat-reel-neighbor" data-reel-next aria-hidden="true">—</span>
+        <span class="fight-shutter" aria-hidden="true">LOCKED</span>
+        <em class="fight-slot-cap">${cap}</em></button>`;
     if(live)return `<div class="combat-reel fight-slot fight-slot-${kind} is-live" aria-label="${type==='ATTACK'?'Attack':'Power'} slot" data-reel-type="${s.phase}">
         <span class="combat-reel-neighbor" data-combat-prev aria-hidden="true">—</span>
         <span data-combat-current aria-live="off">${token(valueNow())}</span>
@@ -282,7 +391,7 @@
     return `<div class="fight-slot fight-slot-${kind} is-empty" aria-hidden="true"><em class="fight-slot-cap">${cap}</em></div>`;
   }
   function side(s,i){
-    return `<div class="fight-side fight-side-${i}${i===1?' ark-reel-opponent':''}${s.actor===i&&['ATTACK','POWER'].includes(s.phase)?' is-active':''}" aria-label="${actorName(s,i)} slots">
+    return `<div class="fight-side fight-side-${i}${i===1?' ark-reel-opponent':''}${(flowApi?!(s.mode==='SOLO'&&i===1):s.actor===i)&&['ATTACK','POWER'].includes(s.phase)?' is-active':''}" aria-label="${actorName(s,i)} slots">
       <span class="fight-side-name">${actorName(s,i)}</span>
       ${slot(s,i,'ATTACK')}${slot(s,i,'POWER')}</div>`;
   }
@@ -308,17 +417,18 @@
       </div>`;
     }
     const isAttack=s.phase==='ATTACK',isPower=s.phase==='POWER',result=s.phase==='RESULT';
-    const phaseLabel=result?'THE STRIKE LANDS':isAttack?'CHOOSE FIGHTING STYLE':'DECIDE WHO STRIKES';
+    const phaseLabel=result?'THE STRIKE LANDS':isAttack?'SET YOUR ATTACK!':'ATTACK!';
+    const keysHelp=s.mode==='DUEL'?'P1: Left Shift / Space / F · P2: Right Shift / Enter / J':'Space, Shift or F to stop · or tap your reel';
     const help=result?'The next exchange starts automatically. Press Enter to skip ahead.':
-      isAttack?'Stop on G (Guts), T (Technique), or P (Power).':
-      'Stop on 10–50 or the ✦ fighting mark. Higher power attacks; ties reroll.';
+      isAttack?'Lock G (Guts), T (Technique) or P (Power). '+keysHelp:
+      'Lock 10–50 or ✦. Higher number strikes; equal numbers reroll. '+keysHelp;
     const center=result?
       `<button type="button" data-combat-next data-initial-focus class="fight-skip">NEXT ▶</button>`:
       `<div class="fight-countdown" data-combat-countdown aria-label="Time left"><b>${Math.ceil(COUNTDOWN_MS/1000)}</b></div>
        <button type="button" data-combat-stop data-initial-focus class="combat-stop ${isAttack?'combat-green':'combat-yellow'}">
         <span aria-hidden="true" class="combat-light"></span>${isAttack?'GREEN — STOP ATTACK SLOT':'YELLOW — STOP POWER SLOT'}</button>`;
     return `<div class="combat-controls fight-deck" data-phase="${s.phase}">
-      <div class="combat-reel-label">${result?phaseLabel:actorLabel(s)+' · '+phaseLabel}</div>
+      <div class="combat-reel-label">${result||flowApi?phaseLabel:actorLabel(s)+' · '+phaseLabel}</div>
       ${side(s,0)}
       <div class="fight-center">${center}</div>
       ${side(s,1)}
@@ -386,8 +496,11 @@
       ${results(s)}
       ${controls(s)}
       <p class="combat-disclaimer">Original prototype combat tuning. Private FBX creatures render only after local import; battles remain playable with the illustrated fallback.</p>
-      <div class="combat-footer">
-        <span>KEYS: G = GREEN · Y = YELLOW · SPACE = STOP · ESC = BACK</span>
+      <div class="combat-footer" data-dev-open="${devOpen()?'true':'false'}">
+        <span>${s.mode==='DUEL'?'P1: L-SHIFT / SPACE / F · P2: R-SHIFT / ENTER / J':'STOP: SPACE / SHIFT / F'} · ESC = BACK</span>
+        <button type="button" data-combat-quit>← BACK TO ARENA</button>
+        <button type="button" data-dev-toggle aria-expanded="${devOpen()?'true':'false'}">DEV ${devOpen()?'▾':'▸'}</button>
+        <div class="ark-dev-drawer">
         <button type="button" data-bear-review-quick>BEAR CINEMATIC REVIEW</button>
         <div class="ark-forestfall-import" aria-label="Forestfall special move video">
           <button type="button" data-forestfall-choose>LOAD FORESTFALL VIDEO</button>
@@ -396,12 +509,21 @@
           <small data-forestfall-status>Choose the 1080p Forestfall MP4. Stored only for this session.</small>
         </div>
         <button type="button" data-ark3d-open>3D ARENA SETUP</button>
-        <button type="button" data-combat-quit>← BACK TO ARENA</button>
+        </div>
       </div>
     </section>`;
   }
   ui.addEventListener('click',event=>{
     const target=event.target;
+    if(target.closest('[data-dev-toggle]')){
+      const footer=target.closest('.combat-footer'),on=footer?.dataset.devOpen!=='true';
+      setDevOpen(on);
+      if(footer){footer.dataset.devOpen=on?'true':'false';
+        const t=footer.querySelector('[data-dev-toggle]');t.setAttribute('aria-expanded',String(on));t.textContent='DEV '+(on?'▾':'▸');}
+      return;
+    }
+    const reel=target.closest('[data-reel-player]');
+    if(reel){stopSlot(Number(reel.dataset.reelPlayer));return;}
     if(target.closest('[data-combat-stop]')){stopSlot();return;}
     if(target.closest('[data-combat-next]')){next();return;}
     if(target.closest('[data-combat-next-bout]')){nextBout();return;}
@@ -417,8 +539,20 @@
     const tag=event.target?.tagName;
     if(tag==='INPUT'||tag==='TEXTAREA')return;
     const state=current();
+    // Mashing the stop button must not skip the attack film: while a film
+    // plays, Space (and Shift) do nothing; Enter or a click still skips.
+    if(['RESULT','FINISHED'].includes(state?.phase)&&
+       ['Space','ShiftLeft','ShiftRight'].includes(event.code)&&
+       !(window.NoahsCinematics?.getState?.()?.done??true)){
+      event.preventDefault();event.stopImmediatePropagation();return;
+    }
     const isAttack=state?.phase==='ATTACK';
     const isPower=state?.phase==='POWER';
+    if(flowApi&&(isAttack||isPower)){
+      const player=flowApi.playerForKey(event.code,state.mode);
+      if(player>=0){event.preventDefault();event.stopImmediatePropagation();stopSlot(player);}
+      return;
+    }
     if((isAttack&&event.key.toLowerCase()==='g')||
        (isPower&&event.key.toLowerCase()==='y')||
        ((isAttack||isPower)&&event.key===' ')){

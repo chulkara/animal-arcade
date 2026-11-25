@@ -1,0 +1,160 @@
+/* Arcade cabinet HUD (2026-11-24 reference audit): chunky, glossy, high
+   contrast, PS2-era. Original art: no shapes, icons or text from the
+   reference game. Loaded last; overrides the muted fight-deck look.
+
+   Top: per player a name, a thick lime health bar with a black edge and a
+   bevel, the technique chips; centre bout badge. Bottom: octagon reels
+   floating over the arena (metal drums), colour-coded G / T / P / ✦,
+   flame countdown, a glossy cabinet button, big "SET YOUR ATTACK!" /
+   "ATTACK!" callouts, LOCKED shutters. Dev tools live in a drawer. */
+@font-face{font-family:'Russo One';src:url('../assets/fonts/russo-one-latin-400.woff2') format('woff2');font-display:swap}
+.game .ark-reference-layout{--hud-ink:#0b0d10;--hud-lime:#55e61d}
+
+/* ---------- top HUD ---------- */
+.game.painted-enabled .ark-reference-layout .ark-arena-hud{
+  background:linear-gradient(180deg,rgba(6,18,30,.72),rgba(6,18,30,.0))!important;border:0!important;box-shadow:none!important}
+.game .ark-reference-layout .ark-hud-nameplate .ark-hud-side{
+  font:italic 400 clamp(10px,.9vw,13px)/1 'Russo One','Arial Black',sans-serif!important;letter-spacing:.06em!important;
+  color:#c8ff4a!important;text-shadow:1px 1px 0 #000,-1px 1px 0 #000,1px -1px 0 #000,-1px -1px 0 #000!important}
+.game .ark-reference-layout .ark-hud-nameplate strong{
+  font:400 clamp(16px,1.7vw,26px)/1 'Russo One','Arial Black',sans-serif!important;letter-spacing:.02em!important;color:#fff!important;
+  text-shadow:2px 2px 0 #000,-2px 2px 0 #000,2px -2px 0 #000,-2px -2px 0 #000,0 3px 0 #000!important;text-transform:none!important}
+.game .ark-reference-layout .ark-hud-health-value{
+  font:400 12px/1 'Russo One',sans-serif!important;color:#e9ffd0!important;text-shadow:1px 1px 0 #000,-1px -1px 0 #000!important;opacity:.85}
+.game .ark-reference-layout .ark-hud-meter{
+  position:relative!important;height:clamp(16px,1.7vw,24px)!important;padding:0!important;overflow:hidden!important;
+  background:linear-gradient(180deg,#5a0d08,#2c0503)!important;border:3px solid var(--hud-ink)!important;border-radius:0!important;
+  clip-path:polygon(10px 0,100% 0,calc(100% - 10px) 100%,0 100%);
+  box-shadow:inset 0 0 0 2px rgba(255,255,255,.12)!important}
+.game .ark-reference-layout .ark-arena-hud-player-1 .ark-hud-meter{clip-path:polygon(0 0,calc(100% - 10px) 0,100% 100%,10px 100%)}
+.game .ark-reference-layout .ark-hud-meter span{
+  display:block!important;height:100%!important;
+  background:linear-gradient(180deg,#f2ffbf 0%,#b6ff4a 22%,#6fef1f 48%,#3fbf10 72%,#227d06 100%)!important;
+  box-shadow:inset 0 -3px 0 rgba(0,0,0,.25),inset 0 2px 0 rgba(255,255,255,.55)!important;
+  animation:ark-hp-drain .55s ease-out both}
+.game .ark-reference-layout .ark-arena-hud-player-1 .ark-hud-meter span{margin-left:auto}
+@keyframes ark-hp-drain{from{width:var(--from,100%)}}
+/* hold the drain while the attack film is on screen; it runs when the HUD returns */
+.ark-reference-layout[data-solo-film="1"] .ark-hud-meter span{animation-play-state:paused}
+.game .ark-reference-layout .ark-hud-techniques span{
+  font:400 11px/1 'Russo One',sans-serif!important;color:#04131c!important;padding:3px 6px 2px!important;
+  background:linear-gradient(180deg,#bff6ff,#3fd6ff)!important;border:2px solid var(--hud-ink)!important;border-radius:0!important;
+  clip-path:polygon(4px 0,100% 0,calc(100% - 4px) 100%,0 100%)}
+.game .ark-reference-layout .ark-arena-hud-center{
+  background:linear-gradient(180deg,#1b1d22,#050607)!important;border:3px solid #000!important;
+  box-shadow:0 0 0 2px #d8b24a,0 4px 0 #000!important;clip-path:polygon(10px 0,calc(100% - 10px) 0,100% 50%,calc(100% - 10px) 100%,10px 100%,0 50%)}
+.game .ark-reference-layout .ark-arena-hud-center b{
+  font:400 clamp(18px,1.9vw,28px)/1 'Russo One','Arial Black',sans-serif!important;color:#fff!important;letter-spacing:.06em!important;
+  text-shadow:0 2px 0 #000!important}
+.game .ark-reference-layout .ark-arena-hud-center span{display:none!important}
+.game .ark-reference-layout .ark-arena-hud-center small{font:400 10px/1 'Russo One',sans-serif!important;color:#f3d77a!important;letter-spacing:.12em!important}
+
+/* ---------- bottom deck: reels float over the arena ---------- */
+.game.painted-enabled .ark-reference-layout .combat-controls.fight-deck{
+  background:linear-gradient(180deg,rgba(0,0,0,0),rgba(0,0,0,.42) 38%,rgba(0,0,0,.72))!important;
+  border-top:0!important;box-shadow:none!important;padding-top:4px!important}
+.game.painted-enabled .ark-reference-layout .fight-deck .fight-slot{
+  --oct:polygon(22% 0,78% 0,100% 22%,100% 78%,78% 100%,22% 100%,0 78%,0 22%);
+  width:clamp(80px,7.8vw,116px)!important;height:clamp(80px,7.8vw,116px)!important;
+  background:#000!important;clip-path:var(--oct);filter:drop-shadow(0 4px 0 rgba(0,0,0,.6))}
+.game.painted-enabled .ark-reference-layout .fight-deck .fight-slot::before{
+  inset:4px;clip-path:var(--oct);
+  background:linear-gradient(180deg,#ffffff 0%,#dfe4ea 18%,#a7b0bc 46%,#7c8592 54%,#c9d0d8 80%,#f4f6f8 100%)}
+.game.painted-enabled .ark-reference-layout .fight-deck .fight-slot-cap{
+  bottom:7px;font:400 9px/1 'Russo One',sans-serif;letter-spacing:.14em;color:#1b2530;text-shadow:0 1px 0 rgba(255,255,255,.6)}
+.game.painted-enabled .ark-reference-layout .fight-deck .fight-slot.is-empty{opacity:.55}
+.game.painted-enabled .ark-reference-layout .fight-deck .fight-slot.is-locked b,
+.game.painted-enabled .ark-reference-layout .fight-deck .combat-reel.is-live [data-reel-current]{
+  font:400 clamp(36px,3.9vw,58px)/1 'Russo One','Arial Black',sans-serif!important;margin-top:-6px!important;
+  color:#111!important;text-shadow:0 2px 0 rgba(255,255,255,.6)!important}
+/* attack emblems: G ember, T gold star, P yellow bolt; letters white with a heavy outline */
+.game.painted-enabled .ark-reference-layout .fight-deck .fight-slot-attack.is-locked[data-value="G"]::before{background:radial-gradient(circle at 50% 40%,#ffd36a 0,#ff8a12 38%,#e04a06 70%,#8a1f02 100%)}
+.game.painted-enabled .ark-reference-layout .fight-deck .fight-slot-attack.is-locked[data-value="T"]::before{background:
+  conic-gradient(from 0deg,#ffe86a 0 10deg,#ff9a1a 10deg 35deg,#ffe86a 35deg 55deg,#ff9a1a 55deg 80deg,#ffe86a 80deg 100deg,#ff9a1a 100deg 125deg,#ffe86a 125deg 145deg,#ff9a1a 145deg 170deg,#ffe86a 170deg 190deg,#ff9a1a 190deg 215deg,#ffe86a 215deg 235deg,#ff9a1a 235deg 260deg,#ffe86a 260deg 280deg,#ff9a1a 280deg 305deg,#ffe86a 305deg 325deg,#ff9a1a 325deg 350deg,#ffe86a 350deg)}
+.game.painted-enabled .ark-reference-layout .fight-deck .fight-slot-attack.is-locked[data-value="P"]::before{background:
+  linear-gradient(115deg,transparent 0 38%,#fff9c2 38% 46%,transparent 46%),radial-gradient(circle at 50% 40%,#fff6a0 0,#ffe21a 45%,#e0a800 100%)}
+.game.painted-enabled .ark-reference-layout .fight-deck .fight-slot-attack.is-locked b{
+  color:#fff!important;text-shadow:3px 0 0 #000,-3px 0 0 #000,0 3px 0 #000,0 -3px 0 #000,3px 3px 0 #000,-3px 3px 0 #000,0 5px 0 #000!important}
+.game.painted-enabled .ark-reference-layout .fight-deck .fight-slot-attack.is-locked .fight-slot-cap{color:#fff;text-shadow:1px 1px 0 #000,-1px -1px 0 #000}
+.game.painted-enabled .ark-reference-layout .fight-deck .fight-slot-power.is-locked[data-value="MARK"]::before{background:radial-gradient(circle at 50% 40%,#c8fbff 0,#28d8ff 40%,#0a62e0 80%,#06307a 100%)}
+.game.painted-enabled .ark-reference-layout .fight-deck .fight-slot-power.is-locked[data-value="MARK"] b{color:#fff!important;text-shadow:2px 2px 0 #001a44,-2px -2px 0 #001a44!important}
+.game.painted-enabled .ark-reference-layout .fight-deck .fight-slot.is-locked{animation:ark-lock-pop .26s cubic-bezier(.2,.9,.3,1.5) both}
+@keyframes ark-lock-pop{0%{transform:scale(1.25);filter:brightness(2.2)}100%{transform:scale(1);filter:drop-shadow(0 4px 0 rgba(0,0,0,.6))}}
+
+/* live reels: a metal drum (symbols above/below curve away) */
+.game.painted-enabled .ark-reference-layout .fight-deck button.combat-reel.is-live{cursor:pointer;font:inherit;color:inherit}
+.game.painted-enabled .ark-reference-layout .fight-deck .combat-reel.is-live{background:#000!important;filter:drop-shadow(0 0 12px rgba(255,214,70,.75)) drop-shadow(0 4px 0 rgba(0,0,0,.6))}
+.game.painted-enabled .ark-reference-layout .fight-deck .combat-reel.is-live::before{
+  background:linear-gradient(180deg,#4b525c 0%,#c9d0d8 22%,#ffffff 50%,#c9d0d8 78%,#4b525c 100%)}
+.game.painted-enabled .ark-reference-layout .fight-deck .combat-reel.is-live [data-reel-current][data-v="G"]{color:#d2480a!important}
+.game.painted-enabled .ark-reference-layout .fight-deck .combat-reel.is-live [data-reel-current][data-v="T"]{color:#c97800!important}
+.game.painted-enabled .ark-reference-layout .fight-deck .combat-reel.is-live [data-reel-current][data-v="P"]{color:#b38f00!important}
+.game.painted-enabled .ark-reference-layout .fight-deck .combat-reel.is-live [data-reel-current][data-mark="true"]{color:#0a62e0!important}
+.game.painted-enabled .ark-reference-layout .fight-deck .combat-reel.is-live .combat-reel-neighbor{
+  position:absolute!important;left:0;right:0;text-align:center;display:block!important;
+  font:400 15px/1 'Russo One',sans-serif!important;color:rgba(20,24,30,.38)!important;transform:scaleY(.55)!important}
+.game.painted-enabled .ark-reference-layout .fight-deck .combat-reel.is-live .combat-reel-neighbor:first-of-type{top:5px}
+.game.painted-enabled .ark-reference-layout .fight-deck .combat-reel.is-live .combat-reel-neighbor:last-of-type{bottom:17px;display:block!important}
+/* LOCKED shutter: hidden until that player has locked and the other hasn't */
+.game .ark-reference-layout .fight-shutter{display:none}
+.game.painted-enabled .ark-reference-layout .fight-deck .combat-reel.is-shuttered{filter:drop-shadow(0 4px 0 rgba(0,0,0,.6))}
+.game.painted-enabled .ark-reference-layout .fight-deck .combat-reel.is-shuttered > :not(.fight-shutter){visibility:hidden}
+.game.painted-enabled .ark-reference-layout .fight-deck .combat-reel.is-shuttered .fight-shutter{
+  display:grid;place-items:center;position:absolute;inset:4px;clip-path:var(--oct);
+  font:400 clamp(13px,1.2vw,17px)/1 'Russo One',sans-serif;letter-spacing:.06em;color:#fff;
+  text-shadow:2px 2px 0 #000,-1px -1px 0 #000;
+  background:repeating-linear-gradient(-45deg,#1a1d22 0 9px,#2b3038 9px 18px);
+  box-shadow:inset 0 0 0 3px #f0c419;animation:ark-lock-pop .22s cubic-bezier(.2,.9,.3,1.5) both}
+.game.painted-enabled .ark-reference-layout .fight-deck .fight-side-name{
+  font:italic 400 12px/1 'Russo One',sans-serif;letter-spacing:.12em;color:#c8ff4a;text-shadow:1px 1px 0 #000,-1px -1px 0 #000}
+
+/* centre: flame countdown + glossy cabinet button */
+.game.painted-enabled .ark-reference-layout .fight-countdown{
+  width:66px;height:66px;
+  background:conic-gradient(#ffe066 0,#ff9a1a calc(var(--left)*180deg),#ff3d0a calc(var(--left)*360deg),rgba(0,0,0,.55) 0);
+  filter:drop-shadow(0 0 10px rgba(255,120,20,.7))}
+.game.painted-enabled .ark-reference-layout .fight-countdown::before{inset:6px;background:radial-gradient(circle at 50% 35%,#5a1a05,#180502);box-shadow:inset 0 0 0 2px #000}
+.game.painted-enabled .ark-reference-layout .fight-countdown b{
+  font:400 30px/1 'Russo One',sans-serif;color:#fff;text-shadow:2px 2px 0 #000,-2px -2px 0 #000,2px -2px 0 #000,-2px 2px 0 #000}
+.game.painted-enabled .ark-reference-layout .fight-deck .combat-stop{
+  border:4px solid #000!important;font:400 10px/1.2 'Russo One',sans-serif!important;letter-spacing:.04em!important;color:#fff!important;
+  text-shadow:1px 1px 0 #000,-1px -1px 0 #000!important;box-shadow:0 6px 0 #000,0 0 18px rgba(120,255,80,.55)!important}
+.game.painted-enabled .ark-reference-layout .fight-deck .combat-stop.combat-green{
+  background:radial-gradient(circle at 50% 28%,#f4ffd8 0,#a9ff5a 18%,#3cc81a 52%,#167a08 100%)!important}
+.game.painted-enabled .ark-reference-layout .fight-deck .combat-stop.combat-yellow{
+  background:radial-gradient(circle at 50% 28%,#fffbe0 0,#ffe45a 18%,#f2a90c 55%,#9a5a00 100%)!important;
+  box-shadow:0 6px 0 #000,0 0 18px rgba(255,200,40,.65)!important}
+.game.painted-enabled .ark-reference-layout .fight-deck .combat-stop:active{transform:translateY(4px)!important;box-shadow:0 2px 0 #000!important}
+
+/* "SET YOUR ATTACK!" (lime) / "ATTACK!" (fire) / "THE STRIKE LANDS" */
+.game.painted-enabled .ark-reference-layout .fight-deck .combat-reel-label{
+  font:400 clamp(24px,2.7vw,40px)/1 'Russo One','Arial Black',sans-serif!important;letter-spacing:.01em!important;
+  text-transform:none!important;transform:skewX(-8deg)!important;
+  background:linear-gradient(180deg,#f6ffd0 0%,#d4ff4a 40%,#59d10e 75%,#2d7d05 100%)!important;
+  -webkit-background-clip:text!important;background-clip:text!important;color:transparent!important;text-shadow:none!important;
+  filter:drop-shadow(2px 0 0 #000) drop-shadow(-2px 0 0 #000) drop-shadow(0 2px 0 #000) drop-shadow(0 -2px 0 #000) drop-shadow(0 4px 0 #000)}
+.game.painted-enabled .ark-reference-layout .fight-deck[data-phase="POWER"] .combat-reel-label{
+  background:linear-gradient(180deg,#fffbe6 0%,#ffe48a 28%,#ffb52e 52%,#e0640c 74%,#a8340a 100%)!important;
+  -webkit-background-clip:text!important;background-clip:text!important}
+.game.painted-enabled .ark-reference-layout .fight-deck[data-phase="RESULT"] .combat-reel-label{font-size:clamp(14px,1.3vw,18px)!important}
+.game.painted-enabled .ark-reference-layout .fight-deck .combat-instruction{font:400 11px/1.2 'Russo One',sans-serif!important;color:rgba(255,255,255,.7)!important;letter-spacing:.03em}
+
+/* ---------- dev drawer ---------- */
+.game .ark-reference-layout .combat-footer[data-dev-open="false"] .ark-dev-drawer{display:none!important}
+.game .ark-reference-layout .combat-footer .ark-dev-drawer{display:contents}
+.game .ark-reference-layout .combat-footer [data-dev-toggle]{opacity:.55}
+.game .ark-reference-layout .combat-footer [data-dev-toggle]:hover,.game .ark-reference-layout .combat-footer [data-dev-toggle]:focus-visible{opacity:1}
+
+@media (prefers-reduced-motion:reduce){
+  .game .ark-reference-layout .ark-hud-meter span,.game .ark-reference-layout .fight-slot.is-locked,.game .ark-reference-layout .fight-shutter{animation:none!important}}
+.game.reduce-motion .ark-reference-layout :is(.ark-hud-meter span,.fight-slot.is-locked,.fight-shutter){animation:none!important}
+
+/* big arena callouts (FIGHT! / SET YOUR ATTACK! / TIEBREAKER) in the cabinet face */
+.game.painted-enabled .ark-reference-layout .fight-callout b{
+  font:400 clamp(44px,6vw,92px)/1 'Russo One','Arial Black',sans-serif!important;letter-spacing:.01em!important;transform:skewX(-8deg);
+  background:linear-gradient(180deg,#fffbe6 0%,#ffe48a 28%,#ffb52e 52%,#e0640c 74%,#a8340a 100%)!important;
+  -webkit-background-clip:text!important;background-clip:text!important;color:transparent!important;text-shadow:none!important;
+  filter:drop-shadow(3px 0 0 #1a0800) drop-shadow(-3px 0 0 #1a0800) drop-shadow(0 3px 0 #1a0800) drop-shadow(0 -3px 0 #1a0800) drop-shadow(0 6px 0 #000)}
+.game.painted-enabled .ark-reference-layout .fight-callout-fight b{font-size:clamp(80px,10vw,150px)!important}
+.game.painted-enabled .ark-reference-layout .fight-callout small{font:400 clamp(14px,1.4vw,20px)/1 'Russo One',sans-serif!important;letter-spacing:.14em!important;color:#fff!important;text-shadow:2px 2px 0 #000!important}
+.game.painted-enabled .ark-reference-layout .fight-callout-small{display:none!important} /* the deck banner already says it */

@@ -13,6 +13,9 @@ const failures=[];
 async function run(name,dimensions,steps,options={}){
   const context=await browser.newContext({viewport:dimensions,deviceScaleFactor:1,reducedMotion:options.reducedMotion||'reduce'});
   const page=await context.newPage();
+  // Developer tools sit in a DEV drawer (closed by default); tests that use
+  // them open it the way a person would, via its toggle.
+  page.openDev=async()=>{if(await page.locator('.combat-footer[data-dev-open="false"]').count())await page.locator('[data-dev-toggle]').click();};
   const errors=[];
   page.on('pageerror',error=>errors.push(String(error)));
   try {
@@ -150,9 +153,9 @@ await run('combat-solo-1440x900',{width:1440,height:900},async page=>{
     nodes=>nodes.map(node=>node.dataset.animalId)),['bear','moose']);
   assert.ok(await page.evaluate(()=>typeof window.NoahsRoster?.motionFor==='function'));
   assert.equal(await page.locator('.combat-hp').count(),2);
-  assert.match(await page.locator('.combat-reel-label').innerText(),/PLAYER 1/);
+  assert.match(await page.locator('.combat-reel-label').innerText(),/SET YOUR ATTACK!/);
   await page.keyboard.press('g');
-  assert.match(await page.locator('.combat-reel-label').innerText(),/DECIDE WHO STRIKES/);
+  assert.match(await page.locator('.combat-reel-label').innerText(),/^ATTACK!$/);
   for(let turn=0;turn<15;turn++){
     const controls=await page.locator('[data-combat-stop]').count();
     if(!controls)break;
@@ -174,17 +177,21 @@ await run('combat-duel-390x844',{width:390,height:844},async page=>{
   await page.locator('[data-prototype-intro]').click();
   await page.locator('[data-prototype-fight]').click();
   assert.equal(await page.locator('#game').getAttribute('data-screen'),'BATTLE_PLAY');
+  // Both reels spin at once; each player has one button. P1 locks first:
+  // P1's reel hides behind a LOCKED shutter until P2 locks, then both reveal.
+  assert.equal(await page.locator('[data-reel-player]').count(),2,'both attack reels spin together');
   await page.keyboard.press('g');
-  assert.match(await page.locator('.combat-reel-label').innerText(),/PLAYER 2/);
-  await page.keyboard.press('g');
-  assert.match(await page.locator('.combat-reel-label').innerText(),/PLAYER 1/);
-  assert.match(await page.locator('.combat-reel-label').innerText(),/DECIDE WHO STRIKES/);
-  await page.keyboard.press('y');
-  assert.match(await page.locator('.combat-reel-label').innerText(),/PLAYER 2/);
+  assert.match(await page.locator('.combat-reel-label').innerText(),/SET YOUR ATTACK!/);
+  assert.equal(await page.locator('[data-reel-player="0"].is-shuttered').count(),1,'P1 pick is masked');
+  await page.keyboard.press('j');
+  assert.match(await page.locator('.combat-reel-label').innerText(),/^ATTACK!$/);
+  assert.equal(await page.locator('[data-reel-player]').count(),2,'both number reels spin together');
+  await page.keyboard.press('j');
+  assert.equal(await page.locator('[data-reel-player="1"].is-shuttered').count(),1,'P2 pick is masked');
   await page.keyboard.press('y');
   for(let turn=0;turn<15;turn++){
     if(!await page.locator('[data-combat-stop]').count())break;
-    await page.keyboard.press('y');
+    await page.keyboard.press('y');await page.keyboard.press('j');
   }
   assert.ok(await page.locator('[data-combat-next], [data-combat-next-bout], [data-combat-rematch]').count()>0);
   await page.locator('[data-combat-quit]').click();
@@ -288,6 +295,7 @@ await run('forestfall-preview-while-reels-spin',{width:1440,height:900},async pa
   await page.locator('[data-prototype-fight]').click();
   assert.equal(await page.locator('#game').getAttribute('data-screen'),'BATTLE_PLAY');
   assert.equal((await page.evaluate(()=>window.NoahsCombat.getState().phase)),'ATTACK');
+  await page.openDev();
   assert.equal(await page.locator('[data-forestfall-preview]').isDisabled(),true);
   // This tiny artificial file only tests the UI path; the user's original
   // generated video never enters the repo or the test service.
@@ -297,7 +305,7 @@ await run('forestfall-preview-while-reels-spin',{width:1440,height:900},async pa
   });
   assert.equal(await page.locator('[data-forestfall-preview]').isDisabled(),false);
   assert.match(await page.locator('[data-forestfall-status]').innerText(),/FORESTFALL READY/);
-  await page.locator('[data-forestfall-preview]').click();
+  await page.openDev();await page.locator('[data-forestfall-preview]').click();
   await page.locator('.ark-forestfall').waitFor({state:'visible',timeout:3000});
   assert.match(await page.locator('.ark-forestfall-status').innerText(),/NO DAMAGE/);
   assert.equal(await page.locator('.ark-forestfall-target-art').count(),1,
@@ -318,7 +326,7 @@ await run('forestfall-preview-while-reels-spin',{width:1440,height:900},async pa
   assert.equal((await page.evaluate(()=>window.NoahsCombat.getState().phase)),'POWER');
   assert.equal(await page.locator('[data-forestfall-preview]').isDisabled(),false,
     'File stays selected across battle-screen rerenders');
-  await page.locator('[data-forestfall-preview]').click();
+  await page.openDev();await page.locator('[data-forestfall-preview]').click();
   assert.equal(await page.locator('.ark-forestfall').count(),1,
     'Preview must also open from the POWER reel, not silently do nothing');
   await page.locator('.ark-forestfall-controls button').last().click();
@@ -426,7 +434,7 @@ await run('forestfall-video-to-native-fbx-match-cut',{width:1440,height:900},asy
     buffer:Buffer.from('fixture; no third-party video checked into CI')
   });
   const prior=await page.evaluate(()=>window.NoahsCombat.getState().animals.map(a=>a.hp));
-  await page.locator('[data-forestfall-preview]').click();
+  await page.openDev();await page.locator('[data-forestfall-preview]').click();
   assert.equal(await page.locator('.ark-forestfall').getAttribute('data-collision'),'native-fbx');
   const seek=async seconds=>page.locator('.ark-forestfall video').evaluate((video,sec)=>{
     Object.defineProperty(video,'duration',{configurable:true,get:()=>14.93});
@@ -456,7 +464,7 @@ await run('forestfall-video-to-native-fbx-match-cut',{width:1440,height:900},asy
   assert.deepEqual(await page.evaluate(()=>window.NoahsCombat.getState().animals.map(a=>a.hp)),
     prior,'A live 3D preview cannot apply or recalculate damage');
   await page.evaluate(()=>{window.__forestfallSpy.failOnUpdate=true;});
-  await page.locator('[data-forestfall-preview]').click();
+  await page.openDev();await page.locator('[data-forestfall-preview]').click();
   await seek(11.7);
   assert.equal(await page.locator('.ark-forestfall').getAttribute('data-collision'),
     'video-fallback','WebGL failure should return to original video rather than strand the match');
@@ -482,16 +490,17 @@ await run('battle-feel-desktop-1440x900',{width:1440,height:900},async page=>{
   assert.equal(await page.locator('.combat-battlefield').count(),1);
   assert.equal(await page.locator('.battlefield-ridge').count(),2);
   assert.equal(await page.locator('.combat-reel-neighbor').count(),2);
-  const first=await page.locator('[data-combat-current]').innerText();
+  const first=await page.locator('[data-reel-current]').innerText();
   // A three-symbol reel may randomly return to its initial symbol after
   // 155ms. Poll continuously for an actual transition rather than making
   // a probabilistic equality comparison at only two timestamps.
   await page.waitForFunction(initial=>{
-    const el=document.querySelector('[data-combat-current]');
+    const el=document.querySelector('[data-reel-current]');
     return Boolean(el)&&el.textContent.trim()!==initial;
   },first,{timeout:3000});
   await page.keyboard.press('g');
   assert.equal(await page.locator('.combat-reel').getAttribute('data-reel-type'),'POWER');
+  assert.match(await page.locator('.combat-reel-label').innerText(),/^ATTACK!$/);
   for(let i=0;i<20;i++){
     if(!await page.locator('[data-combat-stop]').count())break;
     await page.keyboard.press('y');
@@ -503,7 +512,7 @@ await run('battle-feel-desktop-1440x900',{width:1440,height:900},async page=>{
     .evaluate(el=>getComputedStyle(el).animationName);
   assert.notEqual(an,'none','The original animal portrait should animate on attack');
   assert.equal(await page.locator('.ark-cinema').count(),1,'The new cinematic stage should be mounted');
-  assert.ok(['focus','intro','attack','contact','reaction','miracle','victory','done']
+  assert.ok(['focus','title','intro','attack','contact','launch','impact','reaction','miracle','victory','done']
     .includes(await page.locator('.ark-cinema').getAttribute('data-beat')));
   await page.locator('.combat-message').waitFor({state:'visible',timeout:8000});
   assert.match(await page.locator('.combat-message').innerText(),/FERAL CHARGE|LOW SWIPE|HIGH PAW STRIKE|RAGING REAR|ANTLER CHARGE|CROSS-ANTLER SWEEP|TWO-HOOF STOMP|LEAPING ANTLER DRIVE/);
@@ -528,12 +537,12 @@ await run('battle-feel-reduced-motion-390x844',{width:390,height:844},async page
   assert.equal(await page.locator('.combat-battlefield').count(),1);
   assert.ok(await page.locator('[data-combat-stop]').isVisible());
   await page.keyboard.press('g');
-  await page.keyboard.press('g');
+  await page.keyboard.press('j');
   await page.keyboard.press('y');
-  await page.keyboard.press('y');
+  await page.keyboard.press('j');
   for(let i=0;i<20;i++){
     if(!await page.locator('[data-combat-stop]').count())break;
-    await page.keyboard.press('y');
+    await page.keyboard.press('y');await page.keyboard.press('j');
   }
   assert.ok(await page.locator('[data-combat-next], [data-combat-next-bout], [data-combat-rematch]').count()>0);
   const anim=await page.locator('.combat-striker .combat-fighter-art')
@@ -609,8 +618,9 @@ await run('reference-arena-layout-landscape',{width:844,height:390},async page=>
     'HUD and controls must fit within small landscape viewport');
   assert.ok(await page.locator('[data-combat-stop]').isVisible(),'Touch reel stop must be reachable');
   await page.keyboard.press('g');
-  assert.equal(await page.locator('.combat-reel').getAttribute('data-reel-type'),'ATTACK',
-    'Local player two must get their own attack stop');
+  assert.equal(await page.locator('[data-reel-player="1"]').getAttribute('data-reel-type'),'ATTACK',
+    'Local player two keeps their own attack reel after player one locks');
+  assert.equal(await page.locator('[data-reel-player="0"].is-shuttered').count(),1);
 });
 
 await run('private-3d-dialog-mobile-390x844',{width:390,height:844},async page=>{
@@ -620,6 +630,9 @@ await run('private-3d-dialog-mobile-390x844',{width:390,height:844},async page=>
   await page.locator('[data-prototype-intro]').click();
   await page.locator('[data-prototype-fight]').click();
   assert.equal(await page.locator('#game').getAttribute('data-screen'),'BATTLE_PLAY');
+  assert.equal(await page.locator('.combat-footer').getAttribute('data-dev-open'),'false','dev tools start tucked away');
+  assert.equal(await page.locator('[data-ark3d-open]').isVisible(),false);
+  await page.openDev();
   assert.ok(await page.locator('[data-ark3d-open]').isVisible());
   assert.ok(await page.locator('[data-bear-review-quick]').isVisible(),
     'Bear review must be discoverable directly from the battle footer');
