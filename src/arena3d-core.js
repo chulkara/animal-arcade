@@ -131,7 +131,8 @@
       finished:s.phase==='FINISHED',
       miracleName:hit.miracleBonus>0?hit.miracleName:null,
       miracleBonus:hit.miracleBonus||0,damage:hit.damage||0,
-      remainingHp:hit.remainingHp
+      remainingHp:hit.remainingHp,mode:s.mode||null,
+      perfect:s.animals[hit.attacker].hp>=(s.animals[hit.attacker].maxHp||Infinity)
     });
   }
   function contactMs(id,move,durationMs){

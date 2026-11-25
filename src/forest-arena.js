@@ -168,7 +168,7 @@
     // sky dome (unaffected by fog, always behind everything)
     const sky=new THREE.Mesh(new THREE.SphereGeometry(80,32,16),
       new THREE.MeshBasicMaterial({map:texture(THREE,skyCanvas()),side:THREE.BackSide,fog:false,depthWrite:false}));
-    sky.renderOrder=-10;root.add(sky);
+    sky.name='forest-sky';sky.renderOrder=-10;root.add(sky);
     // distant forest panorama ring
     const pano=new THREE.Mesh(new THREE.CylinderGeometry(34,34,17,64,1,true),
       new THREE.MeshBasicMaterial({map:texture(THREE,panoramaCanvas()),side:THREE.BackSide,transparent:true,alphaTest:.02,fog:false,depthWrite:false}));

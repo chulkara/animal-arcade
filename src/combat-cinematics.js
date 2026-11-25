@@ -50,7 +50,11 @@ function createOverlay(){
   '<div class="ark-cinema-dmg" data-ark-dmg><b data-ark-dmg-a></b><b data-ark-dmg-b></b></div>'+
   '<div class="ark-cinema-total" data-ark-dmg-total></div>'+
   '<div class="ark-cinema-lines"></div>'+
+  '<div class="ark-cinema-streak"></div>'+
+  '<div class="ark-cinema-slash"><i></i><i></i><i></i></div>'+
   '<div class="ark-cinema-win-stamp" data-ark-cinema-winner></div>'+
+  '<div class="ark-cinema-vic-dark"></div><div class="ark-cinema-outro"></div>'+
+  '<div class="ark-cinema-win"><b data-ark-perfect>PERFECT!</b><b data-ark-youwin></b></div>'+
   '<div class="ark-cinema-symbols">'+
   Array.from({length:14},(_,i)=>'<span style="--n:'+i+'"></span>').join('')+'</div>'+
   '<div class="ark-cinema-lock" data-ark-cinema-lock></div>'+
@@ -106,9 +110,15 @@ function draw(time){
  const timing=api.duration(event,length);
  const review=window.NoahsArena3D?.getReviewState?.();
  const rehearsal=Boolean(review?.active&&review.event?.key===event.key);
+ // One clock: when the 3D arena is filming this event, follow its time so
+ // titles, flashes and banners can never drift off the shots (slow frames).
+ const film3d=window.NoahsArena3D?.getSequence?.();
  const elapsed=rehearsal?
    Math.min(timing.total,Math.max(0,review.elapsed)):
-   reduce()?timing.total:Math.min(timing.total,Math.max(0,now-sequence.started));
+   reduce()?timing.total:
+   film3d?.key===event.key?Math.min(timing.total,Math.max(0,film3d.elapsed)):
+   Math.min(timing.total,Math.max(0,now-sequence.started));
+ if(film3d?.key===event.key)sequence.started=now-elapsed;
  sequence.elapsed=elapsed;
  const panel=api.panel(event,elapsed,length);
  const beat=panel.beat;
@@ -119,6 +129,7 @@ function draw(time){
    overlay.dataset.accent=panel.accent;
    overlay.dataset.miracle=panel.miracle||'';
    overlay.dataset.attacker=String(event.attacker);
+   overlay.dataset.defender=String(event.defender);
    const kicker=overlay.querySelector('[data-ark-cinema-kicker]');
    const heading=overlay.querySelector('[data-ark-cinema-title]');
    const sub=overlay.querySelector('[data-ark-cinema-sub]');
@@ -133,12 +144,12 @@ function draw(time){
    if(rank)rank.textContent=panel.solo?api.soloSpec(event).rank:'';
    if(name)name.textContent=panel.solo?panel.title:'';
    if(panel.solo){
-     // Two hits then the total, like the reference's flying numbers.
+     // One number pops where the victim lands; the running total sits in
+     // red under the victim's health bar as the HUD returns (reference).
      const dmg=Math.max(0,Math.round(event.damage||event.previewDamage||0));
      const total=overlay.querySelector('[data-ark-dmg-total]');if(total)total.textContent=dmg?String(dmg):'';
-     const first=dmg>1?Math.round(dmg*.4):dmg,second=dmg-first;
      const a=overlay.querySelector('[data-ark-dmg-a]'),b=overlay.querySelector('[data-ark-dmg-b]');
-     if(a)a.textContent=first?String(first):'';if(b)b.textContent=second?String(second):'';
+     if(a)a.textContent=dmg?String(dmg):'';if(b)b.textContent='';
    }
    if(sub)sub.textContent=rehearsal?
      beat==='CONTACT'?'STAGED CONTACT · NO HP CHANGES':
@@ -153,11 +164,27 @@ function draw(time){
  const p=api.shot(event,elapsed,length);
  overlay.dataset.shot=p.shot;
  const solo=api.soloView?api.soloView(event,elapsed,length):null;
- overlay.style.setProperty('--solo-flash',reduce()||!solo?.active?'0':solo.flash.toFixed(3));
+ const live=!reduce()&&solo?.active;
+ overlay.style.setProperty('--solo-flash',live?solo.flash.toFixed(3):'0');
+ overlay.style.setProperty('--solo-burst',live?solo.burst.toFixed(3):'0');
+ overlay.style.setProperty('--solo-streak',live?solo.streak.toFixed(3):'0');
+ overlay.style.setProperty('--solo-slash',live?solo.slash.toFixed(3):'0');
+ overlay.dataset.strike=solo?.strike||'';
  overlay.dataset.pops=solo?.active?String(solo.pops):'0';
+ overlay.dataset.total=solo?.active&&elapsed>=timing.landAt&&elapsed<timing.finish?'1':'';
+ // Damage pop, from film time (deterministic, frame-accurate in review):
+ // scale .6 → 1.15 → 1 in 180 ms, drift up, fade before the return cut.
+ if(solo?.active){
+   const age=elapsed-(timing.landAt||0),span=api.SOLO_MS.pop;
+   const sc=age<80?.6+.55*age/80:age<180?1.15-.15*(age-80)/100:1;
+   const op=age<0||age>=span?0:age<40?age/40:age>span-260?(span-age)/260:1;
+   overlay.style.setProperty('--pop-scale',sc.toFixed(3));
+   overlay.style.setProperty('--pop-op',op.toFixed(3));
+   overlay.style.setProperty('--pop-y',(-Math.max(0,age)/span*24).toFixed(1)+'px');
+ }
  // During the attack film the arena HUD steps away (as in the reference),
  // returning with the HP drain when the film cuts back to the arena.
- const film=Boolean(solo?.active)&&['TITLE','ATTACK','CONTACT','LAUNCH','IMPACT'].includes(p.beat);
+ const film=(Boolean(solo?.active)&&['TITLE','ATTACK','CONTACT','LAUNCH'].includes(p.beat))||p.beat==='VICTORY';
  const layoutRoot=ui.querySelector('.ark-reference-layout');
  if(layoutRoot){if(film)layoutRoot.dataset.soloFilm='1';else delete layoutRoot.dataset.soloFilm;}
  overlay.dataset.move=event.move;
@@ -184,11 +211,26 @@ function draw(time){
      winCued=true;
    }
  }
- const winnerVisible=p.beat==='VICTORY'&&p.local>=api.VICTORY_BANNER_MS;
- overlay.dataset.result=winnerVisible?'visible':'hidden';
+ // Reference win: a dark dip, PERFECT! (only if the winner is unhurt)
+ // slams in, "You win!" under it, then a sky-coloured outro holds it.
+ const vic=p.beat==='VICTORY'?p.local:-1;
+ const perfect=Boolean(event.perfect);
+ const youAt=perfect?api.VICTORY_BANNER_MS:0;
+ const slam=age=>age<0?{s:2,o:0}:age<160?{s:2-1.12*age/160,o:Math.min(1,age/60)}:
+   age<240?{s:.88+.12*(age-160)/80,o:1}:{s:1,o:1};
+ const pf=slam(perfect?vic:-1),yw=slam(vic>=0?vic-youAt:-1);
+ overlay.style.setProperty('--perfect-s',pf.s.toFixed(3));overlay.style.setProperty('--perfect-o',pf.o.toFixed(3));
+ overlay.style.setProperty('--youwin-s',yw.s.toFixed(3));overlay.style.setProperty('--youwin-o',yw.o.toFixed(3));
+ overlay.style.setProperty('--vic-dark',vic<0?'0':(vic<90?vic/90*.7:Math.max(0,.7-(vic-90)/260*.7)).toFixed(3));
+ const cam=p.beat==='VICTORY'?api.camera(event,elapsed,length):null;
+ overlay.style.setProperty('--outro',String(cam?.outro||0));
+ overlay.dataset.result=vic>=youAt?'visible':'hidden';
  const winner=overlay.querySelector('[data-ark-cinema-winner]');
- if(winner)winner.textContent=winnerVisible?
-   event.attackerId.toUpperCase()+' WINS!':'';
+ if(winner)winner.textContent='';
+ const you=overlay.querySelector('[data-ark-youwin]');
+ if(you&&vic>=0)you.textContent=event.mode==='DUEL'?'P'+(event.attacker+1)+' wins!':
+   event.mode==='SOLO'&&event.attacker!==0?'You lose…':'You win!';
+ overlay.dataset.perfect=perfect?'1':'';
  const root=ui.querySelector('.ark-reference-layout');
  if(elapsed>=timing.total){
    sequence.done=true;

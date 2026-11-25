@@ -44,17 +44,37 @@ const MIRACLES=Object.freeze({
   'TIDAL WISH':Object.freeze({type:'tide',label:'TIDAL WISH',symbol:'◈',accent:'sea'}),
   'ECLIPSE OATH':Object.freeze({type:'eclipse',label:'ECLIPSE OATH',symbol:'☾',accent:'violet'})
 });
-// Arcade-style "solo" attacks, from the 2026-11-24 reference footage: the
-// two animals never share the frame. The attacker is shown alone (title card
-// with aura, then the strike against a fire void), the victim is shown alone
-// being launched with damage numbers, then the film returns to the arena.
+// Arcade-style "solo" attacks, from the 2026-11-24 reference footage
+// (Brown Bear vs Great Hornbill, 13.8–22.8 s): the two animals never share
+// the frame. Title card on the arena stage → white-out → attacker alone,
+// crouched head-on → flash cut as it rears → strike (fire void for the
+// signature moves) with a claw glint → it lunges into the lens → flash →
+// victim already tumbling under a red sky → cut to the arena wide as it
+// lands in a dirt plume with its damage number → back to the two-shot.
+// strike: 'fire' (burning void), 'charge' (runs at the lens through speed
+// streaks) or 'slash' (claw ribbon across the screen).
 const SOLO=Object.freeze({
   bear:Object.freeze({
-    P:Object.freeze({rank:'LV.2 SIGNATURE',launchHeight:2.6,spin:1})
+    G:Object.freeze({rank:'LV.1 GUTS',strike:'charge',launchHeight:2.3,spin:.8}),
+    T:Object.freeze({rank:'LV.1 TECHNIQUE',strike:'slash',launchHeight:2.4,spin:.9}),
+    P:Object.freeze({rank:'LV.2 SIGNATURE',strike:'fire',launchHeight:2.6,spin:1}),
+    S:Object.freeze({rank:'LV.3 SIGNATURE',strike:'fire',launchHeight:2.9,spin:1.2})
+  }),
+  moose:Object.freeze({
+    G:Object.freeze({rank:'LV.1 GUTS',strike:'charge',launchHeight:2.2,spin:.8}),
+    T:Object.freeze({rank:'LV.1 TECHNIQUE',strike:'slash',launchHeight:2.3,spin:.9}),
+    P:Object.freeze({rank:'LV.2 SIGNATURE',strike:'fire',launchHeight:2.5,spin:1}),
+    S:Object.freeze({rank:'LV.3 SIGNATURE',strike:'fire',launchHeight:2.8,spin:1.2})
   })
 });
-const SOLO_MS=Object.freeze({titleIn:260,lead:1900,fireHold:280,launch:1250,impact:650,ret:760});
-function soloSpec(event){return SOLO[event?.attackerId]?.[event?.move]||null;}
+// Body height relative to the Bear, so framing fits each animal.
+const SOLO_SCALE=Object.freeze({bear:1,moose:1.18});
+const SOLO_MS=Object.freeze({titleIn:220,lead:2000,whiteOut:380,lunge:170,
+  hitStop:110,launchDelay:170,launch:720,land:1500,ret:520,pop:1350,koHold:1250});
+const reducedShake=v=>Number.isFinite(v)?v:0;
+// event.film===false forces the older shared-frame grammar (the fallback for
+// animals without a film entry; also how the tests keep covering it).
+function soloSpec(event){return event?.film===false?null:SOLO[event?.attackerId]?.[event?.move]||null;}
 const length=(event,nativeMs)=>{
   if(event.attackerId==='moose')return {G:1450,T:1300,P:1840,S:2280}[event.move];
   return Number.isFinite(nativeMs)&&nativeMs>100?nativeMs:1450;
@@ -195,16 +215,24 @@ function duration(event,nativeMs){
 function timeline(event,attack,contact,windup){
   const miracleLead=event.miracleName?850:0;
   if(soloSpec(event)){
+    const sp=soloSpec(event);
     const actionLead=miracleLead+SOLO_MS.lead;
     const titleIn=miracleLead+SOLO_MS.titleIn;
-    const launchAt=actionLead+contact+SOLO_MS.fireHold;
+    windup=clamp(windup,0,contact);
+    // Beats inside the strike (ms after actionLead).
+    const lungeAt=Math.max(120,contact-SOLO_MS.lunge);
+    const fireStart=sp.strike==='fire'?
+      clamp(Math.min(windup-120,lungeAt-260),160,lungeAt-80):lungeAt;
+    const cutAt=clamp(Math.min(windup*.6,fireStart-240),80,lungeAt-60);
+    const launchAt=actionLead+contact+SOLO_MS.launchDelay;
     const landAt=launchAt+SOLO_MS.launch;
-    const returnAt=landAt+SOLO_MS.impact;
+    const returnAt=landAt+SOLO_MS.land;
     const finish=returnAt+SOLO_MS.ret;
-    const victoryStart=event.finished?finish+180:Infinity;
-    return Object.freeze({solo:true,attack,contact,windup:clamp(windup,0,contact),
-      miracleLead,focusLead:SOLO_MS.lead,actionLead,titleIn,launchAt,landAt,returnAt,finish,
-      victoryStart,total:event.finished?victoryStart+VICTORY_END_MS:finish+480});
+    const victoryStart=event.finished?landAt+SOLO_MS.koHold:Infinity;
+    return Object.freeze({solo:true,strike:sp.strike,attack,contact,windup,
+      cutAt,fireStart,lungeAt,miracleLead,focusLead:SOLO_MS.lead,actionLead,titleIn,
+      launchAt,landAt,returnAt,finish,victoryStart,
+      total:event.finished?victoryStart+VICTORY_END_MS:finish+480});
   }
   // The reference takes time to prepare a signature move. Our previous
   // edit triggered the native FBX on frame one, so no strike had a buildup.
@@ -227,9 +255,11 @@ function shot(event,elapsed,nativeMs){
     const at=t-timing.actionLead;
     const pick=t<timing.titleIn?['FOCUS','clash']:
       t<timing.actionLead?['TITLE','soloTitle']:
-      at<timing.windup?['ATTACK','soloRise']:
-      at<timing.contact?['ATTACK','soloFire']:
-      t<timing.launchAt?['CONTACT','soloFire']:
+      at<timing.cutAt?['ATTACK','soloRise']:
+      at<timing.fireStart?['ATTACK','soloRear']:
+      at<timing.lungeAt?['ATTACK','soloFire']:
+      at<timing.contact?['ATTACK','lunge']:
+      t<timing.launchAt?['CONTACT','lunge']:
       t<timing.landAt?['LAUNCH','launch']:
       t<timing.returnAt?['IMPACT','landing']:['REACTION','returnWide'];
     return Object.freeze({name:pick[1],beat:pick[0],shot:pick[1],pose:POSES.wide,
@@ -242,8 +272,7 @@ function shot(event,elapsed,nativeMs){
       timing,accent:descriptor.accent});
   if(event.finished&&t>=timing.victoryStart){
     const v=t-timing.victoryStart;
-    const stage=v<740?0:v<1430?1:v<2140?2:3;
-    const name=['lowHero','sideHero','highHero','finale'][stage];
+    const name=victoryShot(v);
     return Object.freeze({name,beat:'VICTORY',shot:name,pose:POSES[name],local:v,
       progress:clamp(v/VICTORY_END_MS,0,1),timing,accent:descriptor.accent});
   }
@@ -262,45 +291,64 @@ function shot(event,elapsed,nativeMs){
     progress:clamp(attackTime/timing.attack,0,1),timing,accent:descriptor.accent});
 }
 // Per-frame staging for solo attacks: who is on screen, flashes, aura, fire
-// void and the victim's launch arc. Pure; the 3D runtime and DOM overlay
-// both read it so they can never drift apart.
+// void, claw glint, red sky and the victim's tumble. Pure; the 3D runtime and
+// the DOM overlay both read it so they can never drift apart.
 function soloView(event,elapsed,nativeMs){
   const timing=duration(event,nativeMs),sp=soloSpec(event);
   const none=Object.freeze({active:false,showAttacker:true,showDefender:true,
-    flash:0,aura:0,fire:0,launch:null,pops:0,roar:0,stage:null});
+    flash:0,aura:0,fire:0,glint:0,burst:0,streak:0,slash:0,redSky:0,lunge:0,
+    shake:0,launch:null,pops:0,roar:0,stage:null,strike:null});
   if(!timing.solo||!sp)return none;
   const t=clamp(Number(elapsed)||0,0,timing.total);
-  if(t<timing.miracleLead||t>=timing.finish)return none;
+  if(t<timing.miracleLead||t>=Math.min(timing.finish,timing.victoryStart))return none;
   const spike=(at,rise,fall)=>t<at?clamp(1-(at-t)/rise,0,1):clamp(1-(t-at)/fall,0,1);
-  const contactAt=timing.actionLead+timing.contact;
-  const flash=Math.max(spike(timing.titleIn,170,230),
-    spike(timing.actionLead,240,170),spike(contactAt,40,240),
-    .7*spike(timing.launchAt,30,160),.45*spike(timing.returnAt,30,200));
+  const A=timing.actionLead,contactAt=A+timing.contact;
+  const lungeAt=A+timing.lungeAt,fireAt=A+timing.fireStart;
+  // Title starts on a white burst; it fades out to white; a one-frame flash
+  // cuts the crouch to the rear-up; the impact flash follows the lunge.
+  const whiteOut=t<A-SOLO_MS.whiteOut?0:t<A?ease((t-(A-SOLO_MS.whiteOut))/SOLO_MS.whiteOut):
+    clamp(1-(t-A)/160,0,1);
+  const flash=Math.max(spike(timing.titleIn,60,300),whiteOut,
+    .9*spike(A+timing.cutAt,16,110),spike(contactAt+50,50,timing.launchAt-contactAt+60),
+    .35*spike(timing.landAt,16,140));
   const aura=t<timing.titleIn||t>=timing.launchAt?0:ease((t-timing.titleIn)/260);
-  const fireStart=timing.actionLead+timing.windup*.55;
-  const fire=t<fireStart||t>=timing.launchAt?0:ease((t-fireStart)/220);
-  const inLaunch=t>=timing.launchAt&&t<timing.returnAt;
+  const fire=sp.strike!=='fire'||t<fireAt||t>=timing.launchAt?0:ease((t-fireAt)/220);
+  const glint=sp.strike==='charge'||t>=contactAt?0:spike(lungeAt-50,240,90);
+  const streak=sp.strike==='charge'&&t>=A+timing.cutAt&&t<timing.launchAt?
+    ease((t-A-timing.cutAt)/200):0;
+  const slash=sp.strike==='slash'?spike(contactAt,90,260):0;
+  const lunge=t<lungeAt?0:t<contactAt?ease((t-lungeAt)/Math.max(1,contactAt-lungeAt)):
+    t<timing.launchAt?1:0;
+  // Hit-stop shake while the rigs are frozen, a smaller bump on landing.
+  const hitAge=t-contactAt,landAge=t-timing.landAt;
+  const shake=hitAge>=0&&hitAge<320?Math.sin(hitAge*.19)*Math.exp(-hitAge/110):
+    landAge>=0&&landAge<160?.45*Math.sin(landAge*.24)*Math.exp(-landAge/60):0;
+  const burst=t<timing.titleIn?0:clamp(1-(t-timing.titleIn)/520,0,1);
+  const redSky=t>=timing.launchAt&&t<timing.landAt?1:0;
+  const away=event.attacker===0?1:-1;
   let launch=null;
-  if(inLaunch){
-    const u=clamp((t-timing.launchAt)/(timing.landAt-timing.launchAt),0,1);
-    const away=event.attacker===0?1:-1;
-    launch=Object.freeze({u,
-      y:t<timing.landAt?sp.launchHeight*4*u*(1-u):0,
-      drift:away*1.5*ease(u),
-      spin:t<timing.landAt?away*Math.PI*2*sp.spin*ease(u):0,
-      landed:t>=timing.landAt});
+  if(t>=timing.launchAt&&t<timing.returnAt){
+    if(t<timing.landAt){
+      // Already airborne and turning over on the first frame of the shot.
+      const u=clamp((t-timing.launchAt)/(timing.landAt-timing.launchAt),0,1);
+      launch=Object.freeze({u,landed:false,
+        y:sp.launchHeight*(.55+1.8*u*(1-u)),
+        drift:away*(.4+1.6*u),
+        spin:away*(Math.PI*.65+Math.PI*1.5*sp.spin*u)});
+    }else{
+      const bounce=landAge<280?.28*Math.sin(Math.PI*landAge/280):0;
+      launch=Object.freeze({u:1,landed:true,y:bounce,drift:away*2.0,spin:0});
+    }
   }
   // The attacker roars at the lens under its title card.
-  const roar=t<timing.titleIn||t>=timing.actionLead?0:
-    ease((t-timing.titleIn-120)/220)*(1-ease((t-(timing.actionLead-340))/240));
-  // Which set the shot is on: the open plains stage for the title, the rise
-  // and the victim's launch/landing; the fire void during the strike.
-  const stage=fire>0?'fire':t>=timing.titleIn&&t<timing.returnAt?'plains':null;
-  return Object.freeze({active:true,roar,stage,
+  const roar=t<timing.titleIn||t>=A?0:
+    ease((t-timing.titleIn-120)/220)*(1-ease((t-(A-340))/240));
+  const stage=fire>0?'fire':redSky?'red':null;
+  return Object.freeze({active:true,roar,stage,strike:sp.strike,
     showAttacker:!(t>=timing.launchAt&&t<timing.returnAt),
     showDefender:!(t>=timing.titleIn&&t<timing.launchAt),
-    flash,aura,fire,launch,
-    pops:t<timing.launchAt+120?0:t<timing.landAt?1:2});
+    flash,aura,fire,glint,burst,streak,slash,redSky,lunge,shake,launch,
+    pops:t>=timing.landAt&&t<timing.landAt+SOLO_MS.pop?1:0});
 }
 // World slots: player one is LEFT (-X), player two is RIGHT (+X).
 // Framing must never infer a side from the name of the animal: Bear may
@@ -317,57 +365,66 @@ function camera(event,elapsed,nativeMs){
   const facing=event.attacker===0?1:-1;
   let x=0,targetX=0,y=2.8,z=12.2,targetY=1.23,zoom=1;
   if(beat.solo){
-    const view=soloView(event,elapsed,nativeMs);
+    const view=soloView(event,elapsed,nativeMs),T=beat.timing;
+    const H=SOLO_SCALE[event.attackerId]||1,Hd=SOLO_SCALE[event.defenderId]||1;
+    const charge=T.strike==='charge';
     if(beat.shot==='clash'){x=0;targetX=0;y=2.6;z=11.6;targetY=1.25;zoom=1.02;}
     else if(beat.shot==='soloTitle'){
-      // Low front-quarter: the attacker alone against the sky, roaring.
-      x=attackerX+facing*5.6;y=.62;z=2.7;targetX=attackerX+facing*.3;targetY=1.35;zoom=1.0;
+      // Low profile push-in on the arena stage under the title card.
+      const p=ease((beat.local-T.titleIn)/Math.max(1,T.actionLead-T.titleIn));
+      x=attackerX+facing*1.0;y=.78*H;z=(6.8-1.2*p)*H;
+      targetX=attackerX+facing*.35;targetY=1.02*H;zoom=1.0;
     }else if(beat.shot==='soloRise'){
-      // Head-on and low as it rises: the reference's "fills the frame" stance.
-      x=attackerX+facing*7.0;y=1.0;z=2.4;targetX=attackerX;targetY=1.35;zoom=1.0;
+      // Head-on and low: the attacker crouched and coiled, filling the frame.
+      x=attackerX+facing*(charge?7.4:6.0)*H;y=.8*H;z=1.4*H;
+      targetX=attackerX+facing*(charge?.8:0);targetY=1.1*H;zoom=1.0;
+    }else if(beat.shot==='soloRear'){
+      // Flash cut: closer as it rears (or as it closes on the lens).
+      if(charge){x=attackerX+facing*6.6*H;y=.95*H;z=.9*H;targetX=attackerX+facing*1.6;targetY=.95*H;}
+      else{x=attackerX+facing*5.4*H;y=1.25*H;z=1.9*H;targetX=attackerX;targetY=1.75*H;}
+      zoom=1.0;
     }else if(beat.shot==='soloFire'){
-      // Closer, still head-on, the fire void behind: the strike itself.
-      // Far enough that the full rear-up (≈3 units tall) stays in frame.
-      x=attackerX+facing*8.4;y=1.1;z=2.8;targetX=attackerX;targetY=1.95;zoom=1.0;
+      // The strike against the fire void, the full rear-up in frame.
+      x=attackerX+facing*7.4*H;y=1.15*H;z=2.5*H;targetX=attackerX;targetY=1.9*H;zoom=1.0;
+    }else if(beat.shot==='lunge'){
+      // The runtime dollies this into the animal's face from the live head
+      // bone (view.lunge 0→1); this is the framing it starts from.
+      if(T.strike==='fire'){x=attackerX+facing*7.4*H;y=1.15*H;z=2.5*H;targetY=1.9*H;}
+      else if(charge){x=attackerX+facing*6.6*H;y=.95*H;z=.9*H;targetY=.95*H;}
+      else{x=attackerX+facing*5.4*H;y=1.25*H;z=1.9*H;targetY=1.75*H;}
+      targetX=attackerX;zoom=1.0;
     }else if(beat.shot==='launch'){
-      // The victim alone, thrown into the sky; low lens looking up.
+      // The victim alone, tumbling; horizon low so the red sky fills the frame.
       const l=view.launch||{y:0,drift:0};
-      // Steep enough that blue sky, not the hazy horizon band, fills the frame.
-      targetX=defenderX+l.drift;targetY=.9+l.y;
-      x=targetX+facing*1.8;y=.3;z=8.0;zoom=1.0;
+      targetX=defenderX+l.drift;targetY=.75*Hd+l.y;
+      x=targetX-facing*.4;y=1.0+l.y*.45;z=(event.defenderId==='bear'?8.8:7.6)*Hd;zoom=1.0;
     }else if(beat.shot==='landing'){
-      const l=view.launch||{drift:0};
-      targetX=defenderX+l.drift;targetY=.8;x=targetX+facing*.8;y=2.6;z=9.2;zoom=1.0;
+      // Hard cut to the arena wide: the landing in the distance.
+      const away=event.attacker===0?1:-1;
+      targetX=defenderX+away*2.0;targetY=.75;x=defenderX+away*.5;y=2.4;z=12.6;zoom=1.0;
     }else{x=0;targetX=0;y=2.8;z=12.2;targetY=1.23;zoom=1;}
+    const k=reducedShake(view.shake);
+    return Object.freeze({x:x+.11*k,y:y+.06*k,z,targetX,targetY,zoom,angle:0,
+      beat:beat.beat,shot:beat.shot,cut:true,lunge:view.lunge,
+      snap:beat.shot==='launch'||beat.shot==='lunge'});
   }else if(beat.beat==='VICTORY'){
-    targetX=attackerX;
-    if(beat.shot==='lowHero'){
-      // A low front-quarter view must preserve the full winning silhouette,
-      // not cut the head off as the upright native clip rises.
-      x=attackerX+facing*5.0;y=.82;z=4.7;
-      targetY=1.55;zoom=1.05;
-    }else if(beat.shot==='sideHero'){
-      // Reverse angle: the viewer now sees the opposite flank.
-      x=attackerX-facing*4.5;y=2.05;z=5.0;
-      targetY=1.58;zoom=1.08;
-    }else if(beat.shot==='highHero'){
-      // Clearly overhead, not another chest-height profile.
-      x=attackerX+facing*3.2;y=7.3;z=4.5;
-      targetY=1.55;zoom=1.00;
-    }else{
-      // The arcade reference closes on the winner's face, not on an
-      // empty wide arena. Reserve the last cut for a real portrait.
-      // The 9:49 AM recording proves the 4.45-unit portrait shot is
-      // unusable: it fills the whole display with fur and excludes the head.
-      // Return to the longer front view from the better 9:13 AM take.
-      // The original victor advances on all fours before roaring. Keep
-      // the final lens in a front-quarter direction, with real space
-      // around its muzzle and paws rather than a torso-only portrait.
-      const approach=victoryApproach(beat.local);
-      x=attackerX+facing*8.0;y=1.93;z=5.25;
-      targetX=attackerX+facing*approach.travel;
-      targetY=1.13;zoom=1.04;
-    }
+    // Reference win (2026-11-24 footage): the winner stays on all fours in
+    // its fire aura and walks at the lens roaring, cut as side → front
+    // three-quarter → low roar close-up → wide, then the sky outro.
+    const ap=victoryApproach(beat.local);
+    const wx=attackerX+facing*ap.travel,wz=ap.depth;
+    const hx=facing*Math.cos(ap.turn),hz=Math.sin(ap.turn);
+    let nx=-hz,nz=hx;if(nz<0){nx=-nx;nz=-nz;}
+    const H=SOLO_SCALE[event.attackerId]||1;
+    const at=(fwd,side,cy,ty)=>{x=wx+hx*fwd+nx*side;z=wz+hz*fwd+nz*side;y=cy*H;targetX=wx;targetY=ty*H;return wz;};
+    if(beat.shot==='vicSide')at(.6,6.2,1.05,.95);
+    else if(beat.shot==='vicFront')at(5.4,2.2,1.0,1.0);
+    else if(beat.shot==='vicRoar')at(3.6,1.0,.62,1.12);
+    else at(8.6,3.0,1.7,.95);
+    zoom=1.0;
+    return Object.freeze({x,y,z,targetX,targetY,targetZ:wz,zoom,angle:0,
+      beat:beat.beat,shot:beat.shot,cut:true,outro:beat.local>=VICTORY_OUTRO_MS?
+        clamp((beat.local-VICTORY_OUTRO_MS)/420,0,1):0});
   }else if(beat.beat==='FOCUS'){
     // Each technique earns its own visual identity, not the same generic
     // closeup of Bear's face before every strike.
@@ -436,15 +493,6 @@ function camera(event,elapsed,nativeMs){
   // entire standing animal inside a perspective viewport. Preserve each
   // distinct azimuth by dollying along the shot ray rather than forcing
   // another generic side view. The 9:49 AM recording failed this guard.
-  if(beat.beat==='VICTORY'){
-    const distance=Math.hypot(x-targetX,y-targetY,z);
-    const minDistance=10.0;
-    const factor=Math.max(1,minDistance/Math.max(.001,distance));
-    x=targetX+(x-targetX)*factor;
-    y=targetY+(y-targetY)*factor;
-    z*=factor;
-    zoom=Math.min(1.08,zoom);
-  }
   const age=beat.local-beat.timing.contact;
   const punch=beat.beat==='CONTACT'&&!beat.solo?
     Math.max(0,1-Math.max(0,age)/145):0;
@@ -463,27 +511,28 @@ function camera(event,elapsed,nativeMs){
 // looks up, roars, and only then the result transitions away. The user
 // approved the first three existing victory camera cuts; this retimes
 // the final cut to feature movement instead of a static hind-leg idle.
-const VICTORY_LOWER_START_MS=1490;
-const VICTORY_LOWER_READY_MS=2500;
-const VICTORY_APPROACH_START_MS=2540;
-const VICTORY_APPROACH_END_MS=3530;
-const VICTORY_HOWL_START_MS=3350;
-const VICTORY_HOWL_CUE_MS=4100; // roar sound starts as the jaw drops
-const VICTORY_BANNER_MS=4650; // the win banner lands mid-roar, never before it
-const VICTORY_END_MS=6600;
+// Victory timing from the reference (video_1 49.3–55 s, video_4 41.3–46.7 s):
+// PERFECT!/You win! slam within ~0.3 s of the win, ~2.4 s of quick cuts of
+// the winner walking at the lens and roaring, then a sky-coloured outro
+// holding the banner.
+const VICTORY_SHOTS=Object.freeze([['vicSide',0],['vicFront',560],['vicRoar',1060],['vicWide',1800]]);
+const VICTORY_BANNER_MS=280;       // "You win!" (PERFECT! lands at 0 when earned)
+const VICTORY_HOWL_START_MS=700;   // inhale
+const VICTORY_HOWL_CUE_MS=1060;    // roar sound with the jaw drop, on the close-up
+const VICTORY_APPROACH_END_MS=2300;
+const VICTORY_OUTRO_MS=2450;
+const VICTORY_END_MS=4700;
+// Kept for older callers; the winner no longer rears up.
+const VICTORY_LOWER_START_MS=0,VICTORY_LOWER_READY_MS=0,VICTORY_APPROACH_START_MS=0;
+function victoryShot(v){let name=VICTORY_SHOTS[0][0];for(const [n,at] of VICTORY_SHOTS)if(v>=at)name=n;return name;}
 function victoryApproach(victoryElapsed){
   const elapsed=Math.max(0,Number(victoryElapsed)||0);
-  const lowered=ease((elapsed-VICTORY_LOWER_START_MS)/
-    (VICTORY_LOWER_READY_MS-VICTORY_LOWER_START_MS));
-  const step=ease((elapsed-VICTORY_APPROACH_START_MS)/
-    (VICTORY_APPROACH_END_MS-VICTORY_APPROACH_START_MS));
-  const active=elapsed>=VICTORY_APPROACH_START_MS&&
-    elapsed<VICTORY_APPROACH_END_MS;
-  const stride=active?Math.sin((elapsed-VICTORY_APPROACH_START_MS)*.0145)
-    *Math.sin(Math.PI*clamp((elapsed-VICTORY_APPROACH_START_MS)/
-      (VICTORY_APPROACH_END_MS-VICTORY_APPROACH_START_MS),0,1)):0;
-  return Object.freeze({lowered,step,active,stride,
-    travel:.55*step,depth:.33*step,turn:.43*lowered});
+  // Walks diagonally toward centre and the lens, turned to face its path.
+  const step=clamp(elapsed/VICTORY_APPROACH_END_MS,0,1);
+  const glide=step<.85?step:(.85+.15*ease((step-.85)/.15));
+  const turn=.93*ease(elapsed/420);
+  return Object.freeze({lowered:1,step,active:elapsed<VICTORY_APPROACH_END_MS,stride:0,
+    travel:.95*glide,depth:1.25*glide,turn});
 }
 function bearHowl(victoryElapsed){
   const elapsed=Math.max(0,Number(victoryElapsed)||0);
@@ -491,27 +540,25 @@ function bearHowl(victoryElapsed){
     headPitch:0,headYaw:0,neckPitch:0,chestPitch:0,jawOpen:0,
     forePaw:0,bodyLean:0,bodyDrop:0,breath:0});
   if(elapsed<VICTORY_HOWL_START_MS)return zero;
-  const inhale=ease((elapsed-VICTORY_HOWL_START_MS)/560);
-  const throwBack=ease((elapsed-3850)/540);
-  const open=ease((elapsed-4000)/300);
-  const fade=ease((elapsed-5500)/690);
+  const H0=VICTORY_HOWL_START_MS;
+  const inhale=ease((elapsed-H0)/200);
+  const throwBack=ease((elapsed-(H0+200))/240);
+  const open=ease((elapsed-(VICTORY_HOWL_CUE_MS-60))/200);
+  const fade=ease((elapsed-2350)/450);
   const vocal=Math.sin((elapsed-VICTORY_HOWL_CUE_MS)*.021);
   return Object.freeze({
     active:true,
-    phase:elapsed<3850?'inhale':elapsed<4400?'throw':
-      elapsed<5500?'roar':'hold',
-    intensity:inhale*(1-.14*fade),
-    headPitch:.12*inhale-.38*throwBack+.012*vocal*open, // lifted, but the open mouth still faces the camera
+    phase:elapsed<H0+200?'inhale':elapsed<VICTORY_HOWL_CUE_MS?'throw':
+      elapsed<2350?'roar':'hold',
+    intensity:inhale*(1-.3*fade),
+    // Head comes up toward the low lens, mouth wide, as it walks in.
+    headPitch:(.10*inhale-.30*throwBack+.012*vocal*open)*(1-.6*fade),
     headYaw:.04*throwBack*Math.sin(elapsed*.003),
-    neckPitch:.07*inhale-.29*throwBack,
-    chestPitch:.11*inhale-.18*throwBack,
-    jawOpen:clamp((.94+.05*vocal)*open*(1-.28*fade),0,1),
-    // Walk animation has stopped; only subtle paw/shoulder motion while
-    // both forepaws remain planted during the final roar.
-    forePaw:.035*inhale-.062*throwBack,
-    bodyLean:.07*inhale-.09*throwBack,
-    bodyDrop:-.045*inhale+.035*throwBack,
-    breath:(.7+.22*Math.abs(vocal))*open
+    neckPitch:(.05*inhale-.22*throwBack)*(1-.6*fade),
+    chestPitch:(.06*inhale-.10*throwBack)*(1-.6*fade),
+    jawOpen:clamp((.96+.04*vocal)*open*(1-.85*fade),0,1),
+    forePaw:0,bodyLean:.04*inhale-.05*throwBack,bodyDrop:0,
+    breath:(.7+.22*Math.abs(vocal))*open*(1-fade)
   });
 }
 const HIT_STOP_MS=88;
@@ -519,7 +566,7 @@ function hitStop(event,elapsed,nativeMs){
   if(!event||!Number.isFinite(elapsed))return false;
   const timing=duration(event,nativeMs);
   const age=elapsed-timing.actionLead-timing.contact;
-  return age>=0&&age<HIT_STOP_MS;
+  return age>=0&&age<(timing.solo?SOLO_MS.hitStop:HIT_STOP_MS);
 }
 // Art-direct root motion independently from the imported attack FBX.
 // Source FBXs may contain long horizontal RigRoot translations; these must
@@ -595,6 +642,6 @@ function panel(event,elapsed,nativeMs){
 return Object.freeze({ATTACKS,MIRACLES,POSES,HIT_STOP_MS,
   VICTORY_LOWER_START_MS,VICTORY_LOWER_READY_MS,
   VICTORY_APPROACH_START_MS,VICTORY_APPROACH_END_MS,
-  VICTORY_HOWL_START_MS,VICTORY_HOWL_CUE_MS,VICTORY_BANNER_MS,VICTORY_END_MS,
-  spec,miracle,duration,shot,camera,victoryApproach,bearHowl,hitStop,blocking,contactKeep,setMeasuredContact,clearMeasuredContacts,measuredContact,staging,MOOSE_CONTACT,keyPose,KEY_POSES,POSE_FIELDS,SOLO,SOLO_MS,soloSpec,soloView,panel});
+  VICTORY_HOWL_START_MS,VICTORY_HOWL_CUE_MS,VICTORY_BANNER_MS,VICTORY_END_MS,VICTORY_OUTRO_MS,VICTORY_SHOTS,victoryShot,
+  spec,miracle,duration,shot,camera,victoryApproach,bearHowl,hitStop,blocking,contactKeep,setMeasuredContact,clearMeasuredContacts,measuredContact,staging,MOOSE_CONTACT,keyPose,KEY_POSES,POSE_FIELDS,SOLO,SOLO_MS,SOLO_SCALE,soloSpec,soloView,panel});
 });

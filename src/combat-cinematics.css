@@ -421,3 +421,68 @@
 /* The solo film has its own flash, fire and lines; the older move overlays
    (tunnel vignette, conic speed haze) would wash it out. */
 .ark-cinema[data-solo="1"] :is(.ark-cinema-tunnel,.ark-cinema-speed,.ark-cinema-flash){display:none!important}
+
+/* ---- Attack film, second pass (2026-11-24 reference timing) ----
+   Title opens on a white/blue ray burst; Guts charges through horizontal
+   speed streaks; Technique ends on a three-claw slash; the victim's launch
+   is clean red sky (no lines); one damage number pops where it lands and
+   the total sits in red under its health bar. */
+.ark-cinema[data-solo="1"] .ark-cinema-lines{opacity:0!important;animation:none!important}
+.ark-cinema[data-solo="1"][data-beat="title"] .ark-cinema-lines{opacity:var(--solo-burst,0)!important;
+  background:repeating-conic-gradient(from 0deg at 50% 52%,rgba(255,255,255,0) 0deg 4deg,rgba(255,255,255,.9) 5deg 7deg,rgba(190,225,255,0) 9deg 15deg)!important;
+  -webkit-mask:radial-gradient(circle at 50% 52%,#000 0 18%,rgba(0,0,0,.6) 40%,transparent 75%)!important;
+  mask:radial-gradient(circle at 50% 52%,#000 0 18%,rgba(0,0,0,.6) 40%,transparent 75%)!important;
+  mix-blend-mode:screen}
+.ark-cinema-streak{position:absolute;inset:0;z-index:4;pointer-events:none;opacity:var(--solo-streak,0);overflow:hidden;
+  background:
+    repeating-linear-gradient(180deg,transparent 0 13px,rgba(255,255,255,.75) 13px 15px,transparent 15px 31px,rgba(255,240,210,.5) 31px 32px,transparent 32px 47px);
+  -webkit-mask:linear-gradient(180deg,#000 0 22%,transparent 40% 60%,#000 78%),linear-gradient(90deg,#000,transparent 30% 70%,#000);
+  mask:linear-gradient(180deg,#000 0 22%,transparent 40% 60%,#000 78%);
+  animation:ark-streak .12s linear infinite;mix-blend-mode:screen}
+@keyframes ark-streak{from{background-position:0 0}to{background-position:0 47px}}
+.ark-cinema-slash{position:absolute;inset:0;z-index:6;pointer-events:none;opacity:var(--solo-slash,0)}
+.ark-cinema-slash i{position:absolute;left:12%;width:80%;height:2.2%;top:38%;border-radius:50%;
+  background:linear-gradient(90deg,transparent,#fff 18%,#eafcff 60%,#7ee8ff 85%,transparent);
+  box-shadow:0 0 18px 4px rgba(120,230,255,.75);transform:rotate(-24deg) scaleX(calc(.3 + .7*var(--solo-slash,0)))}
+.ark-cinema-slash i:nth-child(2){top:48%;left:9%}
+.ark-cinema-slash i:nth-child(3){top:58%;left:6%}
+.ark-cinema[data-defender="0"] .ark-cinema-slash{transform:scaleX(-1)}
+.ark-cinema[data-solo="1"] .ark-cinema-dmg b:last-child{display:none}
+.ark-cinema[data-solo="1"] .ark-cinema-dmg b:first-child{top:58%;left:auto;right:16%;opacity:0}
+.ark-cinema[data-solo="1"][data-defender="0"] .ark-cinema-dmg b:first-child{right:auto;left:16%}
+.ark-cinema[data-solo="1"] .ark-cinema-dmg b:first-child{opacity:var(--pop-op,0);animation:none;
+  transform:translateY(var(--pop-y,0)) scale(var(--pop-scale,1));transition:none}
+@keyframes ark-dmg-pop{0%{transform:scale(.6);opacity:0}6%{transform:scale(1.15);opacity:1}13%{transform:scale(1)}
+  80%{transform:translateY(-12px);opacity:1}100%{transform:translateY(-22px);opacity:0}}
+.game .ark-cinema[data-solo="1"] .ark-cinema-dmg b{font-size:clamp(48px,6.4vw,92px)!important;
+  background:linear-gradient(180deg,#ffffff 0%,#fffbe0 40%,#ffe44d 70%,#f2b51a 100%)!important;
+  -webkit-background-clip:text!important;background-clip:text!important;
+  filter:drop-shadow(3px 0 0 #000) drop-shadow(-3px 0 0 #000) drop-shadow(0 3px 0 #000) drop-shadow(0 -3px 0 #000) drop-shadow(0 6px 0 #000)!important}
+.ark-cinema[data-solo="1"] .ark-cinema-total{top:15%;left:auto;right:3.5%;text-align:right;opacity:0;animation:none!important;
+  font-size:clamp(24px,2.8vw,40px)!important}
+.ark-cinema[data-solo="1"][data-defender="0"] .ark-cinema-total{right:auto;left:3.5%;text-align:left}
+.ark-cinema[data-solo="1"][data-total="1"] .ark-cinema-total{opacity:1;transition:opacity .15s}
+.game .ark-cinema[data-solo="1"] .ark-cinema-total{
+  background:linear-gradient(180deg,#ffb0a0 0%,#ff3b2e 45%,#c0100c 100%)!important;
+  -webkit-background-clip:text!important;background-clip:text!important;
+  filter:drop-shadow(2px 0 0 #1a0000) drop-shadow(-2px 0 0 #1a0000) drop-shadow(0 2px 0 #1a0000) drop-shadow(0 -2px 0 #1a0000) drop-shadow(0 4px 0 #1a0000)!important}
+@media (prefers-reduced-motion:reduce){.ark-cinema-streak,.ark-cinema-slash{display:none}}
+.game.reduce-motion :is(.ark-cinema-streak,.ark-cinema-slash){display:none}
+
+/* ---- Victory (reference grammar) ---- */
+.ark-cinema-vic-dark{position:absolute;inset:0;z-index:5;pointer-events:none;background:#000;opacity:var(--vic-dark,0)}
+.ark-cinema-outro{position:absolute;inset:0;z-index:6;pointer-events:none;opacity:var(--outro,0);
+  background:linear-gradient(180deg,#3f86c4 0%,#6aa9d8 45%,#9cc9e6 100%)}
+.ark-cinema-win{position:absolute;left:0;right:0;top:5%;z-index:7;text-align:center;pointer-events:none}
+.ark-cinema-win b{display:block;line-height:1.02;transform-origin:50% 60%}
+.ark-cinema-win [data-ark-perfect]{opacity:var(--perfect-o,0);transform:scale(var(--perfect-s,1)) skewX(-8deg)}
+.ark-cinema-win [data-ark-youwin]{opacity:var(--youwin-o,0);transform:scale(var(--youwin-s,1)) skewX(-8deg)}
+.ark-cinema:not([data-perfect="1"]) .ark-cinema-win [data-ark-perfect]{display:none}
+.game .ark-cinema .ark-cinema-win b{font-family:'Russo One','Arial Black',sans-serif;font-weight:400;
+  background:linear-gradient(180deg,#fff6c0 0%,#ffd23a 38%,#ff8a12 66%,#d8400a 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(3px 0 0 #2a0c00) drop-shadow(-3px 0 0 #2a0c00) drop-shadow(0 3px 0 #2a0c00) drop-shadow(0 -3px 0 #2a0c00) drop-shadow(0 6px 0 #120400)}
+.game .ark-cinema .ark-cinema-win [data-ark-perfect]{font-size:clamp(54px,8vw,120px)}
+.game .ark-cinema .ark-cinema-win [data-ark-youwin]{font-size:clamp(40px,5.6vw,84px);text-transform:none}
+.ark-cinema[data-beat="victory"] :is(.ark-cinema-title,.ark-cinema-howl-waves,.ark-cinema-win-stamp){display:none!important}
+.ark-cinema[data-beat="victory"] .ark-cinema-letterbox{height:0!important}

@@ -97,12 +97,34 @@ Each turn both players secretly pick one action; both resolve simultaneously.
 - Active branch: `menu-feel-integration-20261122`.
 
 ## Attack film grammar (from the 2026-11-24 reference footage)
-The original never shows both animals touching. An attack is a short film:
-arena clash → white flash → attacker alone with aura + title card (roar) →
-attacker's strike against a fire void → white flash on contact → victim alone
-launched into the sky with flying damage numbers → victim lands (dust, thud) →
-back to the arena two-shot with the HP drain. Implemented as "solo" attacks:
-`SOLO`/`soloView()` in `combat-cinematics-core.js` (pure, tested), backdrops,
-aura shells and launch arc in `arena3d-runtime.js`, title/damage/flash DOM in
-`combat-cinematics.js`. Enabled so far for Bear High Paw Strike only; add a
-move to `SOLO` to convert it.
+Timed from Brown Bear vs Great Hornbill (video_5 13.8–22.8 s). The original
+never shows both animals touching and never leaves its arena: the stage is
+the battle stage; only the fire void and the launch's red sky are effects.
+1. Title: white ray burst, low profile push-in on the attacker in the arena
+   (aura on, roar), rank + move name; fades to white.
+2. Head-on low shot of the attacker coiled → one-frame flash cut as it rears
+   (Guts: it runs at the lens through speed streaks instead).
+3. Strike: signature moves ('fire') burn in front of a fire void; a 4-point
+   claw glint flares on the highest front paw at the top of the swing.
+4. Lunge: the camera dollies into the live head bone (face fills the frame),
+   110 ms hit-stop with shake, white flash (Technique adds a claw slash).
+5. Launch (720 ms): victim alone, already upside-down and tumbling from the
+   first frame, under a red sky (forest re-lit red), blob shadow below.
+6. Landing: hard cut to the arena wide; dirt spray; ONE damage number pops
+   (timeline-driven, 1.35 s); red total under the victim's health; the HUD
+   returns; the victim plays its hit (or knockout) on landing.
+7. Return to the two-shot.
+All Bear and Moose moves are films (`SOLO` in `combat-cinematics-core.js`,
+strike style 'fire' | 'charge' | 'slash'). `event.film===false` forces the
+older shared-frame grammar (fallback for animals with no film entry; the
+tests use it to keep covering that path). The DOM overlay follows the 3D
+film clock (`NoahsArena3D.getSequence()`), so text never drifts off shots.
+
+## Victory grammar (video_1 49.3–55 s, video_4 41.3–46.7 s)
+Dark dip → PERFECT! (only if the winner is unhurt, `event.perfect`) → You win!
+(SOLO human) / You lose… (CPU won) / P1|P2 wins! (DUEL) within ~0.3 s. The
+winner stays ON ALL FOURS (walk clip, never the upright hind-leg idle) in its
+fire aura and walks diagonally at the lens: cuts vicSide → vicFront → vicRoar
+(low close-up, jaw open) → vicWide, then a sky-coloured outro holds the banner
+(`VICTORY_*` constants). Never zero one Euler axis of the winner's
+orientation: its leaned 90°-yaw quaternion is gimbal-locked (rolled the Bear).

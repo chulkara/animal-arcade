@@ -403,14 +403,9 @@
       // face toward camera, and the high shot gathers breath.
       const front=pulse(0,900),reverse=pulse(900,1820),
         overhead=pulse(1820,2700);
-      set('RigHead',X,.075*front);
-      set('RigHead',Y,.11*reverse);
-      set('RigNeck',X,.055*front);
-      set('RigSpine1',Z,.046*reverse);
-      set('RigLFLeg1',X,-.085*reverse);
-      set('RigRFLeg1',X,-.095*overhead);
+      void front;void reverse;void overhead;
       const howl=cinematics.bearHowl(t);
-      if(!howl.active){
+      if(!howl.active||window.__arkNoHowl){
         actor.resetHowlFace();
         return;
       }
@@ -615,7 +610,6 @@
     // the sides so no cinematic camera is ever blocked. See forest-arena.js.
     if(forest){
       forestRoot=window.NoahsForestArena.build(THREE,scene,{shadows:true});
-      plainsRoot=window.NoahsForestArena.buildPlains?.(THREE,scene,{shadows:true})||null;
       forestFog=scene.fog;
     }
     else{
@@ -749,7 +743,7 @@
       eclipse:0xd7a4ff,dawn:0xffce85,charge:0xffb968,
       dust:0xded0b0,triumph:0xf8e5a7};
     if(shockRing){
-      shockRing.visible=hitPhase;
+      shockRing.visible=false;
       if(hitPhase){
         const age=Math.max(0,soloT?elapsed-soloT.landAt:actionTime-contact);
         const size=.65+age/245;
@@ -813,7 +807,7 @@
       const chargeColor=event.move==='G'?0xc4a077:
         event.move==='T'?0x87efbd:event.move==='P'?0xffad71:0xffcd7d;
       material.color.setHex(kind==='charge'?chargeColor:(colors[kind]||colors.triumph));
-      material.opacity=cleanPortrait?0:Math.max(0,Math.min(.85,alpha));
+      material.opacity=cleanPortrait||kind==='dust'||kind==='triumph'?0:Math.max(0,Math.min(.85,alpha));
     }
   }
   // Fire void behind the attacker during a solo strike: a camera-facing
@@ -865,13 +859,51 @@
     g.putImageData(img,0,0);return c;
   }
   let fireVoid=null;const backdropTex={};
-  let forestRoot=null,plainsRoot=null,forestFog=null,plainsFog=null;
+  let forestRoot=null,forestFog=null;
+  // The film never leaves the arena (the reference's plains *is* its arena).
+  // Only the victim's launch is re-lit: a red sky and a red-washed stage.
+  let stageMats=null,stageRed=false,skyMesh=null,skyMap=null,redSkyTex=null,fogBase=null;
+  function redSkyCanvas(){
+    const W=256,H=256,c=document.createElement('canvas');c.width=W;c.height=H;
+    const g=c.getContext('2d'),img=g.createImageData(W,H),d=img.data;
+    const stops=[[0,[44,10,34]],[.28,[110,22,52]],[.42,[176,40,58]],[.5,[236,104,74]],[.56,[196,56,44]],[1,[120,28,24]]];
+    let seed=41;const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
+    const P=16,lat=Float32Array.from({length:P*P},rnd);
+    const vn=(x,y)=>{const xi=Math.floor(x),yi=Math.floor(y),fx=x-xi,fy=y-yi,
+      at=(a,b)=>lat[((b%P+P)%P)*P+((a%P+P)%P)],sx=fx*fx*(3-2*fx),sy=fy*fy*(3-2*fy);
+      const A=at(xi,yi),B=at(xi+1,yi),C=at(xi,yi+1),D=at(xi+1,yi+1);
+      return A+(B-A)*sx+(C-A)*sy+(A-B-C+D)*sx*sy;};
+    for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+      const v=y/H;let i=0;while(i<stops.length-2&&v>stops[i+1][0])i++;
+      const [v0,c0]=stops[i],[v1,c1]=stops[i+1],k=(v-v0)/(v1-v0);
+      const cloud=v<.5?Math.max(0,vn(x/W*P,y/H*P*.5)*.9+vn(x/W*P*2,y/H*P)*.5-.62)*(1-Math.abs(v-.36)*2.4):0;
+      const o=(y*W+x)*4;
+      for(let ch=0;ch<3;ch++)d[o+ch]=Math.min(255,c0[ch]+(c1[ch]-c0[ch])*k+cloud*[150,90,90][ch]);
+      d[o+3]=255;
+    }
+    g.putImageData(img,0,0);
+    const t=new THREE.CanvasTexture(c);if(THREE.SRGBColorSpace)t.colorSpace=THREE.SRGBColorSpace;
+    return t;
+  }
   function setStage(name){
-    if(!forestRoot||!plainsRoot)return;
-    const plains=name==='plains'||name==='fire';
-    forestRoot.visible=!plains;plainsRoot.visible=plains;
-    if(plains&&!plainsFog)plainsFog=new THREE.Fog(0xd6e6ef,26,75);
-    scene.fog=plains?plainsFog:forestFog;
+    if(!forestRoot)return;
+    if(!stageMats){
+      stageMats=[];
+      skyMesh=forestRoot.getObjectByName('forest-sky');skyMap=skyMesh?.material.map||null;
+      forestRoot.traverse(o=>{if(!o.isMesh||o===skyMesh)return;
+        for(const m of [].concat(o.material))
+          if(m?.color&&!stageMats.includes(m)){m.userData.stageBase=m.color.clone();stageMats.push(m);}});
+      fogBase=scene.fog?.color?.clone()||null;
+    }
+    const red=name==='red';
+    if(red===stageRed)return;stageRed=red;
+    const wash=new THREE.Color(1,.34,.26);
+    for(const m of stageMats){m.color.copy(m.userData.stageBase);if(red)m.color.multiply(wash);}
+    if(skyMesh){
+      if(red&&!redSkyTex)redSkyTex=redSkyCanvas();
+      skyMesh.material.map=red?redSkyTex:skyMap;skyMesh.material.needsUpdate=true;
+    }
+    if(scene.fog&&fogBase)scene.fog.color.copy(red?new THREE.Color(0xb8463a):fogBase);
   }
   function makeBackdropTexture(kind){
     const c=fireCanvas();
@@ -879,6 +911,62 @@
     t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(1.2,.8);
     if(THREE.SRGBColorSpace)t.colorSpace=THREE.SRGBColorSpace;
     return t;
+  }
+  // Four-point star glint on the striking paw at the top of the backswing.
+  let glint=null,blob=null;
+  function starTexture(){
+    const S=128,c=document.createElement('canvas');c.width=c.height=S;
+    const g=c.getContext('2d'),img=g.createImageData(S,S),d=img.data;
+    for(let y=0;y<S;y++)for(let x=0;x<S;x++){
+      const u=(x-S/2)/(S/2),v=(y-S/2)/(S/2),r=Math.hypot(u,v);
+      const ray=Math.max(Math.exp(-Math.abs(v)*26)*(1-Math.abs(u)),Math.exp(-Math.abs(u)*26)*(1-Math.abs(v)));
+      const diag=.35*Math.max(Math.exp(-Math.abs(u-v)*30),Math.exp(-Math.abs(u+v)*30))*Math.max(0,1-r*1.6);
+      const core=Math.exp(-r*r*40),a=Math.min(1,ray+diag+core);
+      const o=(y*S+x)*4;d[o]=255;d[o+1]=255;d[o+2]=Math.min(255,225+30*core);d[o+3]=a*255;
+    }
+    g.putImageData(img,0,0);const t=new THREE.CanvasTexture(c);
+    if(THREE.SRGBColorSpace)t.colorSpace=THREE.SRGBColorSpace;return t;
+  }
+  function paintGlint(view,attacker,time){
+    if(!scene)return;
+    if(!glint){
+      glint=new THREE.Sprite(new THREE.SpriteMaterial({map:starTexture(),transparent:true,
+        blending:THREE.AdditiveBlending,depthTest:false,depthWrite:false,fog:false}));
+      glint.renderOrder=30;glint.visible=false;scene.add(glint);
+    }
+    const k=view?.glint||0;
+    if(k<=.01||!attacker?.joint?.size||!attacker.pivot.visible){glint.visible=false;return;}
+    // The striking paw: whichever front foot is highest right now.
+    const v=new THREE.Vector3();let best=null,bestY=-Infinity;
+    attacker.model.updateMatrixWorld(true);
+    for(const b of attacker.joint.values()){
+      if(!/F.*Leg.*(Digit|Ankle)|Hoof|Hand/i.test(b.name))continue;
+      b.getWorldPosition(v);if(v.y>bestY){bestY=v.y;best=v.clone();}
+    }
+    if(!best){glint.visible=false;return;}
+    const sc=(cinematics.SOLO_SCALE?.[attacker.id]||1)*(.5+1.5*k);
+    glint.position.copy(best);glint.scale.set(sc,sc,1);
+    glint.material.rotation=time*.0012;glint.material.opacity=Math.min(1,k*1.2);
+    glint.visible=true;
+  }
+  // Dark oval under the tumbling victim, shrinking as it rises.
+  function paintLaunchShadow(view,defender){
+    if(!scene)return;
+    if(!blob){
+      const c=document.createElement('canvas');c.width=c.height=64;
+      const g=c.getContext('2d'),gr=g.createRadialGradient(32,32,2,32,32,31);
+      gr.addColorStop(0,'rgba(0,0,0,.85)');gr.addColorStop(.6,'rgba(0,0,0,.5)');gr.addColorStop(1,'rgba(0,0,0,0)');
+      g.fillStyle=gr;g.fillRect(0,0,64,64);
+      blob=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.MeshBasicMaterial({
+        map:new THREE.CanvasTexture(c),transparent:true,depthWrite:false}));
+      blob.rotation.x=-Math.PI/2;blob.position.y=.03;blob.renderOrder=2;blob.visible=false;scene.add(blob);
+    }
+    const l=view?.launch;
+    if(!l||l.landed||!defender){blob.visible=false;return;}
+    const s=(cinematics.SOLO_SCALE?.[defender.id]||1)*Math.max(.9,2.4-.35*l.y);
+    blob.position.x=defender.pivot.position.x;blob.position.z=0;
+    blob.scale.set(s*1.3,s*.75,1);blob.material.opacity=Math.max(.3,.7-.08*l.y);
+    blob.visible=true;
   }
   // A camera-facing backdrop placed just beyond the animal on screen:
   // a fire void behind the striking attacker, open blue sky behind the
@@ -891,11 +979,15 @@
     for(const actor of actors){if(actor)actor.pivot.visible=true;}
     if(attacker)attacker.pivot.visible=view?view.showAttacker:true;
     if(defender)defender.pivot.visible=view?view.showDefender:true;
+    const timing=sequence?cinematics.duration(sequence.event,nativeLength(sequence.event)):null;
+    const victor=Boolean(sequence?.event?.finished&&timing&&sequence.elapsed>=timing.victoryStart&&!reduced());
     for(const actor of actors){
-      actor?.setAura?.(actor===attacker&&view?view.aura:0,time||0);
+      actor?.setAura?.(actor===attacker&&(view?.active||victor)?(victor?1:view.aura):0,time||0);
       if(actor)actor.roarLevel=actor===attacker&&view?view.roar:0;
     }
-    setStage(view?.stage||null);
+    setStage(view?.stage==='red'?'red':null);
+    paintGlint(view,attacker,time||0);
+    paintLaunchShadow(view,defender);
     const cam=filmCamera||camera;
     const kind=view?.fire?'fire':null;
     const subject=kind==='fire'?attacker:defender;
@@ -1091,7 +1183,7 @@
     sequence.elapsed=timeline.victoryStart;
     sequence.attackStarted=true;sequence.contact=true;
     sequence.finished=true;sequence.victoryPlayed=true;
-    actors[event.attacker]?.native('victory');
+    actors[event.attacker]?.native(actors[event.attacker].asset?.clips?.walk?'walk':'idle');
     actors[event.defender]?.native('knockout');
     updateReviewToolbar();
     reviewChange();
@@ -1289,7 +1381,10 @@
     const contact=timing?.contact??core.contactMs(event.attackerId,event.move,length);
     if(sequence.attackStarted&&!sequence.contact&&actionTime>=contact){
       sequence.contact=true;
-      defender?.native(event.knockout?'knockout':'hit');
+      // In an attack film the victim is off screen at contact; it flails
+      // through the launch and takes its real reaction (or its knockout)
+      // when it lands in the arena wide.
+      defender?.native(sequence.solo||!event.knockout?'hit':'knockout');
       defender?.hitReact?.(event.move,({G:.85,T:.7,P:1,S:1.15}[event.move]||.8)*(event.knockout?1.2:1));
       const pelvis=defender?.joint?.get('RigPelvis');
       if(event.knockout&&pelvis&&THREE)
@@ -1301,6 +1396,7 @@
     if(sequence.solo&&timing?.solo&&sequence.thumpAt==null&&sequence.elapsed>=timing.landAt){
       sequence.thumpAt=sequence.elapsed;
       sequence.thumpX=defender?.pivot.position.x??0;
+      if(defender){defender.currentKey=null;defender.native(event.knockout?'knockout':'hit',.06);}
       if(!reduced())window.NoahsAudio?.cue('thud');
     }
     if(!sequence.solo&&event.knockout&&sequence.pelvisStand&&sequence.thumpAt==null&&defender){
@@ -1312,18 +1408,20 @@
         if(!reduced())window.NoahsAudio?.cue('thud');
       }
     }
-    const settle=sequence.solo&&timing?.solo?timing.returnAt-lead:
+    const settle=sequence.solo&&timing?.solo?
+      (event.finished?timing.victoryStart:timing.returnAt)-lead:
       core.settleMs(event.attackerId,event.move,length);
     if(sequence.attackStarted&&!sequence.finished&&actionTime>=settle){
       sequence.finished=true;
       if(event.finished){
-        if(attacker?.asset?.clips?.rear){
-          attacker.native('rear');
-          sequence.victoryRearAt=sequence.elapsed;
-        }else{
-          attacker?.native('victory');
-          sequence.victoryPlayed=true;
+        // The winner stays on all fours and walks at the lens (reference),
+        // never the old upright hind-leg idle.
+        if(attacker){
+          attacker.pivot.position.y=0;attacker.orientation.rotation.z=0;
+          attacker.native(attacker.asset?.clips?.walk?'walk':'idle',.2);
         }
+        sequence.victoryPlayed=true;sequence.victoryMoved=true;sequence.victoryLowered=true;
+        sequence.victoryPosition='quadruped';
       }else{
         attacker?.idle();defender?.idle();
       }
@@ -1341,18 +1439,6 @@
       // The original victor lowers to four paws *before* walking into
       // the camera-facing roar. Source motion wins when provided. If not,
       // the required quad Stand_Idle_01 crossfades over a longer interval.
-      if(!sequence.victoryLowered&&v>=cinematics.VICTORY_LOWER_START_MS){
-        attacker.native(attacker.asset.clips.lower?'lower':'idle',
-          attacker.asset.clips.lower?.28:.68);
-        sequence.victoryLowered=true;
-        sequence.victoryPosition='lowering';
-      }
-      if(sequence.victoryLowered&&!sequence.victoryMoved&&
-         v>=cinematics.VICTORY_LOWER_READY_MS){
-        attacker.native(attacker.asset.clips.walk?'walk':'idle',.35);
-        sequence.victoryMoved=true;
-        sequence.victoryPosition='quadruped';
-      }
       if(sequence.victoryMoved&&!sequence.victoryWalkStopped&&
          v>=cinematics.VICTORY_APPROACH_END_MS){
         attacker.native('idle',.26);
@@ -1401,6 +1487,9 @@
         const facing=event.attacker===0?1:-1;
         attacker.pivot.position.x=attacker.baseX+facing*approach.travel;
         attacker.pivot.position.z=approach.depth;
+        // (orientation is left to victoryGesture: zeroing one Euler axis of
+        // its leaned 90°-yaw quaternion is gimbal-locked and rolled the Bear.)
+        attacker.pivot.position.y=0;
         attacker.pivot.rotation.y=-facing*approach.turn;
       }
       return;
@@ -1422,11 +1511,19 @@
     }
     const view=sequence.solo?cinematics.soloView(event,sequence.elapsed,nativeLength(event)):null;
     if(defender&&view?.launch){
-      // Thrown into the sky, tumbling about its body centre (~1 unit up).
-      const l=view.launch,h=1.0,th=l.spin;
-      defender.pivot.position.x=defender.baseX+l.drift+h*Math.sin(th);
-      defender.pivot.position.y=l.y+h*(1-Math.cos(th));
-      defender.pivot.rotation.z=th;
+      const l=view.launch;
+      if(!l.landed){
+        // Thrown into the sky, tumbling about its body centre.
+        const h=.95*(cinematics.SOLO_SCALE?.[defender.id]||1),th=l.spin;
+        defender.pivot.position.x=defender.baseX+l.drift+h*Math.sin(th);
+        defender.pivot.position.y=l.y+h*(1-Math.cos(th));
+        defender.pivot.rotation.z=th;
+      }else{
+        // Landed on its feet in the arena wide, a short bounce, then its reaction.
+        defender.pivot.position.x=defender.baseX+l.drift;
+        defender.pivot.position.y=l.y;
+        defender.pivot.rotation.z=0;
+      }
       return;
     }
     if(defender&&sequence.solo){defender.pivot.position.y=0;defender.pivot.rotation.z=0;}
@@ -1453,9 +1550,9 @@
     const y=wants?.y??3,z=wants?.z??12;
     const focusY=(wants?.targetY??1.18)*fit;
     const wanted=new THREE.Vector3(x,y,z);
-    const focus=new THREE.Vector3(focusX,focusY,0);
+    const focus=new THREE.Vector3(focusX,focusY,wants?.targetZ??0);
     const key=event?.key+':'+(wants?.shot||'wide');
-    if(key!==lastCameraShot){
+    if(key!==lastCameraShot||wants?.snap){
       // A real movie cut changes viewing direction in a single frame.
       // Interpolating between the front/reverse/overhead camera positions
       // made the 'four angles' read as the same continuous profile shot.
@@ -1484,36 +1581,86 @@
       const heroFactor=Math.min(1.75,1/fit);
       filmCamera.zoom=Math.min(2.2,(wants?.zoom??1)*heroFactor);
       filmCamera.updateProjectionMatrix();
+      if(wants?.lunge>0)applyLunge(event,wants.lunge);
       if(wants?.beat==='VICTORY')fitVictoryInFrame(event,wants);
       applyThump(sequence?.elapsed??0);
     }
   }
   // Short, decaying camera shake plus a ground dust ring when a knocked-out
   // animal hits the floor. Deterministic in sequence time; off for reduced motion.
-  let thumpRing=null;
+  // A brown dirt plume (soft puffs that billow up and drift) with a few
+  // clods thrown out, instead of the old flat ring of glowing dots.
+  let dirt=null;
+  function puffTexture(){
+    const S=64,c=document.createElement('canvas');c.width=c.height=S;
+    const g=c.getContext('2d'),img=g.createImageData(S,S),d=img.data;
+    let seed=7;const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
+    const blobs=Array.from({length:9},()=>[16+rnd()*32,16+rnd()*32,6+rnd()*10]);
+    for(let y=0;y<S;y++)for(let x=0;x<S;x++){
+      let a=0;for(const [bx,by,br] of blobs)a=Math.max(a,1-Math.hypot(x-bx,y-by)/br);
+      const edge=Math.max(0,1-Math.hypot(x-32,y-32)/31);
+      const o=(y*S+x)*4,shade=.75+.25*(1-y/S);
+      d[o]=255*shade;d[o+1]=255*shade;d[o+2]=255*shade;d[o+3]=Math.min(1,a*1.4)*edge*255;
+    }
+    g.putImageData(img,0,0);const t=new THREE.CanvasTexture(c);
+    if(THREE.SRGBColorSpace)t.colorSpace=THREE.SRGBColorSpace;return t;
+  }
   function applyThump(time){
     const at=sequence?.thumpAt;
     const age=at==null?Infinity:time-at;
-    if(!thumpRing&&THREE&&scene){
-      thumpRing=new THREE.Mesh(new THREE.RingGeometry(.35,.62,36),
-        new THREE.MeshBasicMaterial({color:0xd9c8a2,transparent:true,opacity:0,depthWrite:false}));
-      thumpRing.rotation.x=-Math.PI/2;thumpRing.position.y=.04;thumpRing.visible=false;
-      scene.add(thumpRing);
-    }
-    const live=age>=0&&age<900&&!reduced();
-    if(thumpRing){
-      thumpRing.visible=live;
-      if(live){
-        thumpRing.position.x=sequence.thumpX;
-        thumpRing.scale.setScalar(1+age/260);
-        thumpRing.material.opacity=.55*Math.exp(-age/260);
+    if(!dirt&&THREE&&scene){
+      const tex=puffTexture();dirt=[];
+      for(let i=0;i<40;i++){
+        const clod=i>=30;
+        const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthWrite:false,
+          color:clod?0x3e2e1f:[0x7a6248,0x8c7356,0x6b5640,0x9a8466][i%4]}));
+        const a=i*2.399963,r=(i%5)/5;
+        sp.userData={a,r,clod,up:.6+((i*37)%11)/11,spread:.5+((i*53)%13)/13};
+        sp.visible=false;sp.renderOrder=6;scene.add(sp);dirt.push(sp);
       }
+    }
+    const live=age>=0&&age<1300&&!reduced();
+    const scale=(sequence&&cinematics.SOLO_SCALE?.[actors[sequence.event.defender]?.id])||1;
+    for(const sp of dirt||[]){
+      if(!live){sp.visible=false;continue;}
+      const d=sp.userData,t=age/1000;
+      if(d.clod){
+        const vx=Math.cos(d.a)*1.6*d.spread,vy=2.6+1.8*d.up;
+        sp.position.set(sequence.thumpX+vx*t,Math.max(.02,.2+vy*t-4.9*t*t),Math.sin(d.a)*.8*d.spread*t);
+        sp.scale.setScalar(.09+.05*d.spread);
+        sp.material.opacity=t<.9?1:Math.max(0,1-(t-.9)*4);
+      }else{
+        // A narrow spray thrown up beside the body (the reference's column
+        // of dirt), small puffs that thin out, not a smear over the victim.
+        const grow=1-Math.exp(-t*3.6),side=(d.r<.5?-1:1);
+        sp.position.set(sequence.thumpX+side*(.55+.5*d.spread)*scale+Math.cos(d.a)*.25*grow,
+          (.1+(1.2+1.6*d.up)*grow)*scale,(.35+.3*Math.sin(d.a))*scale);
+        sp.scale.setScalar((.28+.75*grow*d.spread)*scale);
+        sp.material.opacity=.95*Math.min(1,age/30)*Math.exp(-Math.max(0,t-.3)*2.4);
+        sp.material.rotation=d.a+t*.4*(d.r-.5);
+      }
+      sp.visible=true;
     }
     if(live&&age<420){
       const k=.075*Math.exp(-age/130);
       filmCamera.position.y+=k*Math.sin(age*.11);
       filmCamera.position.x+=k*.6*Math.sin(age*.083+1.3);
     }
+  }
+  // The strike ends with the attacker driving its face into the lens: dolly
+  // from the shot's framing to just in front of the live head bone.
+  function applyLunge(event,u){
+    const actor=actors[event.attacker];
+    const head=actor?.joint?.get('RigHead')||actor?.joint?.get('RigNeck');
+    if(!head||!filmCamera)return;
+    actor.model.updateMatrixWorld(true);
+    const h=head.getWorldPosition(new THREE.Vector3());
+    const scale=cinematics.SOLO_SCALE?.[actor.id]||1;
+    const dir=filmCamera.position.clone().sub(h).normalize();
+    const end=h.clone().addScaledVector(dir,1.45*scale);
+    const e=u*u*(3-2*u);
+    filmCamera.position.lerp(end,e);
+    filmCamera.lookAt(cameraLook.clone().lerp(h,e));
   }
   function fitVictoryInFrame(event,wants){
     if(!event||wants?.beat!=='VICTORY'||!filmCamera||!THREE)return;
@@ -1522,7 +1669,8 @@
     // The earlier 'portrait' put the camera right inside the skinned
     // torso. Reframe against live bone positions, including the top of
     // the animated head and the planted hind paws, not a guessed height.
-    const names=['RigHead','RigNeck','RigChest','RigPelvis',
+    const names=wants.shot==='vicRoar'?['RigHead','RigNeck','RigJaw','RigLFLegAnkle','RigRFLegAnkle']:
+      ['RigHead','RigNeck','RigChest','RigPelvis',
       'RigLFLeg3','RigRFLeg3','RigLBLeg3','RigRBLeg3',
       'RigLFLegAnkle','RigRFLegAnkle','RigLBLegAnkle','RigRBLegAnkle'];
     const points=names.map(name=>winner.joint.get(name)).filter(Boolean);
@@ -1908,6 +2056,11 @@
       done:bearReview.done,index:bearReview.index,countdown:bearReview.countdown
     }:null,
     getClipDuration:(index,move)=>nativeLength({attacker:index,move}),
+    // The live 3D film clock, so the DOM overlay and the rigs share one time.
+    getSequence:()=>sequence&&renderer&&!document.hidden?{key:sequence.event.key,elapsed:sequence.elapsed}:null,
+    // Diagnostic only: which clip each live actor is playing.
+    getClips:()=>actors.map(actor=>actor?{id:actor.id,key:actor.currentKey,
+      files:actor.asset?.motionFiles||null,keys:Object.keys(actor.asset?.clips||{})}:null),
     // Diagnostic only: world-space X extent of each live skeleton (no mesh data).
     getReach:()=>actors.map(actor=>{
       if(!actor?.joint?.size||!THREE)return null;

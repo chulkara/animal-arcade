@@ -24,7 +24,7 @@
      damage:0,remainingHp:animals[defender].hp,
      // Display-only numbers so the review shows the damage pops; HP is untouched.
      previewDamage:{G:30,T:24,P:46}[move],
-     finished:index===2,knockout:index===2
+     finished:index===2,knockout:index===2,perfect:true
    })));
  }
  function label(index){
