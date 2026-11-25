@@ -500,3 +500,10 @@
   mask:radial-gradient(ellipse at 50% 50%,transparent 0 42%,rgba(0,0,0,.7) 62%,#000 80%)!important;
   animation:ark-radial .16s steps(2) infinite!important}
 @keyframes ark-radial{from{transform:rotate(0)}to{transform:rotate(4deg)}}
+
+/* Technique slash on the victim's body (projected from 3D), not the attacker's face */
+.ark-cinema-slash{inset:auto;left:var(--hit-x,50%);top:var(--hit-y,45%);width:min(46vw,620px);height:min(30vw,380px);
+  transform:translate(-50%,-50%)}
+.ark-cinema-slash i{left:4%;width:92%}
+.ark-cinema-slash i:nth-child(1){top:28%}.ark-cinema-slash i:nth-child(2){top:46%;left:2%}.ark-cinema-slash i:nth-child(3){top:64%;left:0}
+.ark-cinema[data-defender="0"] .ark-cinema-slash{transform:translate(-50%,-50%) scaleX(-1)}

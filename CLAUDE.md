@@ -124,13 +124,18 @@ the battle stage; only the fire void and the launch's red sky are effects.
 4. Lunge: the camera dollies into the live head bone (face fills the frame),
    110 ms hit-stop with shake, white flash (Technique adds a claw slash).
 5. Launch: victim alone under a red sky (forest re-lit red), blown AWAY from
-   the lens: it drops in from the top of the frame and recedes (reference
-   19.9–20.5; the arcade never shows paw-on-victim contact). Per move:
-   Guts 'skid' (low, lands on its side, skids; 100 ms hit-stop), Technique
-   'roll' (barrel roll; 110 ms, 12° Dutch tilt), Power 'blast' (high fall,
-   heavy slam + bounce; 135 ms, 18° tilt). Blob shadow below.
+   the lens (reference 19.9–20.5; the arcade never shows paw-on-victim
+   contact). The blow lands ON the victim: a star burst on its body (and
+   Technique's claw slash, projected onto it) in the first 240 ms. Every
+   launch is a roll about the body's length that ENDS ON ITS SIDE (never an
+   end-over-end flip balanced on its antlers). Guts 'skid' (≤0.6 m, bounce,
+   skid; 100 ms hit-stop), Technique 'roll' (1.4 m, 1¼ turns + yaw; 110 ms,
+   12° tilt), Power 'blast' (starts upside-down, 1½ turns; 135 ms, 18° tilt,
+   slam + bounce). Blob shadow below. Flashes are crisp (≤ ~100 ms).
+   The Bear's Guts film plays its RUN clip (its attack clip rears upright).
 6. Landing: hard cut to the arena wide; body-first into the knockout clip's
-   lying end pose; dirt spray; a survivor holds 450 ms then gets up (400 ms);
+   lying end pose; dirt spray; a survivor holds 450 ms then gets up by playing
+   the knockout fall BACKWARDS (a crossfade squashed the body flat);
    ONE damage number pops on the victim (projected from 3D, 950 ms); red total
    under its health clears before the return cut. Numbers display ×50
    (`DISPLAY_SCALE`, display only — rules unchanged).
@@ -146,11 +151,14 @@ Dark dip → PERFECT! (only if the winner is unhurt, `event.perfect`) → You wi
 (SOLO human) / You lose… (CPU won) / P1|P2 wins! (DUEL) within ~0.3 s. The
 winner stays ON ALL FOURS (walk clip, never the upright hind-leg idle) in its
 fire aura and walks diagonally at the lens: cuts vicSide → vicFront → vicRoar
-(low close-up, jaw open) → vicWide, then a sky-coloured outro holds the banner
-(`VICTORY_*` constants). Never zero one Euler axis of the winner's
+(low close-up, jaw open) → vicWide with a slow dolly-in; the winner and forest
+stay on screen (the arcade's sky-coloured outro was dropped: held in our game
+it read as the scene vanishing). The winner faces its path from frame one. Never zero one Euler axis of the winner's
 orientation: its leaned 90°-yaw quaternion is gimbal-locked (rolled the Bear).
 Aura = Fresnel rim injected ONCE per material (materials are cached and
 outlive actors; a second injection redefines `uAura`, the shader fails to
 compile silently and the body vanishes) + small embers on the upper body.
-A T-pose guard pulls any foreleg flung past the body's side back in; the jaw
-is capped at ~29° (wider stretches the lip mesh into a striped panel).
+A T-pose guard pulls any foreleg flung past the body's side back in. Sign
+convention: +θ about the body's forward axis pulls a RIGHT-side paw in, so
+key-pose armOutR is −θ and armOutL is +θ. Jaw cap: ~29° when our roar drives
+it, ~12° for source clips (wider stretches the lip mesh into a striped panel).

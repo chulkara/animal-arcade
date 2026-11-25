@@ -82,8 +82,8 @@ const LAUNCH_MS=Object.freeze({blast:720,skid:640,roll:700});
 const DISPLAY_SCALE=50;
 // Body height relative to the Bear, so framing fits each animal.
 const SOLO_SCALE=Object.freeze({bear:1,moose:1.18});
-const SOLO_MS=Object.freeze({titleIn:220,lead:2000,whiteOut:380,lunge:170,
-  hitStop:110,launchDelay:170,launch:720,land:1500,ret:520,pop:950,koHold:1250,downHold:450,getUp:400});
+const SOLO_MS=Object.freeze({titleIn:220,lead:2000,lunge:170,
+  hitStop:110,launchDelay:170,launch:720,land:1500,ret:520,pop:950,koHold:1250,downHold:450,getUp:400,whiteOut:220,impact:240});
 const reducedShake=v=>Number.isFinite(v)?v:0;
 // event.film===false forces the older shared-frame grammar (the fallback for
 // animals without a film entry; also how the tests keep covering it).
@@ -144,8 +144,8 @@ const KEY_POSES=Object.freeze({
       {at:['0',0]},
       {at:['w',-.35],pose:{spine1:.07,spine2:.04,chest:.05,shoulderL:-.10,shoulderR:.16,armOutR:.30}},
       {at:['w',0],pose:{spine1:.14,spine2:.07,chest:.09,neck:.08,head:.06,shoulderL:-.22,shoulderR:.24,armOutR:.62,elbowR:-.25,elbowL:.30}},
-      {at:['c',0],pose:{spine1:-.10,spine2:-.06,chest:-.13,neck:-.06,head:-.04,shoulderL:-.05,shoulderR:.12,armOutR:.25}},
-      {at:['h',0],pose:{spine1:-.08,spine2:-.05,chest:-.10,neck:-.08,head:-.10}},
+      {at:['c',0],pose:{spine1:-.10,spine2:-.06,chest:-.13,neck:-.06,head:-.04,shoulderL:-.12,shoulderR:.10,armOutR:.60,armOutL:.45}},
+      {at:['h',0],pose:{spine1:-.08,spine2:-.05,chest:-.10,neck:-.08,head:-.10,armOutR:.30,armOutL:.20}},
       {at:['h',360]}
     ])
   })
@@ -309,7 +309,7 @@ function shot(event,elapsed,nativeMs){
 function soloView(event,elapsed,nativeMs){
   const timing=duration(event,nativeMs),sp=soloSpec(event);
   const none=Object.freeze({active:false,showAttacker:true,showDefender:true,
-    flash:0,aura:0,fire:0,glint:0,burst:0,streak:0,slash:0,redSky:0,lunge:0,
+    flash:0,aura:0,fire:0,glint:0,burst:0,streak:0,slash:0,impact:0,redSky:0,lunge:0,
     shake:0,launch:null,pops:0,roar:0,stage:null,strike:null});
   if(!timing.solo||!sp)return none;
   const t=clamp(Number(elapsed)||0,0,timing.total);
@@ -319,24 +319,28 @@ function soloView(event,elapsed,nativeMs){
   const lungeAt=A+timing.lungeAt,fireAt=A+timing.fireStart;
   // Title starts on a white burst; it fades out to white; a one-frame flash
   // cuts the crouch to the rear-up; the impact flash follows the lunge.
+  // Crisp arcade flashes (a frame or two), not long milky fades.
   const whiteOut=t<A-SOLO_MS.whiteOut?0:t<A?ease((t-(A-SOLO_MS.whiteOut))/SOLO_MS.whiteOut):
-    clamp(1-(t-A)/160,0,1);
-  const flash=Math.max(spike(timing.titleIn,60,300),whiteOut,
-    .9*spike(A+timing.cutAt,16,110),spike(contactAt+50,50,timing.launchAt-contactAt+60),
-    .35*spike(timing.landAt,16,140));
+    clamp(1-(t-A)/70,0,1);
+  const flash=Math.max(spike(timing.titleIn,30,90),whiteOut,
+    .9*spike(A+timing.cutAt,16,50),spike(contactAt+20,20,60),
+    .3*spike(timing.landAt,16,60));
   const aura=t<timing.titleIn||t>=timing.launchAt?0:ease((t-timing.titleIn)/260);
   const fire=sp.strike!=='fire'||t<fireAt||t>=timing.launchAt?0:ease((t-fireAt)/220);
   const glint=sp.strike==='charge'||t>=contactAt?0:spike(lungeAt-50,240,90);
   const streak=sp.strike==='charge'&&t>=A+timing.cutAt&&t<timing.launchAt?
     ease((t-A-timing.cutAt)/200):0;
-  const slash=sp.strike==='slash'?spike(contactAt,90,260):0;
+  // The blow lands on the victim: a burst (and Technique's claw slash) on its
+  // body in the first frames of the launch, never across the attacker's face.
+  const impact=t>=timing.launchAt&&t<timing.launchAt+SOLO_MS.impact?1-(t-timing.launchAt)/SOLO_MS.impact:0;
+  const slash=sp.strike==='slash'?impact:0;
   const lunge=t<lungeAt?0:t<contactAt?ease((t-lungeAt)/Math.max(1,contactAt-lungeAt)):
     t<timing.launchAt?1:0;
   // Hit-stop shake while the rigs are frozen, a smaller bump on landing.
   const hitAge=t-contactAt,landAge=t-timing.landAt;
   const shake=hitAge>=0&&hitAge<320?Math.sin(hitAge*.19)*Math.exp(-hitAge/(sp.hitStop||110)):
     landAge>=0&&landAge<160?.45*Math.sin(landAge*.24)*Math.exp(-landAge/60):0;
-  const burst=t<timing.titleIn?0:clamp(1-(t-timing.titleIn)/520,0,1);
+  const burst=0; // the title ray burst drew spokes across the animal; dropped
   const redSky=t>=timing.launchAt&&t<timing.landAt?1:0;
   const away=event.attacker===0?1:-1;
   // The victim, as in the reference: blown AWAY from the lens, entering the
@@ -346,25 +350,28 @@ function soloView(event,elapsed,nativeMs){
     const L=sp.distance;
     if(t<timing.landAt){
       const u=clamp((t-timing.launchAt)/(timing.landAt-timing.launchAt),0,1);
-      let y,drift,spin,axis='z';
+      // Every launch is a roll about the body's own length that ENDS lying on
+      // its side (-90°), so the cut to the landing matches its pose; never an
+      // end-over-end flip that balances it on its antlers.
+      let y,drift,spin,yaw=0;const axis='x',side=-Math.PI/2;
       if(sp.launch==='skid'){
-        // Low and flat: lands on its side at 55 % and skids the rest.
+        // Guts: low (≤0.6 m), tips onto its side, touches down at 55 %, bounces, skids.
         const v=Math.min(1,u/.55),w=clamp((u-.55)/.45,0,1);
-        y=u<.55?1.3*Math.pow(1-v,1.5):0;
-        drift=u<.55?.3+3.0*v:3.3+(L-3.3)*(1-(1-w)*(1-w));
-        spin=Math.PI*(.6+.4*Math.min(1,v*1.4));
+        y=u<.55?.6*Math.sin(Math.PI*(.35+.65*v))*(1-v*.4):(w<.45?.25*Math.sin(Math.PI*w/.45):0);
+        drift=u<.55?.3+2.4*v:2.7+(L-2.7)*(1-(1-w)*(1-w));
+        spin=side*ease(v);
       }else if(sp.launch==='roll'){
-        // Spins sideways (a barrel roll about its direction of travel).
-        y=sp.launchHeight*1.05*Math.pow(1-u,1.4);
+        // Technique: mid-height sideways spin, a full turn and a quarter onto its flank.
+        y=1.4*Math.pow(1-u,1.3);
         drift=.3+(L-.3)*Math.pow(u,.8);
-        spin=Math.PI*2*sp.spin*u+Math.PI*.4;axis='x';
+        spin=side-Math.PI*2*(1-ease(u));yaw=(event.attacker===0?1:-1)*.9*u;
       }else{
-        // High blast: falls in from the top of the frame, tumbling end over end.
-        y=sp.launchHeight*1.35*Math.pow(1-u,1.6);
+        // Power: high; starts upside-down, turns 1.5 times and is on its side before it lands.
+        y=sp.launchHeight*Math.pow(1-u,1.5);
         drift=.3+(L-.3)*Math.pow(u,.8);
-        spin=Math.PI*(1+1.6*sp.spin*u);
+        spin=-Math.PI-Math.PI*1.5*Math.min(1,u/.85);
       }
-      launch=Object.freeze({u,landed:false,y,drift:away*drift,spin:axis==='z'?away*spin:spin,axis});
+      launch=Object.freeze({u,landed:false,y,drift:away*drift,spin,axis,yaw});
     }else{
       // Body-first landing (it lies on its side: the knockout pose), a heavy
       // slam and second bounce for a blast, then a get-up if it survived.
@@ -374,7 +381,7 @@ function soloView(event,elapsed,nativeMs){
         sp.launch==='roll'&&age<220?.14*Math.sin(Math.PI*age/220):0;
       const downFor=SOLO_MS.downHold,getUp=SOLO_MS.getUp;
       const rising=!event.knockout&&age>downFor?clamp((age-downFor)/getUp,0,1):0;
-      launch=Object.freeze({u:1,landed:true,y:bounce,drift:away*L,spin:0,axis:'z',
+      launch=Object.freeze({u:1,landed:true,y:bounce,drift:away*L,spin:0,axis:'x',yaw:0,
         down:event.knockout?1:1-rising,rising});
     }
   }
@@ -385,7 +392,7 @@ function soloView(event,elapsed,nativeMs){
   return Object.freeze({active:true,roar,stage,strike:sp.strike,
     showAttacker:!(t>=timing.launchAt&&t<timing.returnAt),
     showDefender:!(t>=timing.titleIn&&t<timing.launchAt),
-    flash,aura,fire,glint,burst,streak,slash,redSky,lunge,shake,launch,tilt:lunge>0?sp.tilt:0,
+    flash,aura,fire,glint,burst,streak,slash,impact,redSky,lunge,shake,launch,tilt:lunge>0?sp.tilt:0,
     pops:t>=timing.landAt&&t<timing.landAt+SOLO_MS.pop?1:0});
 }
 // World slots: player one is LEFT (-X), player two is RIGHT (+X).
@@ -461,11 +468,13 @@ function camera(event,elapsed,nativeMs){
     if(beat.shot==='vicSide')at(.6,6.2,1.05,.95);
     else if(beat.shot==='vicFront')at(5.4,2.2,1.0,1.0);
     else if(beat.shot==='vicRoar')at(3.6,1.0,.62,1.12);
-    else at(8.6,3.0,1.7,.95);
+    else at(8.6-.35*clamp((beat.local-1800)/1000,0,6),3.0,1.7,.95); // slow dolly-in
     zoom=1.0;
     return Object.freeze({x,y,z,targetX,targetY,targetZ:wz,zoom,angle:0,
-      beat:beat.beat,shot:beat.shot,cut:true,outro:beat.local>=VICTORY_OUTRO_MS?
-        clamp((beat.local-VICTORY_OUTRO_MS)/420,0,1):0});
+      // The arcade's sky-coloured outro is a cabinet screen transition; held
+      // in our game it read as the scene vanishing, so the roaring winner and
+      // the forest stay on screen instead.
+      beat:beat.beat,shot:beat.shot,cut:true,outro:0});
   }else if(beat.beat==='FOCUS'){
     // Each technique earns its own visual identity, not the same generic
     // closeup of Bear's face before every strike.
@@ -571,7 +580,7 @@ function victoryApproach(victoryElapsed){
   // Walks diagonally toward centre and the lens, turned to face its path.
   const step=clamp(elapsed/VICTORY_APPROACH_END_MS,0,1);
   const glide=step<.85?step:(.85+.15*ease((step-.85)/.15));
-  const turn=.93*ease(elapsed/420);
+  const turn=.93; // already facing its path on frame one (no spin in place)
   return Object.freeze({lowered:1,step,active:elapsed<VICTORY_APPROACH_END_MS,stride:0,
     travel:.95*glide,depth:1.25*glide,turn});
 }

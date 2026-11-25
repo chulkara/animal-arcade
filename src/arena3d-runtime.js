@@ -557,8 +557,10 @@
       addPitch('RigHead',kp.head+.03*heave);addRot('RigHead',UP,kp.headYaw);
       addPitch('RigLFLeg1',kp.shoulderL);addPitch('RigRFLeg1',kp.shoulderR);
       // arm thrown out to the side (about the body's forward axis) and elbows
-      if(kp.armOutL)addRot('RigLFLeg1',strikeFacing,-kp.armOutL);
-      if(kp.armOutR)addRot('RigRFLeg1',strikeFacing,kp.armOutR);
+      // +θ about forward pulls a right-side paw IN (see the guard below), so
+      // throwing an arm OUT is −θ for the right, +θ for the left.
+      if(kp.armOutL)addRot('RigLFLeg1',strikeFacing,kp.armOutL);
+      if(kp.armOutR)addRot('RigRFLeg1',strikeFacing,-kp.armOutR);
       if(kp.elbowL)addPitch('RigLFLeg2',kp.elbowL);
       if(kp.elbowR)addPitch('RigRFLeg2',kp.elbowR);
       // T-pose guard: a source swipe can fling a foreleg straight out
@@ -609,7 +611,9 @@
       let jawAngle=0;
       if(jawBone&&jawRest){
         jawAngle=2*Math.acos(Math.min(1,Math.abs(jawBone.quaternion.dot(jawRest))));
-        const max=.5;
+        // the roar (our own jaw rig + mouth interior) may open ~29°; a source
+        // clip only ~12°, past which its lips stretch into a striped panel
+        const max=(actor.howlJaw||0)>.02||lvl>.02?.5:.21;
         if(jawAngle>max){jawBone.quaternion.copy(jawRest).slerp(jawBone.quaternion,max/jawAngle);jawAngle=max;}
       }
       if(actor.mouthBag)actor.mouthBag.visible=Math.max(lvl*.5,actor.howlJaw||0,jawAngle)>.05;
@@ -1021,6 +1025,26 @@
     glint.material.rotation=time*.0012;glint.material.opacity=Math.min(1,k*1.2);
     glint.visible=true;
   }
+  // The blow lands on the victim: a white-hot star burst on its body for the
+  // first quarter-second of the launch.
+  let impactStar=null;
+  function paintImpact(view,defender){
+    if(!scene)return;
+    if(!impactStar){
+      impactStar=new THREE.Sprite(new THREE.SpriteMaterial({map:starTexture(),transparent:true,color:0xfff0c8,
+        blending:THREE.AdditiveBlending,depthTest:false,depthWrite:false,fog:false}));
+      impactStar.renderOrder=31;impactStar.visible=false;scene.add(impactStar);
+    }
+    const k=view?.impact||0;
+    if(k<=.01||!defender||reduced()){impactStar.visible=false;return;}
+    const sc=(cinematics.SOLO_SCALE?.[defender.id]||1);
+    const c=defender.joint?.get('RigSpine2')||defender.joint?.get('RigChest')||defender.joint?.get('RigSpine1');
+    const v=c?c.getWorldPosition(new THREE.Vector3()):defender.pivot.getWorldPosition(new THREE.Vector3()).add(new THREE.Vector3(0,.9*sc,0));
+    const grow=1-k;
+    impactStar.position.copy(v);impactStar.scale.setScalar(sc*(1.4+2.6*grow));
+    impactStar.material.opacity=Math.min(1,k*1.6);impactStar.material.rotation=grow*.6;
+    impactStar.visible=true;
+  }
   // Dark oval under the tumbling victim, shrinking as it rises.
   function paintLaunchShadow(view,defender){
     if(!scene)return;
@@ -1061,6 +1085,7 @@
     if(forestRoot)forestRoot.visible=!(view?.fire>.55);
     paintGlint(view,attacker,time||0);
     paintLaunchShadow(view,defender);
+    paintImpact(view,defender);
     const cam=filmCamera||camera;
     const kind=view?.fire?'fire':null;
     const subject=kind==='fire'?attacker:defender;
@@ -1446,7 +1471,11 @@
     const lead=timing?.actionLead||0;
     if(!sequence.attackStarted&&sequence.elapsed>=lead){
       sequence.attackStarted=true;
-      attacker?.move(event.move);
+      // In the Guts film the Bear charges the lens on all fours: its source
+      // attack clip rears upright mid-pounce, which read as a biped stand.
+      if(timing?.solo&&timing.strike==='charge'&&attacker?.id==='bear'&&attacker.asset?.clips?.run)
+        attacker.native('run',.12);
+      else attacker?.move(event.move);
     }
     const actionTime=sequence.elapsed-lead;
     // One source of truth: the director's contact (measured from the clip
@@ -1488,7 +1517,16 @@
     // A survivor holds the downed pose, then scrambles back up.
     if(sequence.solo&&timing?.solo&&!event.knockout&&!sequence.gotUp&&
        sequence.elapsed>=timing.landAt+cinematics.SOLO_MS.downHold){
-      sequence.gotUp=true;defender?.native('idle',cinematics.SOLO_MS.getUp/1000);
+      sequence.gotUp=true;
+      // Get up by playing the knockout fall backwards (a crossfade from the
+      // lying pose to idle squashed the body flat), then settle into idle.
+      const ko=defender?.currentKey==='knockout'?defender.current:null;
+      if(ko){ko.paused=false;ko.enabled=true;ko.clampWhenFinished=true;ko.setLoop(THREE.LoopOnce,1);
+        ko.timeScale=-Math.max(1.5,ko.getClip().duration/.6);ko.play();sequence.rising=ko;}
+      else defender?.native('idle',.25);
+    }
+    if(sequence.rising&&sequence.rising.time<=.03){
+      sequence.rising=null;defender?.native('idle',.12);
     }
     const settle=sequence.solo&&timing?.solo?
       (event.finished?timing.victoryStart:timing.returnAt)-lead:
@@ -1601,18 +1639,18 @@
           defender.pivot.position.x=defender.baseX+l.drift;
           defender.pivot.position.y=l.y+h*(1-Math.cos(th));
           defender.pivot.position.z=-h*Math.sin(th);
-          defender.pivot.rotation.set(th,defender.pivot.rotation.y,0);
+          defender.pivot.rotation.set(th,l.yaw||0,0);
         }else{
           defender.pivot.position.x=defender.baseX+l.drift+h*Math.sin(th);
           defender.pivot.position.y=l.y+h*(1-Math.cos(th));
           defender.pivot.position.z=0;
-          defender.pivot.rotation.set(0,defender.pivot.rotation.y,th);
+          defender.pivot.rotation.set(0,0,th);
         }
       }else{
         // Landed on its feet in the arena wide, a short bounce, then its reaction.
         defender.pivot.position.x=defender.baseX+l.drift;
         defender.pivot.position.y=l.y;defender.pivot.position.z=0;
-        defender.pivot.rotation.set(0,defender.pivot.rotation.y,0);
+        defender.pivot.rotation.set(0,0,0);
       }
       return;
     }
@@ -1753,7 +1791,7 @@
     const toCam=filmCamera.position.clone().sub(h).normalize();
     const dir=fwd.multiplyScalar(.75).add(toCam.multiplyScalar(.25)).normalize();
     // a touch below the head looking up into the face (roaring at the lens)
-    const end=h.clone().addScaledVector(dir,1.35*scale);end.y-=.04*scale;
+    const end=h.clone().addScaledVector(dir,2.0*scale);end.y-=.04*scale;
     const e=u*u*(3-2*u);
     filmCamera.position.lerp(end,e);
     filmCamera.lookAt(cameraLook.clone().lerp(h,e));
@@ -2153,6 +2191,13 @@
     }:null,
     getClipDuration:(index,move)=>nativeLength({attacker:index,move}),
     // Where the victim is on screen (0–1), so the damage number pops on it.
+    getHitAnchor:()=>{
+      if(!sequence||!filmCamera)return null;
+      const d=actors[sequence.event.defender];if(!d)return null;
+      const c=d.joint?.get('RigSpine2')||d.joint?.get('RigChest');
+      const v=c?c.getWorldPosition(new THREE.Vector3()):d.pivot.getWorldPosition(new THREE.Vector3()).add(new THREE.Vector3(0,1,0));
+      v.project(filmCamera);return {x:(v.x+1)/2,y:(1-v.y)/2};
+    },
     getPopAnchor:()=>{
       if(!sequence||!filmCamera)return null;
       const d=actors[sequence.event.defender];if(!d)return null;

@@ -31,11 +31,11 @@ test('reference-inspired victory: inhale, head throw and an open-jaw roar while 
  assert.ok(cinema.victoryApproach(1600).active,'still walking toward the lens as it roars');
 });
 
-test('four quick cuts lead into the roar and a sky outro, not a still image',()=>{
+test('four quick cuts lead into the roar, then a held, slowly closing wide',()=>{
  const t=cinema.duration(event,1200);
  const sequence=[80,700,1300,2000,3000].map(ms=>cinema.shot(event,t.victoryStart+ms,1200));
  assert.deepEqual(sequence.map(x=>x.shot),['vicSide','vicFront','vicRoar','vicWide','vicWide']);
- assert.ok(cinema.camera(event,t.victoryStart+3000,1200).outro>.9);
+ assert.equal(cinema.camera(event,t.victoryStart+3000,1200).outro,0,'the winner stays on screen');
 });
 
 test('a supplied native roar FBX is auto-discovered from the private local folder',()=>{

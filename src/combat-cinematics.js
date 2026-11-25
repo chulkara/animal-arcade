@@ -172,7 +172,13 @@ function draw(time){
  overlay.dataset.strike=solo?.strike||'';
  overlay.dataset.pops=solo?.active?String(solo.pops):'0';
  // the red total shows from the landing and clears before the return cut
- overlay.dataset.total=solo?.active&&elapsed>=timing.landAt&&elapsed<timing.returnAt?'1':'';
+ // (not in the film review, which has no HUD to sit under)
+ overlay.dataset.total=!rehearsal&&solo?.active&&elapsed>=timing.landAt&&elapsed<timing.returnAt?'1':'';
+ // Technique's claw slash is drawn across the victim's body as it is hit.
+ if(live&&solo.slash>0){
+   const hit=window.NoahsArena3D?.getHitAnchor?.();
+   if(hit&&Number.isFinite(hit.x)){overlay.style.setProperty('--hit-x',(hit.x*100).toFixed(1)+'%');overlay.style.setProperty('--hit-y',(hit.y*100).toFixed(1)+'%');}
+ }
  // Damage pop, from film time (deterministic, frame-accurate in review):
  // scale .6 → 1.15 → 1 in 180 ms, drift up, fade before the return cut.
  if(solo?.active){
