@@ -146,7 +146,7 @@ function draw(time){
    if(panel.solo){
      // One number pops where the victim lands; the running total sits in
      // red under the victim's health bar as the HUD returns (reference).
-     const dmg=Math.max(0,Math.round(event.damage||event.previewDamage||0));
+     const dmg=Math.max(0,Math.round(event.damage||event.previewDamage||0))*(api.DISPLAY_SCALE||1);
      const total=overlay.querySelector('[data-ark-dmg-total]');if(total)total.textContent=dmg?String(dmg):'';
      const a=overlay.querySelector('[data-ark-dmg-a]'),b=overlay.querySelector('[data-ark-dmg-b]');
      if(a)a.textContent=dmg?String(dmg):'';if(b)b.textContent='';
@@ -171,7 +171,8 @@ function draw(time){
  overlay.style.setProperty('--solo-slash',live?solo.slash.toFixed(3):'0');
  overlay.dataset.strike=solo?.strike||'';
  overlay.dataset.pops=solo?.active?String(solo.pops):'0';
- overlay.dataset.total=solo?.active&&elapsed>=timing.landAt&&elapsed<timing.finish?'1':'';
+ // the red total shows from the landing and clears before the return cut
+ overlay.dataset.total=solo?.active&&elapsed>=timing.landAt&&elapsed<timing.returnAt?'1':'';
  // Damage pop, from film time (deterministic, frame-accurate in review):
  // scale .6 → 1.15 → 1 in 180 ms, drift up, fade before the return cut.
  if(solo?.active){
@@ -180,7 +181,14 @@ function draw(time){
    const op=age<0||age>=span?0:age<40?age/40:age>span-260?(span-age)/260:1;
    overlay.style.setProperty('--pop-scale',sc.toFixed(3));
    overlay.style.setProperty('--pop-op',op.toFixed(3));
-   overlay.style.setProperty('--pop-y',(-Math.max(0,age)/span*24).toFixed(1)+'px');
+   overlay.style.setProperty('--pop-y',(-Math.max(0,age)/span*36).toFixed(1)+'px');
+   // pop on the victim where it lands, not at a fixed screen spot
+   const anchor=age>=0&&age<span?window.NoahsArena3D?.getPopAnchor?.():null;
+   if(anchor&&Number.isFinite(anchor.x)&&Number.isFinite(anchor.y)){
+     overlay.style.setProperty('--pop-x',(Math.min(.88,Math.max(.12,anchor.x))*100).toFixed(1)+'%');
+     overlay.style.setProperty('--pop-top',(Math.min(.8,Math.max(.15,anchor.y))*100).toFixed(1)+'%');
+     overlay.dataset.popAnchored='1';
+   }else if(age<0)overlay.dataset.popAnchored='';
  }
  // During the attack film the arena HUD steps away (as in the reference),
  // returning with the HP drain when the film cuts back to the arena.

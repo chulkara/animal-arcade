@@ -385,7 +385,7 @@
 .ark-cinema-total{position:absolute;left:0;right:0;top:44%;z-index:5;text-align:center;pointer-events:none;opacity:0;
   font:700 clamp(44px,7vw,104px)/1 'Pixelify Sans',monospace;color:#fff;
   text-shadow:4px 0 #2b1a0a,-4px 0 #2b1a0a,0 4px #2b1a0a,0 -4px #2b1a0a,4px 4px #2b1a0a,-4px 4px #2b1a0a,0 8px 0 #2b1a0a}
-.ark-cinema[data-solo="1"][data-beat="reaction"] .ark-cinema-total{opacity:1;animation:ark-solo-total .9s ease-out both}
+/* (the red total is driven by data-total; it clears before the return cut) */
 @keyframes ark-solo-total{0%{transform:scale(1.6);opacity:0}15%{transform:scale(1);opacity:1}75%{opacity:1}100%{opacity:0}}
 @media (prefers-reduced-motion:reduce){.ark-cinema-lines{display:none}}
 .game.reduce-motion .ark-cinema-lines{display:none}
@@ -486,3 +486,17 @@
 .game .ark-cinema .ark-cinema-win [data-ark-youwin]{font-size:clamp(40px,5.6vw,84px);text-transform:none}
 .ark-cinema[data-beat="victory"] :is(.ark-cinema-title,.ark-cinema-howl-waves,.ark-cinema-win-stamp){display:none!important}
 .ark-cinema[data-beat="victory"] .ark-cinema-letterbox{height:0!important}
+
+/* ---- review fixes (2026-11-25) ---- */
+/* damage pops on the victim (projected from 3D), then rises and fades */
+.ark-cinema[data-solo="1"][data-pop-anchored="1"] .ark-cinema-dmg b:first-child,
+.ark-cinema[data-solo="1"][data-pop-anchored="1"][data-defender="0"] .ark-cinema-dmg b:first-child{
+  left:var(--pop-x)!important;right:auto!important;top:var(--pop-top)!important;
+  transform:translate(-50%,-100%) translateY(var(--pop-y,0)) scale(var(--pop-scale,1))!important}
+/* Guts charge: radial streaks converging on the animal, clear centre */
+.ark-cinema-streak{background:repeating-conic-gradient(from 3deg at 50% 50%,
+  rgba(255,255,255,0) 0deg 5deg,rgba(255,255,255,.85) 5.6deg 6.4deg,rgba(255,255,255,0) 7deg 11deg,rgba(255,236,200,.6) 11.4deg 11.9deg,rgba(255,255,255,0) 12.4deg 17deg)!important;
+  -webkit-mask:radial-gradient(ellipse at 50% 50%,transparent 0 42%,rgba(0,0,0,.7) 62%,#000 80%)!important;
+  mask:radial-gradient(ellipse at 50% 50%,transparent 0 42%,rgba(0,0,0,.7) 62%,#000 80%)!important;
+  animation:ark-radial .16s steps(2) infinite!important}
+@keyframes ark-radial{from{transform:rotate(0)}to{transform:rotate(4deg)}}

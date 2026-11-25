@@ -289,16 +289,18 @@
   // Health drains from its previous width (paused by CSS while the attack
   // film plays, so it drains when the HUD returns at the landing).
   let prevPct=[100,100],prevBattle=null;
+  // Arcade-scale numbers on screen (display only; rules use the small values).
+  const SHOW=n=>Math.round(n*(window.NoahsCinematicCore?.DISPLAY_SCALE||1));
   function hud(s,i){
     const f=s.animals[i],a=animal[f.id];
     const remaining=Math.round(f.hp/f.maxHp*100);
     if(prevBattle!==battle){prevBattle=battle;prevPct=[100,100];}
     const from=prevPct[i];prevPct[i]=remaining;
-    return `<div class="ark-arena-hud-player ark-arena-hud-player-${i}" aria-label="${actorName(s,i)} ${a.label}, ${f.hp} of ${f.maxHp} health">
+    return `<div class="ark-arena-hud-player ark-arena-hud-player-${i}" aria-label="${actorName(s,i)} ${a.label}, ${SHOW(f.hp)} of ${SHOW(f.maxHp)} health">
       <div class="ark-hud-nameplate">
         <span class="ark-hud-side">${actorName(s,i)}</span>
         <strong>${a.label}</strong>
-        <span class="ark-hud-health-value">${f.hp} / ${f.maxHp}</span>
+        <span class="ark-hud-health-value">${SHOW(f.hp)} / ${SHOW(f.maxHp)}</span>
       </div>
       <div class="ark-hud-meter" aria-hidden="true"><span style="--from:${from}%;width:${remaining}%"></span></div>
       <div class="ark-hud-techniques" aria-hidden="true">
@@ -334,7 +336,7 @@
     return `<div class="combat-fighter ${feedback}" data-animal-id="${f.id}"
       data-motion="${motion.id}" data-motion-kind="${motion.kind}"
       data-motion-source="${motion.file||motion.move}">
-      <div class="combat-fighter-head"><span>${actorName(s,i)}</span><strong>${f.hp} / ${f.maxHp}</strong></div>
+      <div class="combat-fighter-head"><span>${actorName(s,i)}</span><strong>${SHOW(f.hp)} / ${SHOW(f.maxHp)}</strong></div>
       <div class="combat-hp" role="progressbar" aria-label="${a.label} health" aria-valuemin="0" aria-valuemax="${f.maxHp}" aria-valuenow="${f.hp}">
         <span style="width:${Math.round(100*f.hp/f.maxHp)}%"></span>
       </div>
@@ -355,7 +357,7 @@
     const move=MOVES[s.animals[e.attacker].id]?.[e.special?'S':e.technique]||e.attackName;
     return `<div class="combat-message" role="status">
       <strong>${actorName(s,e.attacker)} — ${move}${e.special?' ✦ SPECIAL':''}</strong>
-      <span>${e.damage} damage dealt to ${actorName(s,e.defender)} · ${e.remainingHp} HP remains
+      <span>${SHOW(e.damage)} damage dealt to ${actorName(s,e.defender)} · ${SHOW(e.remainingHp)} HP remains
       ${e.charge?' · TIE CHARGE '+e.charge:''}</span>
       ${e.strongBonus||e.miracleBonus?`<span class="combat-card-bonus">CARD BOOST ${e.strongBonus?'+ '+e.strongBonus+' STRONG':''}
         ${e.miracleBonus?'+ '+e.miracleBonus+' MIRACLE':''}</span>`:''}</div>`;
@@ -491,7 +493,7 @@
         ${s.lastEvent?.kind==='HIT'?
           `<div class="battlefield-impact-flash" aria-hidden="true"></div>
            <div class="battlefield-damage battlefield-damage-${s.lastEvent.defender}" aria-hidden="true">
-             −${s.lastEvent.damage}</div>`:''}
+             −${SHOW(s.lastEvent.damage)}</div>`:''}
       </div>
       ${results(s)}
       ${controls(s)}

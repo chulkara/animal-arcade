@@ -168,43 +168,78 @@
     // flame sprites lick upward off its body, born at random bones. No
     // outline shells: they read as a cheap neon sticker.
     actor.aura=[];actor.tintMats=null;
-    const flameBones=[...joint.values()].filter(b=>!/Jaw|Tongue|Eye|Lid|Ear|Tail|Digit/i.test(b.name));
+    // Upper body only: embers born at the legs read as flames between them.
+    const flameBones=[...joint.values()].filter(b=>/Spine|Chest|Neck|Head|Pelvis|Hips/i.test(b.name)&&
+      !/Jaw|Tongue|Eye|Lid|Ear|Tail|Digit|Leg/i.test(b.name));
+    actor.auraUniform={value:0};
     actor.setAura=(level,time=0)=>{
       if(!actor.tintMats){
+        // Add the roar's mouth light now (switched off): adding a light later
+        // recompiles every lit material mid-film, which dropped the rim-lit
+        // body from the frame at the roar (and caused a hitch).
+        if(!actor.mouthLight&&pivot.parent){
+          actor.mouthLight=new THREE.PointLight(0xff9f8a,0,.55,2);
+          actor.mouthLight.castShadow=false;pivot.parent.add(actor.mouthLight);
+        }
         actor.tintMats=[];
         model.traverse(o=>{
           if(!o.isMesh||o.name==='MouthBag')return;
           for(const m of [].concat(o.material))
-            if(m?.color&&!actor.tintMats.includes(m)){m.userData.baseColor=m.color.clone();actor.tintMats.push(m);}
+            if(m?.color&&!actor.tintMats.includes(m)){
+              if(!m.userData.baseColor)m.userData.baseColor=m.color.clone();
+              actor.tintMats.push(m);
+              // Warm Fresnel rim: the aura hugs the silhouette (reference's
+              // orange combat aura) instead of cards standing off the body.
+              // Materials are cached and outlive actors: inject ONCE per
+              // material (a second injection redefines uAura and the shader
+              // fails to compile, dropping the body from the frame).
+              if(!m.userData.arkAuraUniform&&!window.__arkNoRim){
+                const uniform=m.userData.arkAuraUniform={value:0};
+                const prior=m.onBeforeCompile;
+                m.onBeforeCompile=(shader,r)=>{
+                  prior?.call(m,shader,r);
+                  if(shader.fragmentShader.includes('uniform float uAura;'))return;
+                  shader.uniforms.uAura=uniform;
+                  shader.fragmentShader='uniform float uAura;\n'+shader.fragmentShader.replace('#include <dithering_fragment>',
+                    `float arkRim=pow(1.0-clamp(abs(dot(normalize(normal),normalize(vViewPosition))),0.0,1.0),3.2);
+                    gl_FragColor.rgb+=vec3(1.0,0.40,0.04)*arkRim*uAura*0.85;
+                    #include <dithering_fragment>`);
+                };
+                m.customProgramCacheKey=()=>'ark-aura';
+                m.needsUpdate=true;
+              }
+            }
         });
       }
+      for(const m of actor.tintMats)if(m.userData.arkAuraUniform)m.userData.arkAuraUniform.value=Math.max(0,level);
       for(const m of actor.tintMats){
         m.color.copy(m.userData.baseColor);
-        if(level>0.001)m.color.multiply(new THREE.Color(1,1-.36*level,1-.62*level));
+        if(level>0.001)m.color.multiply(new THREE.Color(1,1-.08*level,1-.18*level));
       }
       if(!actor.aura.length&&level>0&&flameBones.length&&scene){
         const tex=flameSpriteTexture();
         model.updateMatrixWorld(true);
         const box=new THREE.Box3().setFromObject(model),size=box.getSize(new THREE.Vector3());
-        actor.flameScale=Math.max(.25,size.y*.42);
-        for(let i=0;i<46;i++){
-          const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,
+        actor.flameScale=Math.max(.2,size.y*.18);
+        for(let i=0;i<22;i++){
+          const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,color:0xffa040,
             blending:THREE.AdditiveBlending,depthWrite:false,fog:false,opacity:0}));
           sp.userData={bone:flameBones[(i*7)%flameBones.length],phase:(i*.6180339)%1,
-            jx:(((i*37)%17)/17-.5),jz:(((i*53)%13)/13-.5),speed:.8+((i*29)%11)/22};
+            jx:(((i*37)%17)/17-.5),jz:(((i*53)%13)/13-.5),speed:.7+((i*29)%11)/22};
           sp.renderOrder=5;scene.add(sp);actor.aura.push(sp);
         }
       }
-      const v=new THREE.Vector3(),fs=actor.flameScale||.5;
+      const v=new THREE.Vector3(),fs=actor.flameScale||.3;
       for(const sp of actor.aura){
         const d=sp.userData;
         if(level<=0.001||!actor.pivot.visible){sp.visible=false;continue;}
-        const life=((time*.0011*d.speed)+d.phase)%1;
+        const life=((time*.0010*d.speed)+d.phase)%1;
         d.bone.getWorldPosition(v);
-        sp.position.set(v.x+d.jx*fs*.35,v.y+life*fs*.9,v.z+d.jz*fs*.35);
-        const sc=fs*(.55+.5*Math.sin(life*Math.PI))*(1-.35*life);
-        sp.scale.set(sc*.7,sc,1);
-        sp.material.opacity=level*.5*Math.sin(life*Math.PI);
+        // embers drift up off the back and fade; small, never a wall of cards
+        sp.position.set(v.x+d.jx*fs*1.4,v.y+fs*(.6+life*3.2),v.z+d.jz*fs*1.4);
+        const sc=fs*(.45+.35*Math.sin(life*Math.PI))*(1-.5*life);
+        sp.scale.set(sc*.6,sc,1);
+        sp.material.opacity=level*.55*Math.sin(life*Math.PI);
         sp.material.rotation=d.jx*.6;
         sp.visible=true;
       }
@@ -326,6 +361,7 @@
     // hair along the normals and skinned to the same skeleton. It is only
     // visible through the opening, where it shows as gums/palate.
     if(id==='bear'&&jawBone)buildMouthBag(model,jawBone);
+    const jawRest=jawBone?jawBone.quaternion.clone():null;
     const openMorphs=[];
     model.traverse(node=>{
       if(!node.isMesh||!node.morphTargetDictionary||!node.morphTargetInfluences)return;
@@ -432,6 +468,7 @@
       pivot.position.y=howl.bodyDrop*.50*strength;
       if(jawBone&&!nativeRoar)
         setWorld(jawBone.name,pitchWorld,-.52*howl.jawOpen); // ~30°: open, not unhinged
+      actor.howlJaw=howl.jawOpen;
       // The textured gums, tongue and palate exist but sit in the head's own
       // shadow, so an open mouth read as a black slot. A small warm fill
       // light in front of the jaw (radius < 1 unit, no shadows) lights the
@@ -519,6 +556,27 @@
       addNeck(strikePitch,kp.neck+.06*heave);
       addPitch('RigHead',kp.head+.03*heave);addRot('RigHead',UP,kp.headYaw);
       addPitch('RigLFLeg1',kp.shoulderL);addPitch('RigRFLeg1',kp.shoulderR);
+      // arm thrown out to the side (about the body's forward axis) and elbows
+      if(kp.armOutL)addRot('RigLFLeg1',strikeFacing,-kp.armOutL);
+      if(kp.armOutR)addRot('RigRFLeg1',strikeFacing,kp.armOutR);
+      if(kp.elbowL)addPitch('RigLFLeg2',kp.elbowL);
+      if(kp.elbowR)addPitch('RigRFLeg2',kp.elbowR);
+      // T-pose guard: a source swipe can fling a foreleg straight out
+      // sideways like a plank. Pull any paw that swings past the body's
+      // side back in, rotating that shoulder about the forward axis
+      // (+θ about forward lowers a paw on the right side, so sign = side).
+      model.updateMatrixWorld(true);
+      const centre=joint.get('RigChest')||joint.get('RigSpine2');
+      if(centre){
+        const c=centre.getWorldPosition(new THREE.Vector3()),pw=new THREE.Vector3();
+        for(const [paw,shoulder] of [['RigLFLegDigit11','RigLFLeg1'],['RigRFLegDigit11','RigRFLeg1']]){
+          const b=joint.get(paw)||joint.get(paw.replace('Digit11','Ankle'));
+          if(!b||!joint.get(shoulder))continue;
+          b.getWorldPosition(pw);
+          const side=pw.sub(c).dot(strikePitch),limit=.42*(actor.scale||1);
+          if(Math.abs(side)>limit)addRot(shoulder,strikeFacing,Math.sign(side)*Math.min(.85,(Math.abs(side)-limit)*1.6));
+        }
+      }
     };
     actor.tick=(delta)=>{
       resetApplied(actor);
@@ -542,6 +600,20 @@
         addPitch('RigJaw',-.2*lvl);
       }
       if(actor.mouthLight)actor.mouthLight.intensity=2.0*lvl;
+      // The inner-mouth bag only exists for an open jaw; closed, it can poke
+      // out under the chin when the head is lifted (seen in the strike lunge).
+      if(actor.mouthBag===undefined)actor.mouthBag=model.getObjectByName('MouthBag')||null;
+      // A source clip may open the jaw far wider than the lip mesh can stretch
+      // (striped lip panel in the strike lunge): cap it at ~29°, and show the
+      // mouth interior whenever the jaw is actually open, whatever opened it.
+      let jawAngle=0;
+      if(jawBone&&jawRest){
+        jawAngle=2*Math.acos(Math.min(1,Math.abs(jawBone.quaternion.dot(jawRest))));
+        const max=.5;
+        if(jawAngle>max){jawBone.quaternion.copy(jawRest).slerp(jawBone.quaternion,max/jawAngle);jawAngle=max;}
+      }
+      if(actor.mouthBag)actor.mouthBag.visible=Math.max(lvl*.5,actor.howlJaw||0,jawAngle)>.05;
+      actor.howlJaw=0;
       // Hind-foot correction runs AFTER victoryGesture and applyBlocking
       // so the animated roar's weight shift does not overwrite grounding.
       if(actor.proc){
@@ -835,10 +907,10 @@
   // Tileable value-noise fBm painted through a fire palette: rolling
   // flame and smoke, like the arcade's burning backdrop.
   function fireCanvas(){
-    const S=256,c=document.createElement('canvas');c.width=c.height=S;
+    const S=512,c=document.createElement('canvas');c.width=c.height=S;
     const g=c.getContext('2d'),img=g.createImageData(S,S),d=img.data;
     let seed=97;const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
-    const lattices=[4,8,16,32,64].map(p=>({p,v:Float32Array.from({length:p*p},rnd)}));
+    const lattices=[4,8,16,32,64,128].map(p=>({p,v:Float32Array.from({length:p*p},rnd)}));
     const sm=t=>t*t*(3-2*t);
     const vn=(L,x,y)=>{const p=L.p,xi=Math.floor(x),yi=Math.floor(y),fx=sm(x-xi),fy=sm(y-yi);
       const at=(a,b)=>L.v[((b%p+p)%p)*p+((a%p+p)%p)];
@@ -986,6 +1058,7 @@
       if(actor)actor.roarLevel=actor===attacker&&view?view.roar:0;
     }
     setStage(view?.stage==='red'?'red':null);
+    if(forestRoot)forestRoot.visible=!(view?.fire>.55);
     paintGlint(view,attacker,time||0);
     paintLaunchShadow(view,defender);
     const cam=filmCamera||camera;
@@ -1396,7 +1469,11 @@
     if(sequence.solo&&timing?.solo&&sequence.thumpAt==null&&sequence.elapsed>=timing.landAt){
       sequence.thumpAt=sequence.elapsed;
       sequence.thumpX=defender?.pivot.position.x??0;
-      if(defender){defender.currentKey=null;defender.native(event.knockout?'knockout':'hit',.06);}
+      if(defender){
+        // Body-first: straight into the lying end of the knockout clip.
+        defender.currentKey=null;defender.native('knockout',.05);
+        if(defender.current){const d=defender.current.getClip().duration;defender.current.time=Math.max(0,d-.04);}
+      }
       if(!reduced())window.NoahsAudio?.cue('thud');
     }
     if(!sequence.solo&&event.knockout&&sequence.pelvisStand&&sequence.thumpAt==null&&defender){
@@ -1407,6 +1484,11 @@
         sequence.thumpX=pelvis.getWorldPosition(new THREE.Vector3()).x;
         if(!reduced())window.NoahsAudio?.cue('thud');
       }
+    }
+    // A survivor holds the downed pose, then scrambles back up.
+    if(sequence.solo&&timing?.solo&&!event.knockout&&!sequence.gotUp&&
+       sequence.elapsed>=timing.landAt+cinematics.SOLO_MS.downHold){
+      sequence.gotUp=true;defender?.native('idle',cinematics.SOLO_MS.getUp/1000);
     }
     const settle=sequence.solo&&timing?.solo?
       (event.finished?timing.victoryStart:timing.returnAt)-lead:
@@ -1515,14 +1597,22 @@
       if(!l.landed){
         // Thrown into the sky, tumbling about its body centre.
         const h=.95*(cinematics.SOLO_SCALE?.[defender.id]||1),th=l.spin;
-        defender.pivot.position.x=defender.baseX+l.drift+h*Math.sin(th);
-        defender.pivot.position.y=l.y+h*(1-Math.cos(th));
-        defender.pivot.rotation.z=th;
+        if(l.axis==='x'){
+          defender.pivot.position.x=defender.baseX+l.drift;
+          defender.pivot.position.y=l.y+h*(1-Math.cos(th));
+          defender.pivot.position.z=-h*Math.sin(th);
+          defender.pivot.rotation.set(th,defender.pivot.rotation.y,0);
+        }else{
+          defender.pivot.position.x=defender.baseX+l.drift+h*Math.sin(th);
+          defender.pivot.position.y=l.y+h*(1-Math.cos(th));
+          defender.pivot.position.z=0;
+          defender.pivot.rotation.set(0,defender.pivot.rotation.y,th);
+        }
       }else{
         // Landed on its feet in the arena wide, a short bounce, then its reaction.
         defender.pivot.position.x=defender.baseX+l.drift;
-        defender.pivot.position.y=l.y;
-        defender.pivot.rotation.z=0;
+        defender.pivot.position.y=l.y;defender.pivot.position.z=0;
+        defender.pivot.rotation.set(0,defender.pivot.rotation.y,0);
       }
       return;
     }
@@ -1582,6 +1672,7 @@
       filmCamera.zoom=Math.min(2.2,(wants?.zoom??1)*heroFactor);
       filmCamera.updateProjectionMatrix();
       if(wants?.lunge>0)applyLunge(event,wants.lunge);
+      if(wants?.angle&&!reduced())filmCamera.rotateZ(wants.angle);
       if(wants?.beat==='VICTORY')fitVictoryInFrame(event,wants);
       applyThump(sequence?.elapsed??0);
     }
@@ -1656,8 +1747,13 @@
     actor.model.updateMatrixWorld(true);
     const h=head.getWorldPosition(new THREE.Vector3());
     const scale=cinematics.SOLO_SCALE?.[actor.id]||1;
-    const dir=filmCamera.position.clone().sub(h).normalize();
-    const end=h.clone().addScaledVector(dir,1.45*scale);
+    // From in front of the muzzle (chest→head direction), so the face fills
+    // the frame (reference 19.6), never the ear or shoulder.
+    const fwd=new THREE.Vector3(actor.slot===0?1:-1,.12,0).normalize();
+    const toCam=filmCamera.position.clone().sub(h).normalize();
+    const dir=fwd.multiplyScalar(.75).add(toCam.multiplyScalar(.25)).normalize();
+    // a touch below the head looking up into the face (roaring at the lens)
+    const end=h.clone().addScaledVector(dir,1.35*scale);end.y-=.04*scale;
     const e=u*u*(3-2*u);
     filmCamera.position.lerp(end,e);
     filmCamera.lookAt(cameraLook.clone().lerp(h,e));
@@ -2056,10 +2152,29 @@
       done:bearReview.done,index:bearReview.index,countdown:bearReview.countdown
     }:null,
     getClipDuration:(index,move)=>nativeLength({attacker:index,move}),
+    // Where the victim is on screen (0–1), so the damage number pops on it.
+    getPopAnchor:()=>{
+      if(!sequence||!filmCamera)return null;
+      const d=actors[sequence.event.defender];if(!d)return null;
+      const v=d.pivot.getWorldPosition(new THREE.Vector3());v.y+=1.7*(cinematics.SOLO_SCALE?.[d.id]||1);
+      v.project(filmCamera);return {x:(v.x+1)/2,y:(1-v.y)/2};
+    },
     // The live 3D film clock, so the DOM overlay and the rigs share one time.
     getSequence:()=>sequence&&renderer&&!document.hidden?{key:sequence.event.key,elapsed:sequence.elapsed}:null,
+    // Diagnostic only: materials/programs of an actor (debugging renders).
+    getMaterialDebug:(index=0)=>{
+      const a=actors[index];if(!a)return null;const out=[];
+      a.model.traverse(o=>{if(!o.isMesh)return;
+        out.push({name:o.name,vis:o.visible,culled:o.frustumCulled,
+          mats:[].concat(o.material).map(m=>({type:m.type,name:m.name,vis:m.visible,op:m.opacity,tr:m.transparent,side:m.side,
+            prog:renderer?.properties.get(m)?.currentProgram?.name||null}))});});
+      const progs=(renderer?.info.programs||[]).filter(p=>p.diagnostics&&!p.diagnostics.runnable).map(p=>({used:p.usedTimes,frag:p.diagnostics.fragmentShader?.log,vert:p.diagnostics.vertexShader?.log,key:String(p.cacheKey).slice(0,300)}));
+      return {meshes:out,progs};
+    },
     // Diagnostic only: which clip each live actor is playing.
     getClips:()=>actors.map(actor=>actor?{id:actor.id,key:actor.currentKey,
+      pos:actor.pivot.position.toArray().map(n=>+n.toFixed(2)),rot:actor.pivot.rotation.toArray().slice(0,3).map(n=>+(+n).toFixed(2)),
+      vis:actor.pivot.visible,
       files:actor.asset?.motionFiles||null,keys:Object.keys(actor.asset?.clips||{})}:null),
     // Diagnostic only: world-space X extent of each live skeleton (no mesh data).
     getReach:()=>actors.map(actor=>{

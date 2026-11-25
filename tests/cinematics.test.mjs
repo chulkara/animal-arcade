@@ -86,7 +86,8 @@ test('reel input, storyboard, model camera and sound scripts are wired after the
  assert.ok(ui.includes('ark-reel-lamps'));
  assert.ok(model.includes('cinematics.camera(event,time,nativeLength(event))'));
  assert.ok(model.includes("defender?.native(sequence.solo||!event.knockout?'hit':'knockout')"));
- assert.ok(model.includes("defender.native(event.knockout?'knockout':'hit',.06)"),'film victims react on landing');
+ assert.ok(model.includes("defender.currentKey=null;defender.native('knockout',.05);"),'film victims land body-first, lying');
+ assert.ok(model.includes("defender?.native('idle',cinematics.SOLO_MS.getUp/1000)"),'survivors get back up');
  assert.ok(audio.includes("case 'cinemaMiracle'"));
  assert.ok(audio.includes("case 'cinemaVictory'"));
  assert.ok(readFileSync('src/painted-menu.js','utf8').includes("const ART='./assets/approved-menu.png'"));
@@ -495,17 +496,20 @@ test('solo attack (Bear High Paw Strike) follows the arcade reference film gramm
   assert.ok(v(t.actionLead+t.contact-1).lunge>.9,'lunges into the lens before the flash');
   assert.ok(v(t.titleIn+1).burst>.9&&v(t.actionLead-1).flash>.9,'title opens on a burst, closes to white');
   assert.equal(director.hitStop(evt,t.actionLead+t.contact+60,3000),true);
-  assert.equal(director.hitStop(evt,t.actionLead+t.contact+director.SOLO_MS.hitStop,3000),false);
+  assert.equal(director.hitStop(evt,t.actionLead+t.contact+t.hitStop,3000),false);
+  assert.equal(t.hitStop,135,'the signature move holds its impact longest');
   // the stage never changes: only the launch is re-lit red
   assert.equal(v(t.titleIn+300).stage,null);
   assert.equal(v(t.launchAt+100).stage,'red');
   // the victim is already airborne and turning over on the launch's first frame
   const first=v(t.launchAt).launch;
   assert.ok(first.y>1&&Math.abs(first.spin)>1.5,'tumbling from frame one');
+  assert.ok(first.y>3,'enters from the top of the frame (reference 19.9)');
   const peak=v((t.launchAt+t.landAt)/2).launch;
-  assert.ok(peak.y>2);
+  assert.ok(peak.y<first.y,'and drops away into the distance');
   assert.equal(Math.sign(peak.drift),attacker===0?1:-1);
-  assert.equal(v(t.landAt+300).launch.y,0);
+  assert.ok(v(t.landAt+100).launch.y>0,'heavy slam bounces');
+  assert.equal(v(t.landAt+500).launch.y,0);
   assert.equal(v(t.landAt+10).launch.landed,true);
   assert.equal(v(t.landAt+10).pops,1,'one damage number pops on landing');
   assert.equal(v(t.landAt+director.SOLO_MS.pop+10).pops,0,'and expires');
@@ -513,7 +517,8 @@ test('solo attack (Bear High Paw Strike) follows the arcade reference film gramm
   const sx=attacker===0?-2.02:2.02;
   assert.equal(director.camera(evt,t.titleIn+300,3000).targetX,sx+(attacker===0?.35:-.35));
   const lc=director.camera(evt,(t.launchAt+t.landAt)/2,3000);
-  assert.ok(lc.targetY>2,'launch camera follows the airborne victim');
+  const away=attacker===0?1:-1;
+  assert.ok(away*(lc.targetX-lc.x)>5,'launch camera looks along the flight, away from the attacker');
   assert.equal(lc.snap,true);
   assert.equal(director.panel(evt,t.titleIn+300,3000).sub,'LV.2 SIGNATURE');
  }
@@ -524,4 +529,32 @@ test('solo attack (Bear High Paw Strike) follows the arcade reference film gramm
  assert.equal(director.duration({...base,film:true,attackerId:'bear',defenderId:'moose',move:'G'},1833).strike,'charge');
  assert.equal(director.duration({...base,film:true,attackerId:'bear',defenderId:'moose',move:'T'},1833).strike,'slash');
  director.clearMeasuredContacts();
+});
+
+test('each move has its own impact: hit-stop, tilt and launch; victims land lying and only survivors rise',()=>{
+ const mk=(move,extra={})=>({...base,film:true,attacker:0,defender:1,attackerId:'bear',defenderId:'moose',move,damage:30,...extra});
+ const T=Object.fromEntries(['G','T','P'].map(m=>[m,director.duration(mk(m),3000)]));
+ assert.deepEqual(['G','T','P'].map(m=>T[m].launch),['skid','roll','blast']);
+ assert.deepEqual(['G','T','P'].map(m=>T[m].hitStop),[100,110,135]);
+ const mid=m=>director.soloView(mk(m),(T[m].launchAt+T[m].landAt)/2,3000).launch;
+ assert.ok(mid('P').y>mid('G').y,'Power flies higher than Guts');
+ assert.equal(mid('T').axis,'x','Technique barrel-rolls; the others tumble end over end');
+ assert.equal(mid('P').axis,'z');
+ // the victim is blown away from the lens and lands far off
+ for(const m of ['G','T','P']){
+  const first=director.soloView(mk(m),T[m].launchAt,3000).launch,last=director.soloView(mk(m),T[m].landAt-1,3000).launch;
+  assert.ok(last.drift>first.drift+3,'travels away');
+  assert.ok(first.y>last.y,'drops in from above');
+ }
+ const tiltP=director.camera(mk('P'),T.P.actionLead+T.P.contact-10,3000).angle;
+ assert.ok(Math.abs(tiltP)>.25,'Power impact frame is Dutch-tilted');
+ assert.equal(director.camera(mk('G'),T.G.actionLead+T.G.contact-10,3000).angle,0);
+ // landing: lying (down) first; a survivor rises after the hold, a knockout never does
+ const live=director.soloView(mk('P'),T.P.landAt+10,3000).launch;
+ assert.equal(live.landed,true);assert.equal(live.down,1);
+ assert.ok(director.soloView(mk('P'),T.P.landAt+director.SOLO_MS.downHold+director.SOLO_MS.getUp,3000).launch.rising>=.99);
+ const ko=mk('P',{knockout:true});
+ assert.equal(director.soloView(ko,T.P.landAt+director.SOLO_MS.downHold+300,3000).launch.rising,0);
+ // numbers on screen at arcade scale; rules untouched
+ assert.equal(director.DISPLAY_SCALE,50);
 });

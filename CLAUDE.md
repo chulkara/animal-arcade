@@ -123,11 +123,17 @@ the battle stage; only the fire void and the launch's red sky are effects.
    claw glint flares on the highest front paw at the top of the swing.
 4. Lunge: the camera dollies into the live head bone (face fills the frame),
    110 ms hit-stop with shake, white flash (Technique adds a claw slash).
-5. Launch (720 ms): victim alone, already upside-down and tumbling from the
-   first frame, under a red sky (forest re-lit red), blob shadow below.
-6. Landing: hard cut to the arena wide; dirt spray; ONE damage number pops
-   (timeline-driven, 1.35 s); red total under the victim's health; the HUD
-   returns; the victim plays its hit (or knockout) on landing.
+5. Launch: victim alone under a red sky (forest re-lit red), blown AWAY from
+   the lens: it drops in from the top of the frame and recedes (reference
+   19.9–20.5; the arcade never shows paw-on-victim contact). Per move:
+   Guts 'skid' (low, lands on its side, skids; 100 ms hit-stop), Technique
+   'roll' (barrel roll; 110 ms, 12° Dutch tilt), Power 'blast' (high fall,
+   heavy slam + bounce; 135 ms, 18° tilt). Blob shadow below.
+6. Landing: hard cut to the arena wide; body-first into the knockout clip's
+   lying end pose; dirt spray; a survivor holds 450 ms then gets up (400 ms);
+   ONE damage number pops on the victim (projected from 3D, 950 ms); red total
+   under its health clears before the return cut. Numbers display ×50
+   (`DISPLAY_SCALE`, display only — rules unchanged).
 7. Return to the two-shot.
 All Bear and Moose moves are films (`SOLO` in `combat-cinematics-core.js`,
 strike style 'fire' | 'charge' | 'slash'). `event.film===false` forces the
@@ -143,3 +149,8 @@ fire aura and walks diagonally at the lens: cuts vicSide → vicFront → vicRoa
 (low close-up, jaw open) → vicWide, then a sky-coloured outro holds the banner
 (`VICTORY_*` constants). Never zero one Euler axis of the winner's
 orientation: its leaned 90°-yaw quaternion is gimbal-locked (rolled the Bear).
+Aura = Fresnel rim injected ONCE per material (materials are cached and
+outlive actors; a second injection redefines `uAura`, the shader fails to
+compile silently and the body vanishes) + small embers on the upper body.
+A T-pose guard pulls any foreleg flung past the body's side back in; the jaw
+is capped at ~29° (wider stretches the lip mesh into a striped panel).
