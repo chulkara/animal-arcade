@@ -170,6 +170,44 @@ Each turn both players secretly pick one action; both resolve simultaneously.
   - *Reel drums.* `.is-rolling` restarts per step (symbol drops in with a
     smear); lock springs past centre under a starburst.
 
+- **Iteration 5 (2026-11-25, 8:53 PM recording + forwarded review).**
+  - *Contact shot reads now.* `SOLO_MS.launchDelay` 330 (two-shot ≥ 300 ms).
+    Attacker placed from LIVE BONE extents (`extent`/`leadPoint`, plus
+    snout/antler margins `REACH`/`REACH_D`) so heads/antlers don't sink in;
+    the victim snaps into a flinch (`soloView.flinch`: pivot nose-up about its
+    hind feet + shove back; `flinchLevel` → head back, forelegs up). Spark
+    star + additive shockwave ring at `sequence.contactPoint`
+    (`soloView.impact/ring`), Technique's slash on the contact frame too.
+    `applyContact` frames from bone positions (bind-pose mesh boxes were wrong)
+    and keeps the shake.
+  - *Moose glint* sits above its head on the antlers (was between the hooves).
+  - *Embers removed* (read as white teardrops over the backs); rim only.
+    `window.__arkEmbers` re-enables them for experiments.
+  - *Warm-up.* `prewarm()` builds glint/impact/ring/shadow/fire-void/red+cosmic
+    sky up front and `renderer.compile`s with everything visible: first-use
+    shader compiles held the title white flash on screen 300+ ms.
+  - *Multi-hit pops* (`.ark-hitpops`, 3 slots): each blow's number pops AT its
+    blow on the victim (contact freeze / mid-flight / ground slam), offset,
+    float 32 px. The old centre pop is hidden in films.
+  - *Resurrection flow.* `timing.reviveAt` = landAt + downHold + `reviveHold`
+    600; the landing beat grows by 600. HUD: hold → `data-hp-ko` (drain to 0
+    over 500 ms, shows 0) → release at reviveAt (refill 0 → final via
+    `--from:0`; `--held` is the pre-hit width). FOCUS GUARD! clears first.
+  - *Super Miracle* (`superMiracle`): `fireKind:'cosmic'` (procedural violet
+    vortex backdrop), a falling golden-cyan star (`.ark-falling-star`,
+    `soloView.star`), cyan X-slash on the blow (`.ark-xslash`), 1.8× shake ×3
+    vertical slam. Title = 2 lines: gold eyebrow (SUPER MIRACLE!/GOLD CHANGE!)
+    replaces the rank line; no separate banner. Gold coat now has gold
+    specular + shininess (Phong) and a faint gold emissive.
+  - *FOCUS!!* is a comic strip sliding in from the DEFENDER's edge with a
+    live face portrait (`snapPortrait` at warm-up → `getPortrait(id)`).
+  - *Reels:* drum step settles in 45 ms (the 85 ms step left symbols mostly
+    off-centre = "blank grey"). Tie plates clear in 0.75 s.
+  - *Red light* ramps in over 250 ms at the launch (and out over 400 ms).
+  - *Sky seam:* the cloud wrap reused the original gradient centre (drew
+    nothing), cutting clouds at u=0/1; each wrapped copy gets its own gradient.
+  - *Post-match:* REMATCH + MODE SELECT · 1P / 2P (→ MODE_MENU, where 2 PLAYERS lives).
+
 ## Delivering work to the user
 - The user runs the game on his Mac from `~/Desktop/animal-arcade`. When that
   folder is connected to the session, apply commits there directly

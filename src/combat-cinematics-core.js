@@ -83,7 +83,10 @@ const DISPLAY_SCALE=50;
 // Body height relative to the Bear, so framing fits each animal.
 const SOLO_SCALE=Object.freeze({bear:1,moose:1.18});
 const SOLO_MS=Object.freeze({titleIn:1100,lead:2880,lunge:170,
-  hitStop:110,launchDelay:170,launch:720,land:1500,ret:300,pop:950,koHold:1250,downHold:450,getUp:700,whiteOut:110,impact:240,redFade:400});
+  hitStop:110,launchDelay:330,launch:720,land:1500,ret:300,pop:950,koHold:1250,downHold:450,getUp:700,whiteOut:110,impact:240,redFade:400,
+  // Resurrection: HP drains to 0 on the landing, holds there, then the victim
+  // rises as RESURRECTION! erupts and the bar refills (reviveAt).
+  reviveHold:600});
 const reducedShake=v=>Number.isFinite(v)?v:0;
 // event.film===false forces the older shared-frame grammar (the fallback for
 // animals without a film entry; also how the tests keep covering it).
@@ -239,12 +242,14 @@ function timeline(event,attack,contact,windup){
     const cutAt=clamp(Math.min(windup*.6,fireStart-240),80,lungeAt-60);
     const launchAt=actionLead+contact+Math.max(SOLO_MS.launchDelay,sp.hitStop+40);
     const landAt=launchAt+(LAUNCH_MS[sp.launch]||SOLO_MS.launch);
-    const returnAt=landAt+SOLO_MS.land;
+    const revive=event.resurrected?SOLO_MS.reviveHold:0;
+    const reviveAt=event.resurrected?landAt+SOLO_MS.downHold+revive:null;
+    const returnAt=landAt+SOLO_MS.land+revive;
     const finish=returnAt+SOLO_MS.ret;
     const victoryStart=event.finished?landAt+SOLO_MS.koHold:Infinity;
     return Object.freeze({solo:true,strike:sp.strike,launch:sp.launch,hitStop:sp.hitStop,attack,contact,windup,
       cutAt,fireStart,lungeAt,miracleLead,focusLead:SOLO_MS.lead,actionLead,titleIn,
-      launchAt,landAt,returnAt,finish,victoryStart,
+      launchAt,landAt,returnAt,finish,victoryStart,reviveAt,
       total:event.finished?victoryStart+VICTORY_END_MS:finish+150});
   }
   // The reference takes time to prepare a signature move. Our previous
@@ -310,7 +315,7 @@ function soloView(event,elapsed,nativeMs){
   const timing=duration(event,nativeMs),sp=soloSpec(event);
   const none=Object.freeze({active:false,showAttacker:true,showDefender:true,
     flash:0,aura:0,fire:0,glint:0,burst:0,streak:0,slash:0,impact:0,redSky:0,lunge:0,
-    shake:0,launch:null,pops:0,roar:0,stage:null,strike:null,contact:0});
+    shake:0,launch:null,pops:0,roar:0,stage:null,strike:null,contact:0,flinch:0,ring:0});
   if(!timing.solo||!sp)return none;
   const t=clamp(Number(elapsed)||0,0,timing.total);
   if(t<timing.miracleLead||t>=Math.min(timing.finish,timing.victoryStart))return none;
@@ -333,8 +338,19 @@ function soloView(event,elapsed,nativeMs){
     ease((t-A-timing.cutAt)/200):0;
   // The blow lands on the victim: a burst (and Technique's claw slash) on its
   // body in the first frames of the launch, never across the attacker's face.
-  const impact=t>=timing.launchAt&&t<timing.launchAt+SOLO_MS.impact?1-(t-timing.launchAt)/SOLO_MS.impact:0;
+  // ...and it is ON SCREEN at the blow: the contact two-shot carries a spark
+  // burst + shockwave ring at the contact point (and the claw slash).
+  const contactK=t>=contactAt&&t<timing.launchAt?1-(t-contactAt)/Math.max(1,timing.launchAt-contactAt):0;
+  const launchK=t>=timing.launchAt&&t<timing.launchAt+SOLO_MS.impact?1-(t-timing.launchAt)/SOLO_MS.impact:0;
+  const impact=Math.max(contactK,launchK);
   const slash=sp.strike==='slash'?impact:0;
+  // the victim snaps into a flinch on the contact frame (head back, forequarters up)
+  const flinch=t>=contactAt&&t<timing.launchAt?1:0;
+  // Super Miracle: a cosmic void replaces the fire backdrop, a golden star
+  // falls through the strike onto the victim, and the blow is a cyan X-slash.
+  const superM=Boolean(event.superMiracle);
+  const star=superM&&t>=fireAt-200&&t<contactAt+60?clamp((t-(fireAt-200))/Math.max(1,contactAt-(fireAt-200)),0,1):0;
+  const xslash=superM?contactK:0;
   const lunge=t<lungeAt?0:t<contactAt?ease((t-lungeAt)/Math.max(1,contactAt-lungeAt)):
     t<timing.launchAt?1:0;
   // Hit-stop shake while the rigs are frozen, a smaller bump on landing.
@@ -344,7 +360,7 @@ function soloView(event,elapsed,nativeMs){
   const burst=0; // the title ray burst drew spokes across the animal; dropped
   // Red through the flight, then a 400 ms fade back to daylight in the
   // landing shot (one continuous light change, not a hard orange→green cut).
-  const redSky=t<timing.launchAt?0:t<timing.landAt?1:
+  const redSky=t<timing.launchAt?0:t<timing.landAt?ease(clamp((t-timing.launchAt)/250,0,1)):
     1-ease(clamp((t-timing.landAt)/SOLO_MS.redFade,0,1));
   const away=event.attacker===0?1:-1;
   // The victim, as in the reference: blown AWAY from the lens, entering the
@@ -388,7 +404,7 @@ function soloView(event,elapsed,nativeMs){
       const bounce=sp.launch==='blast'?(age<200?.34*Math.sin(Math.PI*age/200):
         age<380?.12*Math.sin(Math.PI*(age-200)/180):0):
         sp.launch==='roll'&&age<220?.14*Math.sin(Math.PI*age/220):0;
-      const downFor=SOLO_MS.downHold,getUp=SOLO_MS.getUp;
+      const downFor=SOLO_MS.downHold+(event.resurrected?SOLO_MS.reviveHold:0),getUp=SOLO_MS.getUp;
       const rising=!event.knockout&&age>downFor?clamp((age-downFor)/getUp,0,1):0;
       launch=Object.freeze({u:1,landed:true,y:bounce,drift:away*L,spin:0,axis:'x',yaw:0,
         down:event.knockout?1:1-rising,rising});
@@ -403,7 +419,8 @@ function soloView(event,elapsed,nativeMs){
   const contact=t>=contactAt&&t<timing.launchAt?1:0;
   return Object.freeze({active:true,roar,stage,strike:sp.strike,
     showAttacker:!(t>=timing.launchAt&&t<timing.returnAt),
-    showDefender:!(t>=timing.titleIn&&t<contactAt),contact,
+    showDefender:!(t>=timing.titleIn&&t<contactAt),contact,flinch,ring:contactK,
+    fireKind:superM?'cosmic':'fire',star,xslash,slam:superM?1:0,
     flash,aura,fire,glint,burst,streak,slash,impact,redSky,lunge,shake,launch,tilt:lunge>0?sp.tilt:0,
     pops:t>=timing.landAt&&t<timing.landAt+SOLO_MS.pop?1:0});
 }
@@ -470,8 +487,8 @@ function camera(event,elapsed,nativeMs){
       const away=event.attacker===0?1:-1,landX=defenderX+away*(soloSpec(event)?.distance||2);
       targetX=landX;targetY=.75;x=landX-away*2.6;y=2.3;z=11.6;zoom=1.0;
     }else{x=0;targetX=0;y=2.8;z=12.2;targetY=1.23;zoom=1;}
-    const k=reducedShake(view.shake);
-    return Object.freeze({x:x+.11*k,y:y+.06*k,z,targetX,targetY,zoom,
+    const k=reducedShake(view.shake)*(view.slam?1.8:1);
+    return Object.freeze({x:x+.11*k,y:y+.06*k*(view.slam?3:1),z,targetX,targetY,zoom,shake:k,slam:view.slam||0,
       angle:(event.attacker===0?1:-1)*(beat.shot==='lunge'?(view.tilt||0):beat.shot==='contact'?.26:0),
       beat:beat.beat,shot:beat.shot,cut:true,lunge:view.lunge,
       snap:beat.shot==='launch'||beat.shot==='lunge'||beat.shot==='contact'});

@@ -315,14 +315,16 @@
     // attack film lands; combat-cinematics then releases the drain.
     const e=s.lastEvent,struck=e?.kind==='HIT'&&e.defender===i&&['RESULT','FINISHED'].includes(s.phase);
     const before=struck?Math.min(f.maxHp,e.hpBefore??(f.hp+(e.damage||0))):f.hp;
-    const from=struck?Math.round(before/f.maxHp*100):prevPct[i];prevPct[i]=remaining;
+    const held=struck?Math.round(before/f.maxHp*100):prevPct[i];prevPct[i]=remaining;
+    // a Resurrection refills from 0 (the bar drains to 0 first, see data-hp-ko)
+    const from=struck&&e.resurrected?0:held;
     return `<div class="ark-arena-hud-player ark-arena-hud-player-${i}" aria-label="${actorName(s,i)} ${a.label}, ${SHOW(f.hp)} of ${SHOW(f.maxHp)} health">
       <div class="ark-hud-nameplate">
         <span class="ark-hud-side">${actorName(s,i)}</span>
         <strong>${a.label}</strong>
-        <span class="ark-hud-health-value${struck?' is-struck':''}">${struck?`<i class="hp-before">${SHOW(before)}</i>`:''}<i class="hp-after">${SHOW(f.hp)}</i> / ${SHOW(f.maxHp)}</span>
+        <span class="ark-hud-health-value${struck?' is-struck':''}">${struck?`<i class="hp-before">${SHOW(before)}</i><i class="hp-zero">0</i>`:''}<i class="hp-after">${SHOW(f.hp)}</i> / ${SHOW(f.maxHp)}</span>
       </div>
-      <div class="ark-hud-meter${struck?' is-struck':''}" aria-hidden="true"><span style="--from:${from}%;width:${remaining}%"></span></div>
+      <div class="ark-hud-meter${struck?' is-struck':''}" aria-hidden="true"><span style="--held:${held}%;--from:${from}%;width:${remaining}%"></span></div>
       <div class="ark-hud-techniques" aria-hidden="true">
         <span>G ${s.selected[i].technique==='G'?'◆':'·'}</span>
         <span>T ${s.selected[i].technique==='T'?'◆':'·'}</span>
@@ -430,7 +432,8 @@
         ${complete?
           `${matchReward?`<p class="combat-card-reward">MATCH REWARD — ${matchReward.newCard?'NEW CARD':'DUPLICATE'}:
           <strong>${matchReward.name}</strong> ${matchReward.newCard?'UNLOCKED':'×'+matchReward.count}</p>`:''}
-          <button type="button" data-combat-rematch data-initial-focus>NEW MATCH</button>
+          <button type="button" data-combat-rematch data-initial-focus>REMATCH</button>
+          <button type="button" data-combat-mode-select>MODE SELECT · 1P / 2P</button>
           <button type="button" data-combat-view-cards>VIEW MY CARDS</button>`:
           `<p class="combat-intermission">${s.mode==='SOLO'?
              'Your remaining health carries into the next challenger.':
@@ -564,6 +567,8 @@
       stopTimer();window.NoahsCards?.open('CARDS');return;
     }
     if(target.closest('[data-combat-quit]')){stopTimer();window.__arkade?.openScreen('BATTLE_STAGE');}
+    // straight to the 1P vs CPU / 2P LOCAL choice
+    if(target.closest('[data-combat-mode-select]')){stopTimer();window.__arkade?.openScreen('MODE_MENU');}
   });
   window.addEventListener('keydown',event=>{
     if(screen()!=='BATTLE_PLAY'||event.altKey||event.metaKey||event.ctrlKey||

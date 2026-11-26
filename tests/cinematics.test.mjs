@@ -569,7 +569,8 @@ test('each move has its own impact: hit-stop, tilt and launch; victims land lyin
  }
  // red sky holds through the flight and fades back to daylight on the landing
  const red=ms=>director.soloView(mk('P'),ms,3000).redSky;
- assert.equal(red(T.P.launchAt+100),1);
+ assert.ok(red(T.P.launchAt+100)>0&&red(T.P.launchAt+100)<1,'red light ramps in, no hard swap');
+ assert.equal(red(T.P.launchAt+300),1);
  assert.ok(red(T.P.landAt+150)>.2&&red(T.P.landAt+150)<1,'continuous fade, not a hard cut');
  assert.equal(red(T.P.landAt+director.SOLO_MS.redFade+10),0);
  const tiltP=director.camera(mk('P'),T.P.actionLead+T.P.contact-10,3000).angle;
@@ -583,4 +584,33 @@ test('each move has its own impact: hit-stop, tilt and launch; victims land lyin
  assert.equal(director.soloView(ko,T.P.landAt+director.SOLO_MS.downHold+300,3000).launch.rising,0);
  // numbers on screen at arcade scale; rules untouched
  assert.equal(director.DISPLAY_SCALE,50);
+});
+
+test('iteration 5: contact beat reads (≥300 ms), victim flinches, burst + ring on the blow',()=>{
+  const ev={attacker:0,defender:1,attackerId:'bear',defenderId:'moose',move:'T',damage:60,key:'i5',mode:'SOLO'};
+  const t=director.duration(ev,3000),contactAt=t.actionLead+t.contact;
+  assert.ok(t.launchAt-contactAt>=300,'contact two-shot long enough to read');
+  const v=director.soloView(ev,contactAt+20,3000);
+  assert.equal(v.flinch,1);assert.ok(v.impact>.9&&v.ring>.9,'spark burst + shockwave on the contact frame');
+  assert.ok(v.slash>.9,'Technique claw slash on the contact frame');
+  assert.equal(director.soloView(ev,contactAt-5,3000).flinch,0);
+});
+
+test('iteration 5: Super Miracle has its own cosmic sequence; Resurrection holds at 0 before reviving',()=>{
+  const sup={attacker:0,defender:1,attackerId:'bear',defenderId:'moose',move:'S',damage:90,key:'sm',mode:'SOLO',
+    goldChange:true,superMiracle:true,finished:true,knockout:true};
+  const t=director.duration(sup,3000),contactAt=t.actionLead+t.contact;
+  const mid=director.soloView(sup,t.actionLead+t.fireStart+100,3000);
+  assert.equal(mid.fireKind,'cosmic','cosmic void, not the fire backdrop');
+  assert.ok(mid.star>0&&mid.star<1,'the star is falling through the strike');
+  assert.ok(director.soloView(sup,contactAt+20,3000).xslash>.9,'X-slash on the blow');
+  const plain=director.soloView({...sup,goldChange:false,superMiracle:false,key:'p'},t.actionLead+t.fireStart+100,3000);
+  assert.equal(plain.fireKind,'fire');assert.equal(plain.star,0);
+  const rev={attacker:0,defender:1,attackerId:'bear',defenderId:'moose',move:'T',damage:60,key:'rv',mode:'SOLO',resurrected:true};
+  const normal=director.duration({...rev,resurrected:false,key:'nr'},3000),r=director.duration(rev,3000);
+  assert.equal(normal.reviveAt,null);
+  assert.equal(r.reviveAt,r.landAt+director.SOLO_MS.downHold+director.SOLO_MS.reviveHold);
+  assert.equal(r.returnAt-normal.returnAt,director.SOLO_MS.reviveHold,'landing beat grows by the 0-HP hold');
+  assert.equal(director.soloView(rev,r.reviveAt-10,3000).launch.rising,0,'stays down until the revive');
+  assert.ok(director.soloView(rev,r.reviveAt+300,3000).launch.rising>0,'rises with RESURRECTION!');
 });

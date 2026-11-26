@@ -18,7 +18,7 @@ function cleanup(){
  // DOM node. Each new Bear review appended another .ark-cinema, leaving
  // LOW SWIPE painted over Guts, Power and even the final victory.
  if(stage)delete stage.dataset.cineBeat;
- const filmRoot=ui.querySelector('.ark-reference-layout');if(filmRoot){delete filmRoot.dataset.soloFilm;delete filmRoot.dataset.hpHold;}
+ const filmRoot=ui.querySelector('.ark-reference-layout');if(filmRoot){delete filmRoot.dataset.soloFilm;delete filmRoot.dataset.hpHold;delete filmRoot.dataset.hpKo;}
  overlay?.remove();
  ui.querySelectorAll('.combat-battlefield .ark-cinema').forEach(node=>node.remove());
  timer=0;lastBeat='';lastShot='';howlCued=false;winCued=false;
@@ -50,8 +50,9 @@ function createOverlay(){
   '<div class="ark-cinema-dmg" data-ark-dmg><b data-ark-dmg-a></b><b data-ark-dmg-b></b></div>'+
   '<div class="ark-cinema-total" data-ark-dmg-total></div>'+
   // comeback / ✦ cut-ins (driven from film time in draw())
-  '<div class="ark-callin ark-callin-gold" data-ark-callin="gold" aria-hidden="true"><b></b><small></small></div>'+
-  '<div class="ark-callin ark-callin-focus" data-ark-callin="focus" aria-hidden="true"><b>FOCUS!!</b></div>'+
+  '<div class="ark-falling-star" aria-hidden="true"><i></i></div><div class="ark-xslash" aria-hidden="true"><i></i><i></i></div>'+
+  '<div class="ark-hitpops" aria-hidden="true"><b data-ark-hitpop="0"></b><b data-ark-hitpop="1"></b><b data-ark-hitpop="2"></b></div>'+
+  '<div class="ark-callin ark-callin-focus" data-ark-callin="focus" aria-hidden="true"><i data-ark-focus-portrait></i><b>FOCUS!!</b></div>'+
   '<div class="ark-callin ark-callin-guard" data-ark-callin="guard" aria-hidden="true"><b>FOCUS GUARD!</b><small></small></div>'+
   '<div class="ark-callin ark-callin-revive" data-ark-callin="revive" aria-hidden="true"><b>RESURRECTION!</b></div>'+
   '<div class="ark-cinema-lines"></div>'+
@@ -130,9 +131,14 @@ function draw(time){
  // From the title on, the bottom slot HUD stays away until the next turn.
  const hpRoot=ui.querySelector('.ark-reference-layout');
  if(hpRoot&&!rehearsal&&hpRoot.dataset.hitFilm){
-   const releaseAt=timing.landAt??(timing.actionLead+timing.contact);
-   if(elapsed>=releaseAt){delete hpRoot.dataset.hpHold;window.__arkHpReleased=event.key;}
-   else if(window.__arkHpReleased!==event.key)hpRoot.dataset.hpHold='1';
+   const landAt=timing.landAt??(timing.actionLead+timing.contact);
+   // Resurrection: hold → drain to 0 on the landing → hold at 0 → refill as it rises.
+   const releaseAt=event.resurrected&&timing.reviveAt?timing.reviveAt:landAt;
+   if(elapsed>=releaseAt){delete hpRoot.dataset.hpHold;delete hpRoot.dataset.hpKo;window.__arkHpReleased=event.key;}
+   else if(window.__arkHpReleased!==event.key){
+     if(event.resurrected&&elapsed>=landAt){delete hpRoot.dataset.hpHold;hpRoot.dataset.hpKo='1';}
+     else hpRoot.dataset.hpHold='1';
+   }
    if(elapsed>=(timing.titleIn??timing.actionLead))hpRoot.dataset.filmPast='1';
  }
  const panel=api.panel(event,elapsed,length);
@@ -156,7 +162,8 @@ function draw(time){
    if(heading)heading.textContent=panel.title;
    overlay.dataset.solo=panel.solo?'1':'';
    const rank=overlay.querySelector('[data-ark-solo-rank]'),name=overlay.querySelector('[data-ark-solo-name]');
-   if(rank)rank.textContent=panel.solo?api.soloSpec(event).rank:'';
+   if(rank)rank.textContent=!panel.solo?'':event.superMiracle?'SUPER MIRACLE!':event.goldChange?'GOLD CHANGE!':api.soloSpec(event).rank;
+   overlay.dataset.gold=panel.solo&&event.goldChange?'1':'';
    if(name)name.textContent=panel.solo?panel.title:'';
    if(panel.solo){
      // One number pops where the victim lands; the running total sits in
@@ -165,10 +172,11 @@ function draw(time){
      const total=overlay.querySelector('[data-ark-dmg-total]');if(total)total.textContent=dmg?String(dmg):'';
      const a=overlay.querySelector('[data-ark-dmg-a]'),b=overlay.querySelector('[data-ark-dmg-b]');
      if(a)a.textContent=dmg?String(dmg):'';if(b)b.textContent='';
-     a&&(a.dataset.hit='-1');
-     const gold=overlay.querySelector('[data-ark-callin="gold"]');
-     if(gold){gold.querySelector('b').textContent=event.superMiracle?'SUPER MIRACLE!':event.goldChange?'GOLD CHANGE!':'';
-       gold.querySelector('small').textContent=event.superMiracle?'✦ FINISHER':event.goldChange?'✦ MIRACLE STRIKE':'';}
+     overlay.querySelectorAll('[data-ark-hitpop]').forEach(el=>{el.textContent='';el.dataset.placed='';});
+     const portrait=overlay.querySelector('[data-ark-focus-portrait]');
+     if(portrait){const src=window.NoahsArena3D?.getPortrait?.(event.defenderId)||
+       (event.defenderId==='moose'?'./assets/moose-placeholder.svg':'./assets/bear-placeholder.svg');
+       portrait.style.backgroundImage='url("'+src+'")';}
      const guard=overlay.querySelector('[data-ark-callin="guard"] small');
      if(guard)guard.textContent=event.focusGuard?'−'+Math.round((event.guarded||0)*(api.DISPLAY_SCALE||1)):'';
    }
@@ -195,6 +203,15 @@ function draw(time){
  // the red total shows from the landing and clears before the return cut
  // (not in the film review, which has no HUD to sit under)
  overlay.dataset.total=!rehearsal&&solo?.active&&elapsed>=timing.landAt&&elapsed<timing.returnAt?'1':'';
+ // Super Miracle: the golden star falls through the strike onto the victim
+ // and the blow is a cyan X-slash on it.
+ overlay.style.setProperty('--star-u',live?String(solo.star||0):'0');
+ overlay.style.setProperty('--star-op',live&&solo.star>0?'1':'0');
+ overlay.style.setProperty('--xslash',live?String(solo.xslash||0):'0');
+ if(live&&solo.xslash>0){
+   const hit=window.NoahsArena3D?.getHitAnchor?.();
+   if(hit&&Number.isFinite(hit.x)){overlay.style.setProperty('--hit-x',(hit.x*100).toFixed(1)+'%');overlay.style.setProperty('--hit-y',(hit.y*100).toFixed(1)+'%');}
+ }
  // Technique's claw slash is drawn across the victim's body as it is hit.
  if(live&&solo.slash>0){
    const hit=window.NoahsArena3D?.getHitAnchor?.();
@@ -203,36 +220,49 @@ function draw(time){
  // Damage pop, from film time (deterministic, frame-accurate in review):
  // scale .6 → 1.15 → 1 in 180 ms, drift up, fade before the return cut.
  if(solo?.active){
-   // Multi-hit: Technique's 2 and Power/✦'s 3 blows pop one after another
-   // (170 ms apart, each re-popping), the last holds; red total = the sum.
+   // Each blow's number pops AT its blow, on the victim, at its own spot:
+   // 1st on the contact freeze, 2nd mid-flight (3-hit moves), last on the
+   // ground slam. Each floats up 32 px; red total under the HP = their sum.
    const hits=(event.hits?.length?event.hits:[event.damage||event.previewDamage||0]).map(v=>Math.max(0,Math.round(v))*(api.DISPLAY_SCALE||1));
-   const STEP=170,n=hits.length;
-   const age=elapsed-(timing.landAt||0),span=api.SOLO_MS.pop+(n-1)*STEP;
-   const k=age<0?0:Math.min(n-1,Math.floor(age/STEP)),local=age-k*STEP;
-   const popA=overlay.querySelector('[data-ark-dmg-a]');
-   if(popA&&popA.dataset.hit!==String(k)&&age>=0){popA.dataset.hit=String(k);popA.textContent=hits[k]?String(hits[k]):'';}
-   const sc=local<80?.6+.55*local/80:local<180?1.15-.15*(local-80)/100:1;
-   const op=age<0||age>=span?0:age<40?age/40:age>span-260?(span-age)/260:1;
-   overlay.style.setProperty('--pop-scale',sc.toFixed(3));
-   overlay.style.setProperty('--pop-op',op.toFixed(3));
-   overlay.style.setProperty('--pop-y',(-Math.max(0,age)/span*36-k*6).toFixed(1)+'px');
+   const n=Math.min(3,hits.length),contactHit=timing.actionLead+timing.contact+20;
+   const at=n===1?[timing.landAt]:n===2?[contactHit,timing.landAt]:
+     [contactHit,timing.launchAt+.45*(timing.landAt-timing.launchAt),timing.landAt];
+   const OFF=n===1?[[0,0]]:n===2?[[-.07,.02],[0,0]]:[[-.08,.03],[.07,-.03],[0,0]];
+   const age=elapsed-(timing.landAt||0);
+   overlay.querySelectorAll('[data-ark-hitpop]').forEach((el,i)=>{
+     if(i>=n||reduce()){el.style.opacity='0';return;}
+     const a=elapsed-at[i],last=i===n-1,life=last?(event.resurrected?550:api.SOLO_MS.pop):550;
+     if(a<0||a>=life){el.style.opacity='0';if(a<0)el.dataset.placed='';return;}
+     if(el.textContent!==String(hits[i]))el.textContent=String(hits[i]);
+     if(a<90||!el.dataset.placed){
+       const p=window.NoahsArena3D?.getPopAnchor?.();
+       const x=p&&Number.isFinite(p.x)?p.x:(event.defender===1?.7:.3),y=p&&Number.isFinite(p.y)?p.y:.35;
+       el.style.left=(Math.min(.9,Math.max(.1,x+OFF[i][0]))*100).toFixed(1)+'%';
+       el.style.top=(Math.min(.8,Math.max(.12,y+OFF[i][1]))*100).toFixed(1)+'%';
+       if(a>=90)el.dataset.placed='1';
+     }
+     const sc=a<80?.6+.6*a/80:a<180?1.2-.2*(a-80)/100:1;
+     el.style.opacity=String(a<40?a/40:a>life-200?Math.max(0,(life-a)/200):1);
+     el.style.transform='translate(-50%,-50%) translateY('+(-32*a/life).toFixed(1)+'px) scale('+sc.toFixed(3)+')';
+   });
+   overlay.style.setProperty('--pop-op','0');
    // cut-ins, all from film time
    const win=(a,b,fade=120)=>elapsed<a||elapsed>=b?0:Math.min(1,(elapsed-a)/fade,(b-elapsed)/fade);
    const contactAt=timing.actionLead+timing.contact;
-   overlay.style.setProperty('--callin-gold',!reduce()&&event.goldChange?win(timing.titleIn+200,timing.actionLead-150).toFixed(3):'0');
-   overlay.style.setProperty('--callin-focus',!reduce()&&event.focusGuard?win(contactAt-420,contactAt+40,60).toFixed(3):'0');
-   overlay.style.setProperty('--callin-guard',event.focusGuard?win(timing.landAt+120,timing.landAt+1100).toFixed(3):'0');
+   overlay.style.setProperty('--callin-focus',!reduce()&&event.focusGuard?win(contactAt-520,contactAt,70).toFixed(3):'0');
+   // with a Resurrection the guard tag clears before the 0-HP hold
+   overlay.style.setProperty('--callin-guard',event.focusGuard?win(timing.landAt+120,timing.landAt+(event.resurrected?620:1100)).toFixed(3):'0');
    // one sting per cut-in, the first frame it shows (never in the review)
    if(!rehearsal&&!reduce()){
      const cue=(name,on)=>{if(on&&!sequence['cue_'+name]){sequence['cue_'+name]=true;window.NoahsAudio?.cue(name);}};
      cue('goldChange',event.goldChange&&elapsed>=timing.titleIn+200&&elapsed<timing.actionLead);
-     cue('focus',event.focusGuard&&elapsed>=contactAt-420&&elapsed<contactAt);
+     cue('focus',event.focusGuard&&elapsed>=contactAt-520&&elapsed<contactAt);
      cue('focusGuard',event.focusGuard&&elapsed>=timing.landAt+120&&elapsed<timing.returnAt);
-     cue('resurrect',event.resurrected&&elapsed>=timing.landAt+380&&elapsed<timing.returnAt);
+     cue('resurrect',event.resurrected&&elapsed>=timing.reviveAt&&elapsed<timing.returnAt);
    }
-   overlay.style.setProperty('--callin-revive',event.resurrected?win(timing.landAt+380,Math.min(timing.returnAt,timing.landAt+1600)).toFixed(3):'0');
-   // pop on the victim where it lands, not at a fixed screen spot
-   const anchor=age>=0&&age<span?window.NoahsArena3D?.getPopAnchor?.():null;
+   overlay.style.setProperty('--callin-revive',event.resurrected?win(timing.reviveAt,Math.min(timing.returnAt,timing.reviveAt+1300)).toFixed(3):'0');
+   // where the victim lands: the guard / revive tags sit under it
+   const anchor=age>=0&&age<api.SOLO_MS.pop?window.NoahsArena3D?.getPopAnchor?.():null;
    if(anchor&&Number.isFinite(anchor.x)&&Number.isFinite(anchor.y)){
      overlay.style.setProperty('--pop-x',(Math.min(.88,Math.max(.12,anchor.x))*100).toFixed(1)+'%');
      overlay.style.setProperty('--pop-top',(Math.min(.8,Math.max(.15,anchor.y))*100).toFixed(1)+'%');

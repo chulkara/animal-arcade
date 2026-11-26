@@ -514,20 +514,6 @@
   font-family:var(--display-font,"Arial Black",Impact,sans-serif);font-style:italic;letter-spacing:.02em}
 .ark-callin b{display:block;-webkit-text-stroke:0}
 .ark-callin small{display:block;font-size:.34em;letter-spacing:.18em;font-style:normal;margin-top:.25em}
-/* GOLD CHANGE! / SUPER MIRACLE! over the title */
-.ark-callin-gold{left:0;right:0;top:17%;font-size:clamp(34px,4.6vw,72px);opacity:var(--callin-gold,0);
-  transform:scale(calc(.75 + .25*var(--callin-gold,0)))}
-.ark-callin-gold b{background:linear-gradient(180deg,#fffbe6 0%,#ffe27a 38%,#e0a21a 62%,#fff1b0 78%,#b57410 100%);
-  -webkit-background-clip:text;background-clip:text;color:transparent;
-  filter:drop-shadow(3px 0 0 #3a1c00) drop-shadow(-3px 0 0 #3a1c00) drop-shadow(0 3px 0 #3a1c00) drop-shadow(0 -3px 0 #3a1c00) drop-shadow(0 6px 0 #000)}
-.ark-callin-gold small{color:#fff3c4;text-shadow:0 2px 0 #3a1c00}
-/* FOCUS!! comic cut-in on the defender's side, just before the blow */
-.ark-callin-focus{top:14%;right:5%;font-size:clamp(30px,4vw,62px);padding:.35em .7em .45em;
-  background:radial-gradient(circle,#111 1.2px,transparent 1.6px) 0 0/7px 7px,linear-gradient(160deg,#fff36b,#ffb21e);
-  clip-path:polygon(4% 10%,22% 0,40% 9%,62% 0,80% 8%,100% 2%,94% 30%,100% 55%,93% 78%,98% 100%,70% 92%,48% 100%,28% 91%,6% 100%,10% 74%,0 52%,7% 30%);
-  opacity:var(--callin-focus,0);transform:rotate(-6deg) scale(calc(.6 + .4*var(--callin-focus,0)))}
-.ark-cinema[data-defender="0"] .ark-callin-focus{right:auto;left:5%;transform:rotate(6deg) scale(calc(.6 + .4*var(--callin-focus,0)))}
-.ark-callin-focus b{color:#101010;text-shadow:3px 3px 0 #fff}
 /* FOCUS GUARD! under the victim's damage pop */
 .ark-callin-guard{top:70%;right:12%;font-size:clamp(20px,2.4vw,38px);opacity:var(--callin-guard,0)}
 .ark-cinema[data-defender="0"] .ark-callin-guard{right:auto;left:12%}
@@ -550,3 +536,57 @@
   translate:-50% 0;font-size:clamp(26px,3.2vw,50px);white-space:nowrap}
 .ark-cinema[data-solo="1"][data-defender="0"] .ark-callin-guard{left:var(--pop-x,50%)}
 .ark-cinema[data-solo="1"] .ark-callin-revive{top:calc(var(--pop-top,26%) + 15%)}
+
+/* ---- Iteration 5 (8:53 PM recording) ---- */
+/* the old single centre pop is replaced by per-blow pops */
+.ark-cinema[data-solo="1"] .ark-cinema-dmg{display:none!important}
+.ark-hitpops{position:absolute;inset:0;z-index:7;pointer-events:none}
+.ark-hitpops b{position:absolute;left:50%;top:35%;opacity:0;white-space:nowrap;transform:translate(-50%,-50%);
+  font-family:var(--display-font,"Arial Black",Impact,sans-serif);font-size:clamp(40px,5.4vw,80px);line-height:1;
+  background:linear-gradient(180deg,#ffffff 0%,#fffbe0 40%,#ffe44d 70%,#f2b51a 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(3px 0 0 #000) drop-shadow(-3px 0 0 #000) drop-shadow(0 3px 0 #000) drop-shadow(0 -3px 0 #000) drop-shadow(0 6px 0 #000)}
+/* Gold Change / Super Miracle: the eyebrow over the move name is the gold
+   call (two clean lines, nothing stacked between them) */
+.ark-cinema[data-gold="1"] [data-ark-solo-rank]{display:block;font-size:clamp(22px,2.6vw,40px)!important;letter-spacing:.06em!important;
+  margin-bottom:.35em!important;font-style:italic;
+  background:linear-gradient(180deg,#fffbe6 0%,#ffe27a 40%,#e0a21a 65%,#fff1b0 80%,#b57410 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent!important;
+  filter:drop-shadow(2px 0 0 #3a1c00) drop-shadow(-2px 0 0 #3a1c00) drop-shadow(0 2px 0 #3a1c00) drop-shadow(0 -2px 0 #3a1c00) drop-shadow(0 4px 0 #000)}
+/* FOCUS!! - a comic strip slides in from the DEFENDER's edge with its face,
+   so it reads as the defender bracing, not the attacker */
+.ark-callin-focus{top:9%;right:0;left:auto;width:min(56vw,720px);height:clamp(84px,11vw,150px);
+  display:flex;align-items:center;justify-content:flex-start;gap:3%;padding:0 4% 0 2.5%;box-sizing:border-box;
+  background:repeating-linear-gradient(90deg,rgba(255,255,255,.0) 0 18px,rgba(160,240,255,.55) 18px 21px),linear-gradient(90deg,#0b6f8f,#16b8d8 60%,#9ff2ff);
+  border:4px solid #000;box-shadow:0 6px 0 #000;
+  clip-path:polygon(6% 0,100% 0,100% 100%,0 100%,3% 52%);
+  opacity:var(--callin-focus,0);transform:translateX(calc((1 - var(--callin-focus,0))*70%)) skewX(-8deg);font-size:clamp(34px,4.6vw,70px)}
+.ark-cinema[data-defender="0"] .ark-callin-focus{right:auto;left:0;flex-direction:row-reverse;padding:0 2.5% 0 4%;
+  clip-path:polygon(0 0,94% 0,97% 48%,100% 100%,0 100%);transform:translateX(calc((var(--callin-focus,0) - 1)*70%)) skewX(8deg)}
+.ark-callin-focus i{flex:0 0 auto;height:86%;aspect-ratio:1.4;border:4px solid #000;background:#222 center/cover no-repeat;
+  box-shadow:inset 0 0 0 3px #fff;transform:skewX(8deg)}
+.ark-cinema[data-defender="0"] .ark-callin-focus i{transform:skewX(-8deg)}
+.ark-callin-focus b{color:#fff;font-style:italic;-webkit-text-stroke:2px #000;text-shadow:4px 4px 0 #000;transform:skewX(8deg)}
+@media (prefers-reduced-motion:reduce){.ark-callin-focus{transform:none!important}}
+.game.reduce-motion .ark-callin-focus{transform:none!important}
+
+/* Super Miracle: falling golden-cyan star (top of frame → the blow) and a
+   cyan X-slash on the victim at contact. Film-time vars only. */
+.ark-falling-star{position:absolute;inset:0;z-index:6;pointer-events:none;opacity:var(--star-op,0)}
+.ark-falling-star i{position:absolute;left:calc(30% + var(--star-u,0)*22%);top:calc(-18% + var(--star-u,0)*60%);
+  width:calc(9vw + var(--star-u,0)*10vw);aspect-ratio:1;translate:-50% -50%;rotate:calc(var(--star-u,0)*140deg);
+  background:radial-gradient(circle,#fff 0 9%,#fff4b8 16%,rgba(255,210,90,.85) 26%,rgba(120,230,255,.45) 40%,transparent 62%);
+  -webkit-mask:conic-gradient(from 45deg,#000 0 3deg,transparent 3deg 87deg,#000 87deg 93deg,transparent 93deg 177deg,#000 177deg 183deg,transparent 183deg 267deg,#000 267deg 273deg,transparent 273deg),radial-gradient(circle,#000 0 30%,transparent 34%);
+  mask:conic-gradient(from 45deg,#000 0 3deg,transparent 3deg 87deg,#000 87deg 93deg,transparent 93deg 177deg,#000 177deg 183deg,transparent 183deg 267deg,#000 267deg 273deg,transparent 273deg),radial-gradient(circle,#000 0 30%,transparent 34%);
+  filter:drop-shadow(0 0 18px #ffe27a) drop-shadow(0 0 34px #7fe8ff)}
+.ark-falling-star::after{content:'';position:absolute;left:calc(30% + var(--star-u,0)*22%);top:calc(-18% + var(--star-u,0)*60%);
+  width:2.2vw;height:calc(18vh + var(--star-u,0)*22vh);translate:-50% -100%;rotate:-20deg;transform-origin:50% 100%;
+  background:linear-gradient(0deg,rgba(255,240,180,.9),rgba(120,230,255,.35) 45%,transparent);filter:blur(4px)}
+.ark-cinema[data-defender="0"] .ark-falling-star{transform:scaleX(-1)}
+.ark-xslash{position:absolute;inset:0;z-index:7;pointer-events:none;opacity:var(--xslash,0)}
+.ark-xslash i{position:absolute;left:var(--hit-x,55%);top:var(--hit-y,45%);width:62vw;height:clamp(10px,1.4vw,22px);border-radius:50%;
+  translate:-50% -50%;rotate:32deg;scale:calc(.35 + .65*var(--xslash,0)) 1;
+  background:linear-gradient(90deg,transparent,#e8fdff 20%,#fff 50%,#7fe8ff 80%,transparent);box-shadow:0 0 26px 8px rgba(120,230,255,.8)}
+.ark-xslash i:nth-child(2){rotate:-32deg}
+@media (prefers-reduced-motion:reduce){.ark-falling-star,.ark-xslash{display:none}}
+.game.reduce-motion :is(.ark-falling-star,.ark-xslash){display:none}

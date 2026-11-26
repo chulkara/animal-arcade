@@ -42,7 +42,13 @@
 .ark-reference-layout .ark-hud-health-value i{font-style:normal}
 .ark-reference-layout[data-hp-hold="1"] .ark-hud-health-value.is-struck .hp-before{display:inline}
 .ark-reference-layout[data-hp-hold="1"] .ark-hud-health-value.is-struck .hp-after{display:none}
-.ark-reference-layout[data-hp-hold="1"] .ark-hud-meter.is-struck span{animation:none!important;width:var(--from)!important}
+.ark-reference-layout[data-hp-hold="1"] .ark-hud-meter.is-struck span{animation:none!important;width:var(--held,var(--from))!important}
+/* Resurrection: drain to 0 on the landing, hold at 0, then refill from 0 */
+.ark-reference-layout .ark-hud-health-value .hp-zero{display:none}
+.ark-reference-layout[data-hp-ko="1"] .ark-hud-health-value.is-struck .hp-zero{display:inline}
+.ark-reference-layout[data-hp-ko="1"] .ark-hud-health-value.is-struck :is(.hp-before,.hp-after){display:none}
+.ark-reference-layout[data-hp-ko="1"] .ark-hud-meter.is-struck span{animation:ark-hp-to-zero .5s ease-in both!important}
+@keyframes ark-hp-to-zero{from{width:var(--held)}to{width:0}}
 /* A filmed hit: no "THE STRIKE LANDS"/NEXT over the clash, no expedition
    pill over the film or the result banner, and the bottom slot HUD stays
    hidden from the title until the next SET YOUR ATTACK! (Enter still skips). */
@@ -115,10 +121,10 @@
    the top with a motion smear); locking springs past centre and settles
    under a starburst. Off for reduced motion. */
 .game.painted-enabled .ark-reference-layout .fight-deck .combat-reel.is-live{overflow:hidden}
-.game.painted-enabled .ark-reference-layout .fight-deck .combat-reel.is-live.is-rolling [data-reel-current]{animation:ark-drum-in .085s linear both}
-.game.painted-enabled .ark-reference-layout .fight-deck .combat-reel.is-live.is-rolling .combat-reel-neighbor{animation:ark-drum-n .085s linear both}
-@keyframes ark-drum-in{0%{translate:0 -62%;filter:blur(1.5px);opacity:.55}100%{translate:0 0;filter:none;opacity:1}}
-@keyframes ark-drum-n{0%{translate:0 -110%}100%{translate:0 0}}
+.game.painted-enabled .ark-reference-layout .fight-deck .combat-reel.is-live.is-rolling [data-reel-current]{animation:ark-drum-in .045s ease-out both}
+.game.painted-enabled .ark-reference-layout .fight-deck .combat-reel.is-live.is-rolling .combat-reel-neighbor{animation:ark-drum-n .045s ease-out both}
+@keyframes ark-drum-in{0%{translate:0 -28%;filter:blur(.5px)}100%{translate:0 0;filter:none}}
+@keyframes ark-drum-n{0%{translate:0 -60%}100%{translate:0 0}}
 .game.painted-enabled .ark-reference-layout .fight-deck .fight-slot.is-locked{animation:ark-lock-spring .34s cubic-bezier(.2,.9,.3,1) both}
 @keyframes ark-lock-spring{0%{transform:translateY(-16%) scale(1.18);filter:brightness(2.2)}45%{transform:translateY(7%) scale(.97)}72%{transform:translateY(-2%) scale(1.01)}100%{transform:none;filter:drop-shadow(0 4px 0 rgba(0,0,0,.6))}}
 .game.painted-enabled .ark-reference-layout .fight-deck .fight-slot.is-locked::after{content:'';position:absolute;inset:-38%;pointer-events:none;z-index:2;mix-blend-mode:screen;
@@ -240,8 +246,8 @@
 .game.reduce-motion .ark-reference-layout .fight-clash :is(span,i,.fight-shard){animation:none!important}
 /* tie: both silver plates slide in, butt heads, bounce apart and fade (no debris) */
 .game.painted-enabled .ark-reference-layout .fight-clash.is-tie{top:42%}
-.game.painted-enabled .ark-reference-layout .fight-clash.is-tie .fight-clash-l{animation:ark-tie-l 1.2s cubic-bezier(.2,.9,.3,1.1) both}
-.game.painted-enabled .ark-reference-layout .fight-clash.is-tie .fight-clash-r{animation:ark-tie-r 1.2s cubic-bezier(.2,.9,.3,1.1) both}
+.game.painted-enabled .ark-reference-layout .fight-clash.is-tie .fight-clash-l{animation:ark-tie-l .75s cubic-bezier(.2,.9,.3,1.1) both}
+.game.painted-enabled .ark-reference-layout .fight-clash.is-tie .fight-clash-r{animation:ark-tie-r .75s cubic-bezier(.2,.9,.3,1.1) both}
 @keyframes ark-tie-l{0%{transform:translateX(-55vw)}16%{transform:translateX(18%)}24%,55%{transform:none;opacity:1}72%{transform:translateX(-34%) rotate(-8deg);opacity:1}100%{transform:translateX(-40%) rotate(-8deg);opacity:0}}
 @keyframes ark-tie-r{0%{transform:translateX(55vw)}16%{transform:translateX(-18%)}24%,55%{transform:none;opacity:1}72%{transform:translateX(34%) rotate(8deg);opacity:1}100%{transform:translateX(40%) rotate(8deg);opacity:0}}
 .game.reduce-motion .ark-reference-layout .fight-clash.is-tie{display:none}

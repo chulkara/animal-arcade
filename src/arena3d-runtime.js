@@ -219,10 +219,25 @@
         m.color.copy(m.userData.baseColor);
         if(level>0.001)m.color.multiply(new THREE.Color(1,1-.08*level,1-.18*level));
         // Gold Change: the coat turns burnished gold (lifted, then tinted)
-        if(g>0.001)m.color.lerp(new THREE.Color(1.0,.78,.30).multiplyScalar(.55+.45*m.userData.baseColor.getHSL({}).l*2),g*.82);
+        // keep the fur's own light/dark (texture × colour), just pushed to gold
+        if(g>0.001)m.color.lerp(new THREE.Color(1.0,.74,.32),g*.62);
         m.userData.arkAuraColor?.value.setRGB(1.0,.40+.42*g,.04+.30*g);
+        // burnished-metal read: gold specular highlights + a faint gold glow
+        // (Phong from FBX; PBR metalness would go black with no env map)
+        if(m.specular){
+          if(!m.userData.baseSpec){m.userData.baseSpec=m.specular.clone();m.userData.baseShine=m.shininess;}
+          m.specular.copy(m.userData.baseSpec).lerp(new THREE.Color(.75,.6,.3),g);
+          m.shininess=m.userData.baseShine+(48-m.userData.baseShine)*g;
+        }else if('metalness' in m){
+          if(m.userData.baseMetal===undefined){m.userData.baseMetal=m.metalness;m.userData.baseRough=m.roughness;}
+          m.metalness=m.userData.baseMetal+(.5-m.userData.baseMetal)*g;m.roughness=m.userData.baseRough+(.3-m.userData.baseRough)*g;
+        }
+        if(m.emissive){if(!m.userData.baseEmissive)m.userData.baseEmissive=m.emissive.clone();
+          m.emissive.copy(m.userData.baseEmissive).lerp(new THREE.Color(.09,.055,.0),g);}
       }
-      if(!actor.aura.length&&level>0&&flameBones.length&&scene){
+      // Ember sprites are off: on the real rigs they read as pale "teardrops"
+      // floating over the backs. The Fresnel rim alone carries the aura.
+      if(window.__arkEmbers&&!actor.aura.length&&level>0&&flameBones.length&&scene){
         const tex=flameSpriteTexture();
         model.updateMatrixWorld(true);
         const box=new THREE.Box3().setFromObject(model),size=box.getSize(new THREE.Vector3());
@@ -651,6 +666,12 @@
           addPitch('RigRFLeg1',.32*rake*lvl);addPitch('RigRFLeg2',-.55*rake*lvl);
         }
       }else actor.roarClock=0;
+      // contact flinch (set by applyBlocking): head thrown back, forelegs up
+      const fl=actor.flinchLevel||0;
+      if(fl>.001&&!reduced()){
+        updateFacing();addPitch('RigHead',.38*fl);addNeck(strikePitch,.24*fl);
+        addPitch('RigLFLeg1',.42*fl);addPitch('RigRFLeg1',.34*fl);
+      }
       // The title roar's mouth light must sit in the mouth: it was never
       // positioned, so it lit a pale disc on the ground at the world origin
       // in every title shot. Leave it to the victory howl while that runs.
@@ -1069,10 +1090,34 @@
     if(redSkyMesh){redSkyMesh.material.opacity=k;redSkyMesh.visible=k>0;}
     if(scene.fog&&fogBase)scene.fog.color.copy(fogBase).lerp(new THREE.Color(stageKind==='cosmic'?0x2a1650:0xb8463a),k);
   }
+  // Super Miracle backdrop: a deep indigo/violet vortex with gold and cyan
+  // star dust (original procedural texture, same plane as the fire void).
+  function cosmicCanvas(){
+    const W=512,H=512,c=document.createElement('canvas');c.width=W;c.height=H;
+    const g=c.getContext('2d');
+    const bg=g.createRadialGradient(W/2,H/2,8,W/2,H/2,W*.72);
+    bg.addColorStop(0,'#d9c4ff');bg.addColorStop(.05,'#7a4fd0');bg.addColorStop(.25,'#33157a');bg.addColorStop(.6,'#140840');bg.addColorStop(1,'#05021a');
+    g.fillStyle=bg;g.fillRect(0,0,W,H);
+    let seed=19;const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
+    g.globalCompositeOperation='lighter';
+    for(let arm=0;arm<4;arm++)for(let i=0;i<220;i++){
+      const u=i/220,a=arm*Math.PI/2+u*5.2,r=u*W*.62;
+      const x=W/2+Math.cos(a)*r+(rnd()-.5)*26*u,y=H/2+Math.sin(a)*r+(rnd()-.5)*26*u;
+      g.fillStyle=`rgba(${120+rnd()*70|0},${90+rnd()*80|0},235,${.025+.05*(1-u)})`;
+      g.beginPath();g.arc(x,y,3+7*(1-u),0,7);g.fill();
+    }
+    for(let i=0;i<420;i++){const x=rnd()*W,y=rnd()*H,r=rnd()<.06?1.8:.7,gold=rnd()<.35;
+      g.fillStyle=gold?`rgba(255,226,140,${.6+rnd()*.4})`:`rgba(170,240,255,${.5+rnd()*.5})`;
+      g.beginPath();g.arc(x,y,r,0,7);g.fill();}
+    g.globalCompositeOperation='source-over';
+    return c;
+  }
   function makeBackdropTexture(kind){
-    const c=fireCanvas();
+    const c=kind==='cosmic'?cosmicCanvas():fireCanvas();
     const t=new THREE.CanvasTexture(c);
-    t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(1.2,.8);
+    // the fire tiles; the vortex is one centred image (tiling cut it into crescents)
+    if(kind==='cosmic'){t.wrapS=t.wrapT=THREE.ClampToEdgeWrapping;}
+    else{t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(1.2,.8);}
     if(THREE.SRGBColorSpace)t.colorSpace=THREE.SRGBColorSpace;
     return t;
   }
@@ -1100,10 +1145,15 @@
     }
     const k=view?.glint||0;
     if(k<=.01||!attacker?.joint?.size||!attacker.pivot.visible){glint.visible=false;return;}
-    // The striking paw: whichever front foot is highest right now.
+    // The striking paw: whichever front foot is highest right now. The Moose
+    // strikes with its antlers: the glint sits above its head on the tines.
     const v=new THREE.Vector3();let best=null,bestY=-Infinity;
     attacker.model.updateMatrixWorld(true);
-    for(const b of attacker.joint.values()){
+    if(attacker.id==='moose'){
+      const head=attacker.joint.get('RigHead');
+      if(head){best=head.getWorldPosition(new THREE.Vector3()).add(new THREE.Vector3(0,.75*(cinematics.SOLO_SCALE?.moose||1),0));}
+    }
+    if(!best)for(const b of attacker.joint.values()){
       if(!/F.*Leg.*(Digit|Ankle)|Hoof|Hand/i.test(b.name))continue;
       b.getWorldPosition(v);if(v.y>bestY){bestY=v.y;best=v.clone();}
     }
@@ -1115,7 +1165,7 @@
   }
   // The blow lands on the victim: a white-hot star burst on its body for the
   // first quarter-second of the launch.
-  let impactStar=null;
+  let impactStar=null,impactRing=null;
   function paintImpact(view,defender){
     if(!scene)return;
     if(!impactStar){
@@ -1123,11 +1173,24 @@
         blending:THREE.AdditiveBlending,depthTest:false,depthWrite:false,fog:false}));
       impactStar.renderOrder=31;impactStar.visible=false;scene.add(impactStar);
     }
+    if(!impactRing){
+      const c=document.createElement('canvas');c.width=c.height=128;const g=c.getContext('2d');
+      const gr=g.createRadialGradient(64,64,30,64,64,62);
+      gr.addColorStop(0,'rgba(255,255,255,0)');gr.addColorStop(.55,'rgba(255,250,220,.9)');gr.addColorStop(.75,'rgba(160,235,255,.55)');gr.addColorStop(1,'rgba(255,255,255,0)');
+      g.fillStyle=gr;g.fillRect(0,0,128,128);
+      impactRing=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c),transparent:true,
+        blending:THREE.AdditiveBlending,depthTest:false,depthWrite:false,fog:false}));
+      impactRing.renderOrder=32;impactRing.visible=false;scene.add(impactRing);
+    }
     const k=view?.impact||0;
-    if(k<=.01||!defender||reduced()){impactStar.visible=false;return;}
+    if(k<=.01||!defender||reduced()){impactStar.visible=false;impactRing.visible=false;return;}
     const sc=(cinematics.SOLO_SCALE?.[defender.id]||1);
     const c=defender.joint?.get('RigSpine2')||defender.joint?.get('RigChest')||defender.joint?.get('RigSpine1');
-    const v=c?c.getWorldPosition(new THREE.Vector3()):defender.pivot.getWorldPosition(new THREE.Vector3()).add(new THREE.Vector3(0,.9*sc,0));
+    const v=view.contact&&sequence?.contactPoint?sequence.contactPoint.clone():
+      c?c.getWorldPosition(new THREE.Vector3()):defender.pivot.getWorldPosition(new THREE.Vector3()).add(new THREE.Vector3(0,.9*sc,0));
+    const r=view.ring||0;
+    if(r>.01){const u=1-r;impactRing.position.copy(v);impactRing.scale.setScalar(sc*(.6+4.2*u));
+      impactRing.material.opacity=Math.min(1,r*1.4);impactRing.visible=true;}else impactRing.visible=false;
     const grow=1-k;
     impactStar.position.copy(v);impactStar.scale.setScalar(sc*(1.4+2.6*grow));
     impactStar.material.opacity=Math.min(1,k*1.6);impactStar.material.rotation=grow*.6;
@@ -1181,8 +1244,8 @@
     paintLaunchShadow(view,defender);
     paintImpact(view,defender);
     const cam=filmCamera||camera;
-    const kind=view?.fire?'fire':null;
-    const subject=kind==='fire'?attacker:defender;
+    const kind=view?.fire?(view.fireKind||'fire'):null;
+    const subject=kind?attacker:defender;
     if(!kind||!cam||!subject){if(fireVoid)fireVoid.visible=false;return;}
     if(!fireVoid){
       fireVoid=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.MeshBasicMaterial({
@@ -1610,7 +1673,7 @@
     }
     // A survivor holds the downed pose, then scrambles back up.
     if(sequence.solo&&timing?.solo&&!event.knockout&&!sequence.gotUp&&
-       sequence.elapsed>=timing.landAt+cinematics.SOLO_MS.downHold){
+       sequence.elapsed>=timing.landAt+cinematics.SOLO_MS.downHold+(sequence.event.resurrected?cinematics.SOLO_MS.reviveHold:0)){
       sequence.gotUp=true;
       // Get up by playing the knockout fall backwards (a crossfade from the
       // lying pose to idle squashed the body flat), then settle into idle.
@@ -1738,10 +1801,30 @@
     // Contact two-shot: put the attacker's strike against the victim (a cut,
     // so the jump in position is never seen), for the hit-stop only.
     if(view?.contact&&attacker&&defender){
-      const reach=(bodyHalf(attacker)+bodyHalf(defender))*.82;
-      attacker.pivot.position.x=defender.pivot.position.x-direction*reach;
+      // Place by the live skeletons, not body length: the attacker's leading
+      // bone (+ snout/antler margin) stops at the victim's nearest bone
+      // (+ its margin), so heads and antlers never sink into each other.
+      const sa=cinematics.SOLO_SCALE?.[attacker.id]||1,sd=cinematics.SOLO_SCALE?.[defender.id]||1;
+      attacker.pivot.position.x=defender.pivot.position.x-direction*(bodyHalf(attacker)+bodyHalf(defender));
       attacker.pivot.position.z=0;
-    }
+      // world x of the attacker's leading tip and the victim's nearest tip;
+      // margins point along the attack direction (sign matters for slot 1)
+      const front=extent(attacker,direction,'max')+direction*REACH[attacker.id]*sa;
+      const near=extent(defender,direction,'min')-direction*REACH_D[defender.id]*sd;
+      attacker.pivot.position.x+=near-front;
+      // the victim snaps into a flinch: nose-up about its hind feet, shoved back
+      const fl=view.flinch||0;defender.flinchLevel=fl;
+      if(fl>0){
+        const facingD=-direction,hind=new THREE.Vector3(-facingD*bodyHalf(defender)*.8,0,0);
+        defender.pivot.updateMatrixWorld(true);const b0=defender.pivot.localToWorld(hind.clone());
+        defender.pivot.rotateOnAxis(new THREE.Vector3(0,0,1),facingD*.2*fl);
+        defender.pivot.updateMatrixWorld(true);const b1=defender.pivot.localToWorld(hind.clone());
+        defender.pivot.position.add(b0.sub(b1));defender.pivot.position.x+=direction*.22*sd*fl;
+      }
+      // where the blow lands: between the leading bone and the victim's nearest bone, chest high
+      const ca=leadPoint(attacker,direction,'max'),cd=leadPoint(defender,direction,'min');
+      sequence.contactPoint=ca.add(cd).multiplyScalar(.5);
+    }else{if(defender)defender.flinchLevel=0;if(sequence)sequence.contactPoint=null;}
     if(defender&&view?.launch){
       const l=view.launch;
       if(!l.landed){
@@ -1837,7 +1920,12 @@
       const heroFactor=Math.min(1.75,1/fit);
       filmCamera.zoom=Math.min(2.2,(wants?.zoom??1)*heroFactor);
       filmCamera.updateProjectionMatrix();
-      if(wants?.shot==='contact')applyContact(event);
+      if(wants?.shot==='contact'){
+        applyContact(event);
+        const k=wants.shake||0,sc=cinematics.SOLO_SCALE?.[actors[event.defender]?.id]||1;
+        if(k){const right=new THREE.Vector3(1,0,0).applyQuaternion(filmCamera.quaternion);
+          filmCamera.position.addScaledVector(right,.11*k*sc);filmCamera.position.y+=.07*k*sc*(wants.slam?3:1);}
+      }
       else if(wants?.lunge>0)applyLunge(event,wants.lunge);
       if(wants?.angle&&!reduced())filmCamera.rotateZ(wants.angle);
       if(wants?.beat==='VICTORY')fitVictoryInFrame(event,wants);
@@ -1907,6 +1995,23 @@
   }
   // The strike ends with the attacker driving its face into the lens: dolly
   // from the shot's framing to just in front of the live head bone.
+  // Snout / antler reach beyond the last bone (attacker front, victim near side).
+  const REACH={bear:.28,moose:.45},REACH_D={bear:.18,moose:.32};
+  function bonePositions(actor){
+    actor.model.updateMatrixWorld(true);
+    const out=[];for(const b of actor.joint?.values?.()||[])out.push(b.getWorldPosition(new THREE.Vector3()));
+    if(!out.length)out.push(actor.pivot.getWorldPosition(new THREE.Vector3()));
+    return out;
+  }
+  function extent(actor,dir,which){
+    const xs=bonePositions(actor).map(p=>p.x*dir);
+    return (which==='max'?Math.max(...xs):Math.min(...xs))*dir;
+  }
+  function leadPoint(actor,dir,which){
+    const pts=bonePositions(actor);let best=pts[0];
+    for(const p of pts)if(which==='max'?p.x*dir>best.x*dir:p.x*dir<best.x*dir)best=p;
+    return best.clone();
+  }
   // Half body length (nose to tail along the facing axis), measured once in
   // the idle stance from the live skeleton bounds.
   function bodyHalf(actor){
@@ -1920,7 +2025,8 @@
   function applyContact(event){
     const a=actors[event.attacker],d=actors[event.defender];
     if(!a?.model||!d?.model||!filmCamera)return;
-    const box=new THREE.Box3().setFromObject(a.model).union(new THREE.Box3().setFromObject(d.model));
+    const box=new THREE.Box3().setFromPoints([...bonePositions(a),...bonePositions(d)]);
+    box.expandByScalar(.45*Math.max(cinematics.SOLO_SCALE?.[a.id]||1,cinematics.SOLO_SCALE?.[d.id]||1));
     const c=box.getCenter(new THREE.Vector3()),size=box.getSize(new THREE.Vector3());
     const away=event.attacker===0?1:-1;
     const vfov=THREE.MathUtils.degToRad(filmCamera.fov)/Math.max(1,filmCamera.zoom);
@@ -2045,6 +2151,8 @@
         else node.removeAttribute('data-3d-visible');
       });
       layer.hidden=!actors.some(Boolean);
+      if(changed)warmed=false;
+      prewarm();
       const hit=bearReview?.active?bearReview.event:core.battleEvent(s);
       if(!hit){if(shownEvent||changed){
         sequence=null;shownEvent=null;actors.forEach(actor=>actor?.idle());
@@ -2053,6 +2161,51 @@
       }
       startLoop();
     }
+  }
+  // A face close-up of each animal from its live rig, for the FOCUS!! strip.
+  const portraits={};
+  function snapPortrait(actor){
+    if(!actor?.model||portraits[actor.id]||!renderer)return;
+    const head=actor.joint?.get('RigHead');if(!head)return;
+    const canvas=renderer.domElement,W=canvas.width,H=canvas.height;if(!W||!H)return;
+    const sc=cinematics.SOLO_SCALE?.[actor.id]||1,f=actor.slot===1?-1:1;
+    actor.model.updateMatrixWorld(true);
+    const h=head.getWorldPosition(new THREE.Vector3());
+    const cam=new THREE.PerspectiveCamera(26,W/H,.05,200);
+    cam.position.set(h.x+f*1.7*sc,h.y+.12*sc,h.z+1.0*sc);cam.lookAt(h.x+f*.15*sc,h.y-.05*sc,h.z);
+    const others=actors.filter(a=>a&&a!==actor),was=others.map(a=>a.pivot.visible);
+    others.forEach(a=>{a.pivot.visible=false;});
+    renderer.render(scene,cam);
+    const out=document.createElement('canvas');out.width=280;out.height=200;
+    const cw=Math.min(W,H*1.4),ch=cw/1.4;
+    out.getContext('2d').drawImage(canvas,(W-cw)/2,(H-ch)/2,cw,ch,0,0,280,200);
+    others.forEach((a,i)=>{a.pivot.visible=was[i];});
+    try{portraits[actor.id]=out.toDataURL('image/jpeg',.85);}catch{}
+  }
+  let warmed=false;
+  function prewarm(){
+    if(warmed||!renderer||!scene||!actors[0]?.model||!actors[1]?.model)return;
+    warmed=true;
+    const step=(f)=>{try{f();}catch(err){console.warn('[arena3d] prewarm step skipped',err);}};
+    try{
+      const cam=filmCamera||camera,fake={glint:1,impact:1,ring:1,contact:0,fire:1,launch:null};
+      step(()=>{for(const a of actors)a.setAura?.(0,0,0);});
+      step(()=>paintGlint(fake,actors[0],0));step(()=>paintImpact(fake,actors[1]));
+      step(()=>paintLaunchShadow({launch:{landed:false,y:1,drift:0,u:.5}},actors[1]));
+      step(()=>{
+        if(!fireVoid){fireVoid=new THREE.Mesh(new THREE.PlaneGeometry(1,1),new THREE.MeshBasicMaterial({
+          transparent:true,opacity:0,depthWrite:true,fog:false}));scene.add(fireVoid);}
+        const tex=backdropTex.fire||(backdropTex.fire=makeBackdropTexture('fire'));
+        fireVoid.material.map=tex;fireVoid.material.needsUpdate=true;
+      });
+      step(()=>{setStage(1,'red');setStage(1,'cosmic');});
+      const hidden=[];scene.traverse(o=>{if(!o.visible){hidden.push(o);o.visible=true;}});
+      renderer.compile(scene,cam);
+      for(const o of hidden)o.visible=false;
+      setStage(0,'red');
+      for(const o of [glint,impactStar,impactRing,blob,fireVoid])if(o)o.visible=false;
+      step(()=>{for(const a of actors)snapPortrait(a);});
+    }catch(err){console.warn('[arena3d] prewarm skipped',err);}
   }
   async function importSelected(id){
     if(loading)return;
@@ -2359,6 +2512,7 @@
       const v=d.pivot.getWorldPosition(new THREE.Vector3());v.y+=1.7*(cinematics.SOLO_SCALE?.[d.id]||1);
       v.project(filmCamera);return {x:(v.x+1)/2,y:(1-v.y)/2};
     },
+    getPortrait:(id)=>portraits[id]||null,
     // The live 3D film clock, so the DOM overlay and the rigs share one time.
     getSequence:()=>sequence&&renderer&&!document.hidden?{key:sequence.event.key,elapsed:sequence.elapsed}:null,
     // Diagnostic only: materials/programs of an actor (debugging renders).

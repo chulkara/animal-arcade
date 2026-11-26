@@ -28,12 +28,15 @@
       const x=r()*512,y=90+r()*140,w=40+r()*120,h=12+r()*26;
       for(let k=0;k<6;k++){
         const cx=x+(r()-.5)*w,cy=y+(r()-.5)*h*.6,rad=h*(.8+r()*.9);
-        const cg=g.createRadialGradient(cx,cy,0,cx,cy,rad);
-        cg.addColorStop(0,'rgba(255,255,255,.55)');cg.addColorStop(1,'rgba(255,255,255,0)');
-        g.fillStyle=cg;g.fillRect(cx-rad,cy-rad,rad*2,rad*2);
-        // wrap horizontally so the dome has no seam
-        if(cx<rad){g.fillRect(cx+512-rad,cy-rad,rad*2,rad*2);}
-        if(cx>512-rad){g.fillRect(cx-512-rad,cy-rad,rad*2,rad*2);}
+        // Wrap horizontally so the dome has no seam. Each copy needs its OWN
+        // gradient centre: reusing the original's drew nothing at the wrap,
+        // which cut clouds at u=0/1 into a hard vertical seam in the sky.
+        const shifts=[0];if(cx<rad)shifts.push(512);if(cx>512-rad)shifts.push(-512);
+        for(const dx of shifts){
+          const px=cx+dx,cg=g.createRadialGradient(px,cy,0,px,cy,rad);
+          cg.addColorStop(0,'rgba(255,255,255,.55)');cg.addColorStop(1,'rgba(255,255,255,0)');
+          g.fillStyle=cg;g.fillRect(px-rad,cy-rad,rad*2,rad*2);
+        }
       }
     }
     return c;
