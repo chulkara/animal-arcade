@@ -1698,7 +1698,8 @@
         // never the old upright hind-leg idle.
         if(attacker){
           attacker.pivot.position.y=0;attacker.orientation.rotation.z=0;
-          attacker.native(attacker.asset?.clips?.walk?'walk':'idle',.2);
+          // planted facing the lens (no walk-in): breathing idle under the roar
+          attacker.native('idle',.2);
         }
         sequence.victoryPlayed=true;sequence.victoryMoved=true;sequence.victoryLowered=true;
         sequence.victoryPosition='quadruped';

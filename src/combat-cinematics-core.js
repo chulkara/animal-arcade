@@ -508,10 +508,13 @@ function camera(event,elapsed,nativeMs){
     let nx=-hz,nz=hx;if(nz<0){nx=-nx;nz=-nz;}
     const H=SOLO_SCALE[event.attackerId]||1;
     const at=(fwd,side,cy,ty)=>{x=wx+hx*fwd+nx*side;z=wz+hz*fwd+nz*side;y=cy*H;targetX=wx;targetY=ty*H;return wz;};
-    if(beat.shot==='vicSide')at(.6,6.2,1.05,.95);
-    else if(beat.shot==='vicFront')at(5.4,2.2,1.0,1.0);
-    else if(beat.shot==='vicRoar')at(3.6,1.0,.62,1.12);
-    else at(8.6-.35*clamp((beat.local-1800)/1000,0,6),3.0,1.7,.95); // slow dolly-in
+    // one low-angle front shot, a touch off-axis, easing slowly in
+    const push=ease(clamp(beat.local/VICTORY_END_MS,0,1));
+    // aimed above the head so the body sits low and the thrown-back roaring
+    // head stays clear of the PERFECT! / You win! banner across the top
+    // (the Moose rears up on its hind legs at the end: frame it lower still)
+    const moose=event.attackerId==='moose';
+    at((moose?8.0:7.0)-1.1*push,.7,.62,moose?1.85:1.55);
     zoom=1.0;
     return Object.freeze({x,y,z,targetX,targetY,targetZ:wz,zoom,angle:0,
       // The arcade's sky-coloured outro is a cabinet screen transition; held
@@ -608,7 +611,10 @@ function camera(event,elapsed,nativeMs){
 // PERFECT!/You win! slam within ~0.3 s of the win, ~2.4 s of quick cuts of
 // the winner walking at the lens and roaring, then a sky-coloured outro
 // holding the banner.
-const VICTORY_SHOTS=Object.freeze([['vicSide',0],['vicFront',560],['vicRoar',1060],['vicWide',1800]]);
+// User decision 2026-11-26 (after two reviews): the winner faces the lens
+// from frame one, centred, in ONE low-angle shot that slowly dollies in
+// through the roar - no profile walk-in, no cuts, no wide pull-back.
+const VICTORY_SHOTS=Object.freeze([['vicHold',0]]);
 const VICTORY_BANNER_MS=280;       // "You win!" (PERFECT! lands at 0 when earned)
 const VICTORY_HOWL_START_MS=700;   // inhale
 const VICTORY_HOWL_CUE_MS=1060;    // roar sound with the jaw drop, on the close-up
@@ -620,12 +626,11 @@ const VICTORY_LOWER_START_MS=0,VICTORY_LOWER_READY_MS=0,VICTORY_APPROACH_START_M
 function victoryShot(v){let name=VICTORY_SHOTS[0][0];for(const [n,at] of VICTORY_SHOTS)if(v>=at)name=n;return name;}
 function victoryApproach(victoryElapsed){
   const elapsed=Math.max(0,Number(victoryElapsed)||0);
-  // Walks diagonally toward centre and the lens, turned to face its path.
-  const step=clamp(elapsed/VICTORY_APPROACH_END_MS,0,1);
-  const glide=step<.85?step:(.85+.15*ease((step-.85)/.15));
-  const turn=.93; // already facing its path on frame one (no spin in place)
-  return Object.freeze({lowered:1,step,active:elapsed<VICTORY_APPROACH_END_MS,stride:0,
-    travel:.95*glide,depth:1.25*glide,turn});
+  // Planted at centre stage, a little toward the lens, squarely facing the
+  // camera on frame one (sideX is ±2.02, so travel 2.02 lands on x = 0).
+  void elapsed;
+  return Object.freeze({lowered:1,step:1,active:false,stride:0,
+    travel:2.02,depth:.6,turn:Math.PI/2});
 }
 function bearHowl(victoryElapsed){
   const elapsed=Math.max(0,Number(victoryElapsed)||0);

@@ -47,21 +47,20 @@ test('universal Miracle introductions apply to either animal, not a specific rig
  ]);
 });
 
-test('victory: four quick cuts of the four-paw winner, then the winner held on screen',()=>{
+test('victory: the winner faces the lens from frame one in one slow push-in (user decision 2026-11-26)',()=>{
  const evt={...base,attacker:1,defender:0,attackerId:'bear',
   defenderId:'moose',move:'G',knockout:true,finished:true};
  const start=director.duration(evt,1000).victoryStart;
- const shots=[start+50,start+700,start+1300,start+2000].map(ms=>director.shot(evt,ms,1000));
- assert.deepEqual(shots.map(s=>s.beat),['VICTORY','VICTORY','VICTORY','VICTORY']);
- assert.deepEqual(shots.map(s=>s.shot),['vicSide','vicFront','vicRoar','vicWide']);
- const cameras=shots.map(s=>director.camera(evt,start+s.local,1000));
- assert.equal(new Set(cameras.map(c=>Math.atan2(c.x-c.targetX,c.z-c.targetZ).toFixed(2))).size,4,'four distinct directions');
- // no sky-coloured fade: the winner stays on screen, the wide slowly dollies in
- for(const ms of [2000,director.VICTORY_OUTRO_MS+500,director.VICTORY_END_MS-10])
-  assert.equal(director.camera(evt,start+ms,1000).outro,0);
- const far=director.camera(evt,start+1900,1000),near=director.camera(evt,start+director.VICTORY_END_MS-10,1000);
- assert.ok(Math.hypot(near.x-near.targetX,near.z-near.targetZ)<Math.hypot(far.x-far.targetX,far.z-far.targetZ),'slow dolly-in');
- assert.equal(director.victoryApproach(0).turn,director.victoryApproach(2000).turn,'faces its path from frame one');
+ const shots=[start+50,start+700,start+1300,start+2000,start+director.VICTORY_END_MS-10].map(ms=>director.shot(evt,ms,1000));
+ assert.ok(shots.every(s=>s.beat==='VICTORY'&&s.shot==='vicHold'),'one shot, no cuts');
+ const cams=shots.map(s=>director.camera(evt,start+s.local,1000));
+ const dist=c=>Math.hypot(c.x-c.targetX,c.z-c.targetZ);
+ for(let i=1;i<cams.length;i++)assert.ok(dist(cams[i])<=dist(cams[i-1])+1e-9,'only ever pushes in, never pulls back');
+ assert.ok(dist(cams[0])-dist(cams[cams.length-1])>.8,'a visible push-in');
+ for(const c of cams){assert.equal(c.outro,0);assert.ok(Math.abs(c.targetX)<1e-9,'winner centred');
+  assert.ok(c.z>c.targetZ+3,'camera in front of the winner');assert.ok(Math.abs(c.x-c.targetX)<1.2,'nearly head-on');}
+ const a0=director.victoryApproach(0),a1=director.victoryApproach(3000);
+ assert.equal(a0.turn,Math.PI/2,'squarely facing the lens');assert.deepEqual(a0,a1,'no walk, no turn');
  assert.ok(director.VICTORY_END_MS<=5000,'no long static victory footage');
  assert.ok(director.VICTORY_BANNER_MS<=400,'You win! lands within ~0.3 s');
 });
@@ -110,7 +109,7 @@ test('battle event carries equipped Miracle identity and damage into the univers
 });
 
 
-test('regression: the winner walks toward centre and the lens and every cut tracks it',()=>{
+test('regression: the winner is centred for either slot and the camera tracks it',()=>{
  for(const attacker of [0,1]){
   const evt={...base,attacker,defender:1-attacker,
    attackerId:'bear',defenderId:'moose',move:'P',finished:true,knockout:true};
@@ -120,13 +119,12 @@ test('regression: the winner walks toward centre and the lens and every cut trac
    const cam=director.camera(evt,begin+t,1200),ap=director.victoryApproach(t);
    assert.equal(cam.beat,'VICTORY');
    assert.ok(Math.abs(cam.targetX-(home+facing*ap.travel))<1e-9,'Camera tracks the winner');
-   assert.ok(Math.abs(cam.targetX)<=2.02,'Approach moves toward centre, never away');
+   assert.ok(Math.abs(home+facing*ap.travel)<1e-9,'winner stands at centre stage');
    assert.ok(Math.hypot(cam.x-cam.targetX,cam.z-cam.targetZ)>=2.5,'camera never inside the winner');
-   assert.equal(cam.cut,true);
   }
-  assert.ok(director.victoryApproach(2300).depth>1,'walks toward the lens');
  }
 });
+
 
 test('regression: Bear contact is a two-fighter shot, not a cropped victim closeup',()=>{
  for(const attacker of [0,1]){
@@ -229,7 +227,7 @@ test('original-video comparison: signature moves prepare before FBX contact and 
   defenderId:'moose',move:'P',finished:true};
  const begin=director.duration(event,1300).victoryStart;
  const portrait=director.camera(event,begin+1300,1300);
- assert.equal(portrait.shot,'vicRoar','the win closes on the roaring face');
+ assert.equal(portrait.shot,'vicHold','the win holds on the roaring face');
  assert.ok(Math.hypot(portrait.x-portrait.targetX,portrait.z-portrait.targetZ)>=2.5,
     'The winning camera must stay outside the Bear torso');
   assert.ok(portrait.zoom<=1.08);
@@ -237,8 +235,8 @@ test('original-video comparison: signature moves prepare before FBX contact and 
  const ui=readFileSync('src/combat-cinematics.js','utf8');
  assert.ok(runtime.includes('const lead=timing?.actionLead||0;'),
   'The native source clip must wait until cinematic focus concludes');
- assert.ok(runtime.includes("attacker.native(attacker.asset?.clips?.walk?'walk':'idle',.2)"),
-  'The winner stays on four paws and walks in');
+ assert.ok(runtime.includes("attacker.native('idle',.2);"),
+  'The winner stays on four paws, planted facing the lens (no walk-in)');
  assert.ok(ui.includes("'You win!'")&&ui.includes('PERFECT!'));
  assert.ok(readFileSync('src/audio.js','utf8').includes("case 'cinemaWin'"));
 });
@@ -288,7 +286,7 @@ test('bear win has a visible inhale followed by a head-raised roar on the close-
  assert.ok(roaring.neckPitch<-.15);
  assert.ok(roaring.jawOpen>.8);
  // the jaw is open on the roar close-up cut
- const [,roarAt]=director.VICTORY_SHOTS.find(([n])=>n==='vicRoar');
+ const roarAt=director.VICTORY_HOWL_CUE_MS;
  assert.ok(director.bearHowl(roarAt+200).jawOpen>.5);
  assert.ok(director.VICTORY_HOWL_CUE_MS>=roarAt-100&&director.VICTORY_HOWL_CUE_MS<=roarAt+300,'roar sound with the close-up');
 });

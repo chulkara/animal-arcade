@@ -223,7 +223,7 @@ Each turn both players secretly pick one action; both resolve simultaneously.
     the flight (core `redSky`=1 from contactAt), 18° contact tilt.
   - Hit pops 2+ carry "N HITS!" so equal numbers read as separate blows.
   - Our-roar jaw cap 0.34 rad (was 0.5; the gold coat made the mouth a dark box).
-  - Victory kept as the reference grammar (walk-in, vicWide). User decides.
+  - Victory: user chose winner-faces-camera (see Victory grammar).
 
 ## Delivering work to the user
 - The user runs the game on his Mac from `~/Desktop/animal-arcade`. When that
@@ -271,14 +271,19 @@ older shared-frame grammar (fallback for animals with no film entry; the
 tests use it to keep covering that path). The DOM overlay follows the 3D
 film clock (`NoahsArena3D.getSequence()`), so text never drifts off shots.
 
-## Victory grammar (video_1 49.3–55 s, video_4 41.3–46.7 s)
+## Victory grammar (USER DECISION 2026-11-26: winner faces the camera)
 Dark dip → PERFECT! (only if the winner is unhurt, `event.perfect`) → You win!
-(SOLO human) / You lose… (CPU won) / P1|P2 wins! (DUEL) within ~0.3 s. The
-winner stays ON ALL FOURS (walk clip, never the upright hind-leg idle) in its
-fire aura and walks diagonally at the lens: cuts vicSide → vicFront → vicRoar
-(low close-up, jaw open) → vicWide with a slow dolly-in; the winner and forest
-stay on screen (the arcade's sky-coloured outro was dropped: held in our game
-it read as the scene vanishing). The winner faces its path from frame one. Never zero one Euler axis of the winner's
+(SOLO human) / You lose… (CPU won) / P1|P2 wins! (DUEL) within ~0.3 s.
+The winner is planted at centre stage (`victoryApproach`: travel 2.02 → x=0,
+depth .6, turn π/2) squarely facing the lens from frame one, on all fours in
+its idle (no walk-in, no turn), and roars. ONE low-angle front shot
+(`VICTORY_SHOTS=[['vicHold',0]]`) eases in slowly over the whole victory —
+no cuts, no wide pull-back. It is aimed above the head (ty 1.55, Moose 1.85
+and further back) so the thrown-back head / rear-up stays clear of the banner.
+REMATCH / MODE SELECT (`.combat-finish`) fade in 1.2 s after the banner over
+the held winner (`data-vic-controls`). The earlier reference grammar (profile
+walk-in, vicSide → vicFront → vicRoar → vicWide) was replaced at the user's
+request after two reviews. Never zero one Euler axis of the winner's
 orientation: its leaned 90°-yaw quaternion is gimbal-locked (rolled the Bear).
 Aura = Fresnel rim injected ONCE per material (materials are cached and
 outlive actors; a second injection redefines `uAura`, the shader fails to

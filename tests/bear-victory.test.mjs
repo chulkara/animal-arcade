@@ -28,13 +28,13 @@ test('reference-inspired victory: inhale, head throw and an open-jaw roar while 
  assert.ok(roaring.headPitch<-.15&&roaring.headPitch>-.42,'muzzle up, open mouth still faces the lens');
  assert.ok(roaring.jawOpen>.8,'Open the jaw while vocalizing');
  assert.ok(cinema.bearHowl(cinema.VICTORY_HOWL_CUE_MS+150).jawOpen>.5,'Jaw is opening as the roar sound cues');
- assert.ok(cinema.victoryApproach(1600).active,'still walking toward the lens as it roars');
+ assert.equal(cinema.victoryApproach(1600).active,false,'planted facing the lens while it roars (no walk-in)');
 });
 
-test('four quick cuts lead into the roar, then a held, slowly closing wide',()=>{
+test('one held low-angle shot through the roar: no cuts, no pull-back',()=>{
  const t=cinema.duration(event,1200);
  const sequence=[80,700,1300,2000,3000].map(ms=>cinema.shot(event,t.victoryStart+ms,1200));
- assert.deepEqual(sequence.map(x=>x.shot),['vicSide','vicFront','vicRoar','vicWide','vicWide']);
+ assert.deepEqual([...new Set(sequence.map(x=>x.shot))],['vicHold']);
  assert.equal(cinema.camera(event,t.victoryStart+3000,1200).outro,0,'the winner stays on screen');
 });
 

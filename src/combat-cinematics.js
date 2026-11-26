@@ -18,7 +18,7 @@ function cleanup(){
  // DOM node. Each new Bear review appended another .ark-cinema, leaving
  // LOW SWIPE painted over Guts, Power and even the final victory.
  if(stage)delete stage.dataset.cineBeat;
- const filmRoot=ui.querySelector('.ark-reference-layout');if(filmRoot){delete filmRoot.dataset.soloFilm;delete filmRoot.dataset.hpHold;delete filmRoot.dataset.hpKo;}
+ const filmRoot=ui.querySelector('.ark-reference-layout');if(filmRoot){delete filmRoot.dataset.soloFilm;delete filmRoot.dataset.hpHold;delete filmRoot.dataset.hpKo;delete filmRoot.dataset.vicControls;}
  overlay?.remove();
  ui.querySelectorAll('.combat-battlefield .ark-cinema').forEach(node=>node.remove());
  timer=0;lastBeat='';lastShot='';howlCued=false;winCued=false;
@@ -301,6 +301,9 @@ function draw(time){
    if(event.attackerId==='moose'&&p.local>=2300+640&&!sequence.rearCued){
      window.NoahsAudio?.cue('mooseBellow');sequence.rearCued=true;
    }
+   // REMATCH / MODE SELECT fade in 1.2 s after the banner, over the held winner
+   const vr=ui.querySelector('.ark-reference-layout');
+   if(vr&&!rehearsal)vr.dataset.vicControls=p.local>=api.VICTORY_BANNER_MS+1200?'1':'';
    if(p.local>=api.VICTORY_BANNER_MS&&!winCued){
      window.NoahsAudio?.cue('cinemaWin');
      winCued=true;

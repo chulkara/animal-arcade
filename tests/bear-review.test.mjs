@@ -35,7 +35,7 @@ test('Bear review reuses the same native action timing for any opponent and play
    ['FERAL CHARGE','LOW SWIPE','HIGH PAW STRIKE']);
  const end=cinema.duration(events[2],1250);
  assert.ok(end.total>end.victoryStart);
- assert.equal(cinema.shot(events[2],end.victoryStart+1080,1250).shot,'vicRoar');
+ assert.equal(cinema.shot(events[2],end.victoryStart+1080,1250).shot,'vicHold');
  const mirror=state();mirror.animals[1].id='bear';
  assert.equal(bear.events(mirror)[0].defenderId,'bear');
 });
