@@ -133,6 +133,10 @@
       miracleName:hit.miracleBonus>0?hit.miracleName:null,
       miracleBonus:hit.miracleBonus||0,damage:hit.damage||0,
       remainingHp:hit.remainingHp,mode:s.mode||null,
+      // comeback layers + how the damage is shown (see combat-engine.js)
+      hits:Object.freeze(Array.isArray(hit.hits)&&hit.hits.length?[...hit.hits]:[hit.damage||0]),
+      focusGuard:Boolean(hit.focusGuard),guarded:hit.guarded||0,resurrected:Boolean(hit.resurrected),
+      goldChange:Boolean(hit.goldChange),superMiracle:Boolean(hit.superMiracle),
       perfect:s.animals[hit.attacker].hp>=(s.animals[hit.attacker].maxHp||Infinity)
     });
   }

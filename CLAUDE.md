@@ -30,10 +30,26 @@ or text.
 - Look target: PS2 / 2000s, warm retro arcade. No generic "AI" look,
   no clutter added to hide weak animation.
 
-## Combat rules v2 — Charge / Shield / Attack + Slots
-Status: rules engine implemented in `src/engine/turn-resolver.js`
-(pure, tested). Not yet wired into the UI/3D; the live game still runs the
-older G/T/P reel prototype (`src/combat-engine.js`) until the UI switch.
+## Ruleset decision (user, 2026-11-25): KEEP G/T/P + 10–50/✦
+The live game's Guts/Technique/Power reel + power reel (`src/combat-engine.js`)
+is THE ruleset. New rules layer on top of it, not on rules v2.
+Comeback layers in `combat-engine.js` `resolve()` (tests: `tests/comeback.test.mjs`):
+- **Focus Guard**: the first HEAVY hit (Power, ✦, or raw ≥ 60) an animal
+  takes at or below half health is cut by 35%. Once per bout per animal.
+- **Resurrection**: once per bout per animal, a hit that would KO leaves it
+  on 25% health instead (`hpBefore` on the event; the HUD uses it).
+- **Hits**: a strike's damage shown as Guts 1 / Technique 2 / Power & ✦ 3
+  blows (`hits`, shares sum exactly; display only).
+- **Gold Change**: every ✦ hit; the attacker turns gold (tint + gold rim via
+  `uAuraColor`) with a GOLD CHANGE! cut-in over the title.
+  **Super Miracle**: a ✦ hit that wins the bout; the launch sky is cosmic
+  (`setStage(level,'cosmic')`) instead of red.
+- Cut-ins (`.ark-callin-*`, film-time driven): FOCUS!! comic panel just before
+  the blow, FOCUS GUARD! −N at the landing, RESURRECTION! as it gets up.
+
+## Combat rules v2 — Charge / Shield / Attack + Slots (NOT used)
+Status: built and tested in `src/engine/turn-resolver.js` but the user chose
+to keep G/T/P (above). Kept for reference; do not wire it in without asking.
 
 Each turn both players secretly pick one action; both resolve simultaneously.
 
@@ -99,10 +115,9 @@ Each turn both players secretly pick one action; both resolve simultaneously.
 - `src/arcade-hud.css` (loaded last): lime health bars that drain when the
   HUD returns, metal octagon reels with G/T/P/✦ emblems, flame countdown,
   glossy cabinet button, "SET YOUR ATTACK!" / "ATTACK!" banners.
-- Dev tools (film review, 3D setup, Forestfall) sit in a DEV drawer, closed by
-  default (`localStorage['arkade.devDrawer']`).
-- Open question for the user: the live game still uses the G/T/P + 10–50
-  reel rules; the Charge/Shield/Attack rules v2 engine is built but unwired.
+- Dev tools (film review, 3D setup, Forestfall, BACK TO ARENA) sit in a DEV
+  drawer, closed on load and after each use (in-memory, not persisted).
+- Ruleset settled: G/T/P + 10–50/✦ (see "Ruleset decision").
 
 - **Power clash beat (2026-11-25, from the 2:41 PM real-match recording).**
   `.fight-clash` (combat-ui.js markup, arcade-hud.css): two octagon plates
@@ -156,27 +171,31 @@ Each turn both players secretly pick one action; both resolve simultaneously.
     smear); lock springs past centre under a starburst.
 
 ## Delivering work to the user
-- The user runs the game on his Mac from `~/Desktop/animal-arcade`.
-- Deliver commits as a git bundle whose ref is the branch name
-  (`git bundle create x.bundle <base>..<branch>`; never `..HEAD`), then
-  `git fetch <bundle> <branch> && git reset --hard FETCH_HEAD`.
-- Active branch: `menu-feel-integration-20261122`.
+- The user runs the game on his Mac from `~/Desktop/animal-arcade`. When that
+  folder is connected to the session, apply commits there directly
+  (fetch a bundle + `git merge --ff-only`); he starts the server himself.
+- Otherwise deliver a git bundle whose ref is the branch name
+  (`git bundle create x.bundle <base>..<branch>`; never `..HEAD`).
+- Active branch: `menu-feel-integration-20261122`, pushed to GitHub as
+  draft PR #13 (stacked on #12). Keep it a draft; never merge without asking.
 
 ## Attack film grammar (from the 2026-11-24 reference footage)
 Timed from Brown Bear vs Great Hornbill (video_5 13.8–22.8 s). The original
-never shows both animals touching and never leaves its arena: the stage is
-the battle stage; only the fire void and the launch's red sky are effects.
+never leaves its arena: the stage is the battle stage; only the fire void and
+the launch's red sky are effects. Deliberate departure (user-forwarded
+reviews, 2026-11-25): the blow lands in a two-fighter CONTACT shot (step 4b).
 1. Title: white ray burst, low profile push-in on the attacker in the arena
    (aura on, roar), rank + move name; fades to white.
 2. Head-on low shot of the attacker coiled → one-frame flash cut as it rears
    (Guts: it runs at the lens through speed streaks instead).
 3. Strike: signature moves ('fire') burn in front of a fire void; a 4-point
    claw glint flares on the highest front paw at the top of the swing.
-4. Lunge: the camera dollies into the live head bone (face fills the frame),
-   110 ms hit-stop with shake, white flash (Technique adds a claw slash).
+4. Lunge: the camera dollies toward the live head bone (stops 2.7 units
+   short, no cropped cheek).
+4b. Contact: hard cut to a 3/4 two-shot from live bounds, attacker placed
+   against the victim, rigs frozen for the hit-stop, 15° tilt, 40 ms flash.
 5. Launch: victim alone under a red sky (forest re-lit red), blown AWAY from
-   the lens (reference 19.9–20.5; the arcade never shows paw-on-victim
-   contact). The blow lands ON the victim: a star burst on its body (and
+   the lens (reference 19.9–20.5). The blow lands ON the victim: a star burst on its body (and
    Technique's claw slash, projected onto it) in the first 240 ms. Every
    launch is a roll about the body's length that ENDS ON ITS SIDE (never an
    end-over-end flip balanced on its antlers). Guts 'skid' (≤0.6 m, bounce,
@@ -184,8 +203,8 @@ the battle stage; only the fire void and the launch's red sky are effects.
    12° tilt), Power 'blast' (starts upside-down, 1½ turns; 135 ms, 18° tilt,
    slam + bounce). Blob shadow below. Flashes are crisp (≤ ~100 ms).
    The Bear's Guts film plays its RUN clip (its attack clip rears upright).
-6. Landing: hard cut to the arena wide; body-first into the knockout clip's
-   lying end pose; dirt spray; a survivor holds 450 ms then gets up by playing
+6. Landing: cut to the arena wide, the red light fading back to day (400 ms); body-first into the knockout clip's
+   lying end pose; dirt spray; a survivor holds 450 ms then gets up (700 ms) by playing
    the knockout fall BACKWARDS (a crossfade squashed the body flat);
    ONE damage number pops on the victim (projected from 3D, 950 ms); red total
    under its health clears before the return cut. Numbers display ×50

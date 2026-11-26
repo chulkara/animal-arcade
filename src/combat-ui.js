@@ -314,7 +314,7 @@
     // The struck side keeps its pre-hit health (number and bar) until the
     // attack film lands; combat-cinematics then releases the drain.
     const e=s.lastEvent,struck=e?.kind==='HIT'&&e.defender===i&&['RESULT','FINISHED'].includes(s.phase);
-    const before=struck?Math.min(f.maxHp,f.hp+(e.damage||0)):f.hp;
+    const before=struck?Math.min(f.maxHp,e.hpBefore??(f.hp+(e.damage||0))):f.hp;
     const from=struck?Math.round(before/f.maxHp*100):prevPct[i];prevPct[i]=remaining;
     return `<div class="ark-arena-hud-player ark-arena-hud-player-${i}" aria-label="${actorName(s,i)} ${a.label}, ${SHOW(f.hp)} of ${SHOW(f.maxHp)} health">
       <div class="ark-hud-nameplate">

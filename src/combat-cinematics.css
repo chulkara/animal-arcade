@@ -507,3 +507,46 @@
 .ark-cinema-slash i{left:4%;width:92%}
 .ark-cinema-slash i:nth-child(1){top:28%}.ark-cinema-slash i:nth-child(2){top:46%;left:2%}.ark-cinema-slash i:nth-child(3){top:64%;left:0}
 .ark-cinema[data-defender="0"] .ark-cinema-slash{transform:translate(-50%,-50%) scaleX(-1)}
+
+/* ---- Comeback / ✦ cut-ins (2026-11-25). Opacity comes from film time
+   (--callin-*), so they sit on exact beats and freeze in the film review. ---- */
+.ark-callin{position:absolute;z-index:8;pointer-events:none;text-align:center;line-height:.95;
+  font-family:var(--display-font,"Arial Black",Impact,sans-serif);font-style:italic;letter-spacing:.02em}
+.ark-callin b{display:block;-webkit-text-stroke:0}
+.ark-callin small{display:block;font-size:.34em;letter-spacing:.18em;font-style:normal;margin-top:.25em}
+/* GOLD CHANGE! / SUPER MIRACLE! over the title */
+.ark-callin-gold{left:0;right:0;top:17%;font-size:clamp(34px,4.6vw,72px);opacity:var(--callin-gold,0);
+  transform:scale(calc(.75 + .25*var(--callin-gold,0)))}
+.ark-callin-gold b{background:linear-gradient(180deg,#fffbe6 0%,#ffe27a 38%,#e0a21a 62%,#fff1b0 78%,#b57410 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(3px 0 0 #3a1c00) drop-shadow(-3px 0 0 #3a1c00) drop-shadow(0 3px 0 #3a1c00) drop-shadow(0 -3px 0 #3a1c00) drop-shadow(0 6px 0 #000)}
+.ark-callin-gold small{color:#fff3c4;text-shadow:0 2px 0 #3a1c00}
+/* FOCUS!! comic cut-in on the defender's side, just before the blow */
+.ark-callin-focus{top:14%;right:5%;font-size:clamp(30px,4vw,62px);padding:.35em .7em .45em;
+  background:radial-gradient(circle,#111 1.2px,transparent 1.6px) 0 0/7px 7px,linear-gradient(160deg,#fff36b,#ffb21e);
+  clip-path:polygon(4% 10%,22% 0,40% 9%,62% 0,80% 8%,100% 2%,94% 30%,100% 55%,93% 78%,98% 100%,70% 92%,48% 100%,28% 91%,6% 100%,10% 74%,0 52%,7% 30%);
+  opacity:var(--callin-focus,0);transform:rotate(-6deg) scale(calc(.6 + .4*var(--callin-focus,0)))}
+.ark-cinema[data-defender="0"] .ark-callin-focus{right:auto;left:5%;transform:rotate(6deg) scale(calc(.6 + .4*var(--callin-focus,0)))}
+.ark-callin-focus b{color:#101010;text-shadow:3px 3px 0 #fff}
+/* FOCUS GUARD! under the victim's damage pop */
+.ark-callin-guard{top:70%;right:12%;font-size:clamp(20px,2.4vw,38px);opacity:var(--callin-guard,0)}
+.ark-cinema[data-defender="0"] .ark-callin-guard{right:auto;left:12%}
+.ark-callin-guard b{color:#aef4ff;text-shadow:2px 0 0 #00222e,-2px 0 0 #00222e,0 2px 0 #00222e,0 -2px 0 #00222e,0 4px 0 #000}
+.ark-callin-guard small{color:#dffaff;font-size:.6em;letter-spacing:.06em;text-shadow:0 2px 0 #00222e}
+/* RESURRECTION! as the survivor gets back up */
+.ark-callin-revive{left:0;right:0;top:24%;font-size:clamp(36px,5vw,80px);opacity:var(--callin-revive,0);
+  transform:scale(calc(.8 + .2*var(--callin-revive,0)))}
+.ark-callin-revive::before{content:'';position:absolute;left:50%;top:50%;width:min(70vw,900px);aspect-ratio:1;translate:-50% -50%;z-index:-1;
+  background:repeating-conic-gradient(rgba(255,236,150,.55) 0 6deg,transparent 6deg 18deg);
+  -webkit-mask:radial-gradient(circle,#000 8%,transparent 55%);mask:radial-gradient(circle,#000 8%,transparent 55%)}
+.ark-callin-revive b{background:linear-gradient(180deg,#ffffff 0%,#fff3b8 45%,#ffc93c 75%,#e48a12 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(3px 0 0 #3a1400) drop-shadow(-3px 0 0 #3a1400) drop-shadow(0 3px 0 #3a1400) drop-shadow(0 -3px 0 #3a1400) drop-shadow(0 6px 0 #000)}
+@media (prefers-reduced-motion:reduce){.ark-callin{transform:none!important}.ark-callin-revive::before{display:none}}
+.game.reduce-motion .ark-callin{transform:none!important}
+.game.reduce-motion .ark-callin-revive::before{display:none}
+/* guard + resurrection sit under the damage pop, on the victim (not over it) */
+.ark-cinema[data-solo="1"] .ark-callin-guard{left:var(--pop-x,50%);right:auto;top:calc(var(--pop-top,26%) + 8%);
+  translate:-50% 0;font-size:clamp(26px,3.2vw,50px);white-space:nowrap}
+.ark-cinema[data-solo="1"][data-defender="0"] .ark-callin-guard{left:var(--pop-x,50%)}
+.ark-cinema[data-solo="1"] .ark-callin-revive{top:calc(var(--pop-top,26%) + 15%)}

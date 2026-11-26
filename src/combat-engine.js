@@ -13,6 +13,19 @@
   const BASE_HP=180;
   const ATTACK_NAMES=Object.freeze({G:'GUTS',T:'TECHNIQUE',P:'POWER'});
   const BONUS=Object.freeze({G:14,T:8,P:18});
+  // Comeback layers (original rules, decided 2026-11-25 on top of G/T/P):
+  // Focus Guard - the first HEAVY hit (Power, ✦, or >= 60) an animal takes at
+  //   or below half health is cut by 35%. Once per bout per animal.
+  // Resurrection - once per bout per animal, a hit that would KO leaves it
+  //   on 25% health instead.
+  // Hits - how a strike's damage is shown: Guts one blow, Technique two,
+  //   Power/✦ three (shares sum exactly to the damage; rules unchanged).
+  const FOCUS_CUT=.35,HEAVY_DAMAGE=60,REVIVE_SHARE=.25;
+  const HIT_SHARES=Object.freeze({G:[1],T:[.45,.55],P:[.25,.25,.5],MARK:[.25,.25,.5]});
+  function splitHits(damage,key){
+    const shares=HIT_SHARES[key]||[1];let left=damage;
+    return shares.map((share,i)=>{const v=i===shares.length-1?left:Math.round(damage*share);left-=v;return v;});
+  }
   function assert(value,message){if(!value)throw new Error(message);}
   function selectFrom(source,rng){
     const n=Math.min(0.999999,Math.max(0,Number(rng())||0));
@@ -45,6 +58,7 @@
         mode,animals:original.map((id,i)=>({id,hp:initialHealth[i],maxHp:BASE_HP,player:i+1})),
         round:1,phase:'ATTACK',actor:0,selected:[{technique:null,power:null},{technique:null,power:null}],
         tieCharge:0,lastEvent:null,winner:null,history:[],
+        focusUsed:[false,false],revived:[false,false],
         modifiers:initialModifiers.map(m=>({...m}))
       };
       return getState();
@@ -102,10 +116,19 @@
       const card=state.modifiers[attacker];
       const strongBonus=card.strongTechnique===attack.technique?card.strongBonus:0;
       const miracleBonus=attack.power==='MARK'?card.miracleBonus:0;
-      const damage=Math.round(18+rankValue*0.5+BONUS[attack.technique]+
+      const raw=Math.round(18+rankValue*0.5+BONUS[attack.technique]+
         state.tieCharge*12+(attack.power==='MARK'?20:0)+strongBonus+miracleBonus);
       const victim=state.animals[defender];
-      victim.hp=Math.max(0,victim.hp-damage);
+      const hpBefore=victim.hp;
+      const heavy=attack.technique==='P'||attack.power==='MARK'||raw>=HEAVY_DAMAGE;
+      const focusGuard=heavy&&!state.focusUsed[defender]&&victim.hp<=victim.maxHp/2;
+      if(focusGuard)state.focusUsed[defender]=true;
+      const damage=focusGuard?Math.round(raw*(1-FOCUS_CUT)):raw;
+      let resurrected=false;
+      if(victim.hp-damage<=0&&!state.revived[defender]){
+        state.revived[defender]=true;resurrected=true;
+        victim.hp=Math.max(1,Math.round(victim.maxHp*REVIVE_SHARE));
+      }else victim.hp=Math.max(0,victim.hp-damage);
       state.winner=victim.hp===0?attacker:null;
       state.phase=state.winner===null?'RESULT':'FINISHED';
       state.lastEvent={
@@ -114,7 +137,10 @@
         damage,remainingHp:victim.hp,charge:state.tieCharge,
         special:attack.power==='MARK',winner:state.winner,
         strongBonus,miracleBonus,strongName:strongBonus?card.strongName:null,
-        miracleName:miracleBonus?card.miracleName:null
+        miracleName:miracleBonus?card.miracleName:null,
+        rawDamage:raw,hpBefore,focusGuard,guarded:raw-damage,resurrected,
+        hits:splitHits(damage,attack.power==='MARK'?'MARK':attack.technique),
+        goldChange:attack.power==='MARK',superMiracle:attack.power==='MARK'&&state.winner!==null
       };
       state.history.push(state.lastEvent);
       if(state.history.length>60)state.history.shift();
@@ -131,5 +157,6 @@
     reset();
     return Object.freeze({stop,nextRound,reset,getState});
   }
-  return Object.freeze({createBattle,TECHNIQUES,POWERS,BASE_HP,ATTACK_NAMES});
+  return Object.freeze({createBattle,TECHNIQUES,POWERS,BASE_HP,ATTACK_NAMES,
+    FOCUS_CUT,HEAVY_DAMAGE,REVIVE_SHARE,HIT_SHARES,splitHits});
 });

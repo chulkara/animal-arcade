@@ -172,7 +172,7 @@
     const flameBones=[...joint.values()].filter(b=>/Spine|Chest|Neck|Head|Pelvis|Hips/i.test(b.name)&&
       !/Jaw|Tongue|Eye|Lid|Ear|Tail|Digit|Leg/i.test(b.name));
     actor.auraUniform={value:0};
-    actor.setAura=(level,time=0)=>{
+    actor.setAura=(level,time=0,gold=0)=>{
       if(!actor.tintMats){
         // Add the roar's mouth light now (switched off): adding a light later
         // recompiles every lit material mid-film, which dropped the rim-lit
@@ -195,14 +195,16 @@
               // fails to compile, dropping the body from the frame).
               if(!m.userData.arkAuraUniform&&!window.__arkNoRim){
                 const uniform=m.userData.arkAuraUniform={value:0};
+                // rim colour: fire orange, or gold for a ✦ Gold Change
+                const hue=m.userData.arkAuraColor={value:new THREE.Color(1.0,0.40,0.04)};
                 const prior=m.onBeforeCompile;
                 m.onBeforeCompile=(shader,r)=>{
                   prior?.call(m,shader,r);
                   if(shader.fragmentShader.includes('uniform float uAura;'))return;
-                  shader.uniforms.uAura=uniform;
-                  shader.fragmentShader='uniform float uAura;\n'+shader.fragmentShader.replace('#include <dithering_fragment>',
+                  shader.uniforms.uAura=uniform;shader.uniforms.uAuraColor=hue;
+                  shader.fragmentShader='uniform float uAura;\nuniform vec3 uAuraColor;\n'+shader.fragmentShader.replace('#include <dithering_fragment>',
                     `float arkRim=pow(1.0-clamp(abs(dot(normalize(normal),normalize(vViewPosition))),0.0,1.0),3.2);
-                    gl_FragColor.rgb+=vec3(1.0,0.40,0.04)*arkRim*uAura*0.85;
+                    gl_FragColor.rgb+=uAuraColor*arkRim*uAura*0.85;
                     #include <dithering_fragment>`);
                 };
                 m.customProgramCacheKey=()=>'ark-aura';
@@ -212,9 +214,13 @@
         });
       }
       for(const m of actor.tintMats)if(m.userData.arkAuraUniform)m.userData.arkAuraUniform.value=Math.max(0,level);
+      const g=Math.max(0,Math.min(1,gold));
       for(const m of actor.tintMats){
         m.color.copy(m.userData.baseColor);
         if(level>0.001)m.color.multiply(new THREE.Color(1,1-.08*level,1-.18*level));
+        // Gold Change: the coat turns burnished gold (lifted, then tinted)
+        if(g>0.001)m.color.lerp(new THREE.Color(1.0,.78,.30).multiplyScalar(.55+.45*m.userData.baseColor.getHSL({}).l*2),g*.82);
+        m.userData.arkAuraColor?.value.setRGB(1.0,.40+.42*g,.04+.30*g);
       }
       if(!actor.aura.length&&level>0&&flameBones.length&&scene){
         const tex=flameSpriteTexture();
@@ -1015,8 +1021,21 @@
   }
   // Graded 0..1 (not on/off): the red launch light fades back to daylight
   // over the landing shot instead of hard-cutting orange → green.
-  let redSkyMesh=null;
-  function setStage(level){
+  let redSkyMesh=null,stageKind='red',cosmicSkyTex=null;
+  function cosmicSkyCanvas(){
+    const W=256,H=256,c=document.createElement('canvas');c.width=W;c.height=H;
+    const g=c.getContext('2d');
+    const grad=g.createLinearGradient(0,0,0,H);
+    grad.addColorStop(0,'#07031a');grad.addColorStop(.35,'#1d0b4a');grad.addColorStop(.48,'#5a2a9c');
+    grad.addColorStop(.53,'#f0c060');grad.addColorStop(.6,'#3a1660');grad.addColorStop(1,'#12062a');
+    g.fillStyle=grad;g.fillRect(0,0,W,H);
+    let seed=7;const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
+    for(let i=0;i<260;i++){const x=rnd()*W,y=rnd()*H*.5,r=rnd()<.08?1.4:.6;
+      g.fillStyle=`rgba(255,${235+rnd()*20|0},${200+rnd()*55|0},${.5+rnd()*.5})`;g.beginPath();g.arc(x,y,r,0,7);g.fill();}
+    const t=new THREE.CanvasTexture(c);if(THREE.SRGBColorSpace)t.colorSpace=THREE.SRGBColorSpace;
+    return t;
+  }
+  function setStage(level,kind='red'){
     if(!forestRoot)return;
     if(!stageMats){
       stageMats=[];
@@ -1024,25 +1043,31 @@
       forestRoot.traverse(o=>{if(!o.isMesh||o===skyMesh)return;
         for(const m of [].concat(o.material))
           if(m?.color&&!stageMats.includes(m)){m.userData.stageBase=m.color.clone();
-            m.userData.stageRed=m.color.clone().multiply(new THREE.Color(1,.34,.26));stageMats.push(m);}});
+            m.userData.stageRed=m.color.clone().multiply(new THREE.Color(1,.34,.26));
+            m.userData.stageCosmic=m.color.clone().multiply(new THREE.Color(.42,.34,.78));stageMats.push(m);}});
       fogBase=scene.fog?.color?.clone()||null;
     }
     const k=Math.max(0,Math.min(1,Number(level)||0));
+    if(kind!==stageKind&&k>0){stageKind=kind;stageRed=-1;
+      if(redSkyMesh){if(kind==='cosmic'&&!cosmicSkyTex)cosmicSkyTex=cosmicSkyCanvas();
+        redSkyMesh.material.map=kind==='cosmic'?cosmicSkyTex:redSkyTex;redSkyMesh.material.needsUpdate=true;}}
     if(Math.abs(k-stageRed)<.015&&!(k===0&&stageRed!==0)&&!(k===1&&stageRed!==1))return;
     stageRed=k;
-    for(const m of stageMats)m.color.copy(m.userData.stageBase).lerp(m.userData.stageRed,k);
+    const target=stageKind==='cosmic'?'stageCosmic':'stageRed';
+    for(const m of stageMats)m.color.copy(m.userData.stageBase).lerp(m.userData[target],k);
     if(skyMesh&&k>0&&!redSkyMesh){
       if(!redSkyTex)redSkyTex=redSkyCanvas();
+      if(stageKind==='cosmic'&&!cosmicSkyTex)cosmicSkyTex=cosmicSkyCanvas();
       // A second dome just inside the sky carries the red sky; its opacity
       // is the cross-fade (swapping the one texture could only cut).
-      redSkyMesh=new THREE.Mesh(skyMesh.geometry,new THREE.MeshBasicMaterial({map:redSkyTex,transparent:true,
+      redSkyMesh=new THREE.Mesh(skyMesh.geometry,new THREE.MeshBasicMaterial({map:stageKind==='cosmic'?cosmicSkyTex:redSkyTex,transparent:true,
         opacity:0,depthWrite:false,fog:false,side:skyMesh.material.side}));
       redSkyMesh.position.copy(skyMesh.position);redSkyMesh.quaternion.copy(skyMesh.quaternion);
       redSkyMesh.scale.copy(skyMesh.scale).multiplyScalar(.995);
       redSkyMesh.renderOrder=(skyMesh.renderOrder||0)+1;skyMesh.parent.add(redSkyMesh);
     }
     if(redSkyMesh){redSkyMesh.material.opacity=k;redSkyMesh.visible=k>0;}
-    if(scene.fog&&fogBase)scene.fog.color.copy(fogBase).lerp(new THREE.Color(0xb8463a),k);
+    if(scene.fog&&fogBase)scene.fog.color.copy(fogBase).lerp(new THREE.Color(stageKind==='cosmic'?0x2a1650:0xb8463a),k);
   }
   function makeBackdropTexture(kind){
     const c=fireCanvas();
@@ -1141,7 +1166,8 @@
     const timing=sequence?cinematics.duration(sequence.event,nativeLength(sequence.event)):null;
     const victor=Boolean(sequence?.event?.finished&&timing&&sequence.elapsed>=timing.victoryStart&&!reduced());
     for(const actor of actors){
-      actor?.setAura?.(actor===attacker&&(view?.active||victor)?(victor?1:view.aura):0,time||0);
+      const gold=actor===attacker&&sequence?.event?.goldChange&&(view?.active||victor)?1:0;
+      actor?.setAura?.(actor===attacker&&(view?.active||victor)?(victor?1:Math.max(view.aura,gold*.6)):0,time||0,gold);
       if(actor)actor.roarLevel=actor===attacker&&view?view.roar:0;
     }
     // the animal in the spin close-up growls (head up, jaw parted / antler toss)
@@ -1149,7 +1175,7 @@
       const a=spinFeature.age;
       spinFeature.actor.roarLevel=.55*Math.min(1,a/260)*(a>1150?Math.max(0,1-(a-1150)/300):1);
     }
-    setStage(view?.stage==='red'?view.redSky:0);
+    setStage(view?.stage==='red'?view.redSky:0,sequence?.event?.superMiracle?'cosmic':'red');
     if(forestRoot)forestRoot.visible=!(view?.fire>.55);
     paintGlint(view,attacker,time||0);
     paintLaunchShadow(view,defender);

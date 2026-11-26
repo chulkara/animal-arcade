@@ -49,6 +49,11 @@ function createOverlay(){
   '<div class="ark-cinema-solo-title"><small data-ark-solo-rank></small><strong data-ark-solo-name></strong></div>'+
   '<div class="ark-cinema-dmg" data-ark-dmg><b data-ark-dmg-a></b><b data-ark-dmg-b></b></div>'+
   '<div class="ark-cinema-total" data-ark-dmg-total></div>'+
+  // comeback / ✦ cut-ins (driven from film time in draw())
+  '<div class="ark-callin ark-callin-gold" data-ark-callin="gold" aria-hidden="true"><b></b><small></small></div>'+
+  '<div class="ark-callin ark-callin-focus" data-ark-callin="focus" aria-hidden="true"><b>FOCUS!!</b></div>'+
+  '<div class="ark-callin ark-callin-guard" data-ark-callin="guard" aria-hidden="true"><b>FOCUS GUARD!</b><small></small></div>'+
+  '<div class="ark-callin ark-callin-revive" data-ark-callin="revive" aria-hidden="true"><b>RESURRECTION!</b></div>'+
   '<div class="ark-cinema-lines"></div>'+
   '<div class="ark-cinema-streak"></div>'+
   '<div class="ark-cinema-slash"><i></i><i></i><i></i></div>'+
@@ -160,6 +165,12 @@ function draw(time){
      const total=overlay.querySelector('[data-ark-dmg-total]');if(total)total.textContent=dmg?String(dmg):'';
      const a=overlay.querySelector('[data-ark-dmg-a]'),b=overlay.querySelector('[data-ark-dmg-b]');
      if(a)a.textContent=dmg?String(dmg):'';if(b)b.textContent='';
+     a&&(a.dataset.hit='-1');
+     const gold=overlay.querySelector('[data-ark-callin="gold"]');
+     if(gold){gold.querySelector('b').textContent=event.superMiracle?'SUPER MIRACLE!':event.goldChange?'GOLD CHANGE!':'';
+       gold.querySelector('small').textContent=event.superMiracle?'✦ FINISHER':event.goldChange?'✦ MIRACLE STRIKE':'';}
+     const guard=overlay.querySelector('[data-ark-callin="guard"] small');
+     if(guard)guard.textContent=event.focusGuard?'−'+Math.round((event.guarded||0)*(api.DISPLAY_SCALE||1)):'';
    }
    if(sub)sub.textContent=rehearsal?
      beat==='CONTACT'?'STAGED CONTACT · NO HP CHANGES':
@@ -192,12 +203,34 @@ function draw(time){
  // Damage pop, from film time (deterministic, frame-accurate in review):
  // scale .6 → 1.15 → 1 in 180 ms, drift up, fade before the return cut.
  if(solo?.active){
-   const age=elapsed-(timing.landAt||0),span=api.SOLO_MS.pop;
-   const sc=age<80?.6+.55*age/80:age<180?1.15-.15*(age-80)/100:1;
+   // Multi-hit: Technique's 2 and Power/✦'s 3 blows pop one after another
+   // (170 ms apart, each re-popping), the last holds; red total = the sum.
+   const hits=(event.hits?.length?event.hits:[event.damage||event.previewDamage||0]).map(v=>Math.max(0,Math.round(v))*(api.DISPLAY_SCALE||1));
+   const STEP=170,n=hits.length;
+   const age=elapsed-(timing.landAt||0),span=api.SOLO_MS.pop+(n-1)*STEP;
+   const k=age<0?0:Math.min(n-1,Math.floor(age/STEP)),local=age-k*STEP;
+   const popA=overlay.querySelector('[data-ark-dmg-a]');
+   if(popA&&popA.dataset.hit!==String(k)&&age>=0){popA.dataset.hit=String(k);popA.textContent=hits[k]?String(hits[k]):'';}
+   const sc=local<80?.6+.55*local/80:local<180?1.15-.15*(local-80)/100:1;
    const op=age<0||age>=span?0:age<40?age/40:age>span-260?(span-age)/260:1;
    overlay.style.setProperty('--pop-scale',sc.toFixed(3));
    overlay.style.setProperty('--pop-op',op.toFixed(3));
-   overlay.style.setProperty('--pop-y',(-Math.max(0,age)/span*36).toFixed(1)+'px');
+   overlay.style.setProperty('--pop-y',(-Math.max(0,age)/span*36-k*6).toFixed(1)+'px');
+   // cut-ins, all from film time
+   const win=(a,b,fade=120)=>elapsed<a||elapsed>=b?0:Math.min(1,(elapsed-a)/fade,(b-elapsed)/fade);
+   const contactAt=timing.actionLead+timing.contact;
+   overlay.style.setProperty('--callin-gold',!reduce()&&event.goldChange?win(timing.titleIn+200,timing.actionLead-150).toFixed(3):'0');
+   overlay.style.setProperty('--callin-focus',!reduce()&&event.focusGuard?win(contactAt-420,contactAt+40,60).toFixed(3):'0');
+   overlay.style.setProperty('--callin-guard',event.focusGuard?win(timing.landAt+120,timing.landAt+1100).toFixed(3):'0');
+   // one sting per cut-in, the first frame it shows (never in the review)
+   if(!rehearsal&&!reduce()){
+     const cue=(name,on)=>{if(on&&!sequence['cue_'+name]){sequence['cue_'+name]=true;window.NoahsAudio?.cue(name);}};
+     cue('goldChange',event.goldChange&&elapsed>=timing.titleIn+200&&elapsed<timing.actionLead);
+     cue('focus',event.focusGuard&&elapsed>=contactAt-420&&elapsed<contactAt);
+     cue('focusGuard',event.focusGuard&&elapsed>=timing.landAt+120&&elapsed<timing.returnAt);
+     cue('resurrect',event.resurrected&&elapsed>=timing.landAt+380&&elapsed<timing.returnAt);
+   }
+   overlay.style.setProperty('--callin-revive',event.resurrected?win(timing.landAt+380,Math.min(timing.returnAt,timing.landAt+1600)).toFixed(3):'0');
    // pop on the victim where it lands, not at a fixed screen spot
    const anchor=age>=0&&age<span?window.NoahsArena3D?.getPopAnchor?.():null;
    if(anchor&&Number.isFinite(anchor.x)&&Number.isFinite(anchor.y)){
