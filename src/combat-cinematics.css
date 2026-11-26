@@ -590,3 +590,7 @@
 .ark-xslash i:nth-child(2){rotate:-32deg}
 @media (prefers-reduced-motion:reduce){.ark-falling-star,.ark-xslash{display:none}}
 .game.reduce-motion :is(.ark-falling-star,.ark-xslash){display:none}
+
+.ark-hitpops b[data-n]:not([data-n=""])::after{content:attr(data-n);display:block;text-align:center;margin-top:.1em;
+  font-size:.34em;letter-spacing:.08em;font-style:italic;color:#9ff2ff;-webkit-text-fill-color:#9ff2ff;
+  text-shadow:2px 0 0 #00222e,-2px 0 0 #00222e,0 2px 0 #00222e,0 -2px 0 #00222e}

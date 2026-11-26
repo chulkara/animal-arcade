@@ -76,14 +76,14 @@ const SOLO=Object.freeze({
     S:Object.freeze({...SOLO_STYLE.S,launchHeight:2.8,spin:1.2})
   })
 });
-const LAUNCH_MS=Object.freeze({blast:720,skid:640,roll:700});
+const LAUNCH_MS=Object.freeze({blast:720,skid:440,roll:700});
 // Fights run on small numbers (180 HP); the screen shows them at arcade
 // scale. Display only: every rule and outcome is unchanged.
 const DISPLAY_SCALE=50;
 // Body height relative to the Bear, so framing fits each animal.
 const SOLO_SCALE=Object.freeze({bear:1,moose:1.18});
 const SOLO_MS=Object.freeze({titleIn:1100,lead:2880,lunge:170,
-  hitStop:110,launchDelay:330,launch:720,land:1500,ret:300,pop:950,koHold:1250,downHold:450,getUp:700,whiteOut:110,impact:240,redFade:400,
+  hitStop:110,launchDelay:330,launch:720,land:1500,ret:300,pop:950,koHold:1250,downHold:450,getUp:700,whiteOut:60,impact:240,redFade:400,
   // Resurrection: HP drains to 0 on the landing, holds there, then the victim
   // rises as RESURRECTION! erupts and the bar refills (reviveAt).
   reviveHold:600});
@@ -360,7 +360,9 @@ function soloView(event,elapsed,nativeMs){
   const burst=0; // the title ray burst drew spokes across the animal; dropped
   // Red through the flight, then a 400 ms fade back to daylight in the
   // landing shot (one continuous light change, not a hard orange→green cut).
-  const redSky=t<timing.launchAt?0:t<timing.landAt?ease(clamp((t-timing.launchAt)/250,0,1)):
+  // (a Super Miracle stays in its cosmic sky from the blow through the flight)
+  const redSky=event.superMiracle&&t>=contactAt&&t<timing.landAt?1:
+    t<timing.launchAt?0:t<timing.landAt?ease(clamp((t-timing.launchAt)/250,0,1)):
     1-ease(clamp((t-timing.landAt)/SOLO_MS.redFade,0,1));
   const away=event.attacker===0?1:-1;
   // The victim, as in the reference: blown AWAY from the lens, entering the
@@ -375,17 +377,18 @@ function soloView(event,elapsed,nativeMs){
       // end-over-end flip that balances it on its antlers.
       let y,drift,spin,yaw=0;const axis='x',side=-Math.PI/2;
       if(sp.launch==='skid'){
-        // Guts: low (≤0.6 m), tips onto its side, touches down at 55 %, bounces, skids.
-        const v=Math.min(1,u/.55),w=clamp((u-.55)/.45,0,1);
-        y=u<.55?.6*Math.sin(Math.PI*(.35+.65*v))*(1-v*.4):(w<.45?.25*Math.sin(Math.PI*w/.45):0);
-        drift=u<.55?.3+2.4*v:2.7+(L-2.7)*(1-(1-w)*(1-w));
-        spin=side*ease(v);
+        // Guts: a fast, low ballistic hop (0.7 m peak, 440 ms, steady
+        // horizontal speed), tipping onto its side; it never hangs in the air.
+        y=4*.7*u*(1-u);
+        drift=.2+(L-.2)*u;
+        spin=side*ease(u);
       }else if(sp.launch==='roll'){
-        // Technique: mid-height sideways spin, a full turn and a quarter onto its flank.
-        // Leaves the ground from where it stood in the contact two-shot.
+        // Technique: mid-height arc from where it stood in the contact
+        // two-shot, rolling ONE way onto its flank (never back through
+        // upright) while it spins flat about the vertical for the tumble.
         y=1.5*Math.sin(Math.PI*u)*(1-.35*u);
         drift=.15+(L-.15)*Math.pow(u,.8);
-        spin=(side-Math.PI*2)*ease(u);yaw=(event.attacker===0?1:-1)*.9*u;
+        spin=side*ease(u);yaw=(event.attacker===0?1:-1)*2.4*ease(u);
       }else{
         // Power: high; starts upside-down, turns 1.5 times and is on its side before it lands.
         // Power (reference 19.9): already high and upside-down on the first
@@ -394,7 +397,9 @@ function soloView(event,elapsed,nativeMs){
         // recording opened on an empty tilted sky before it dropped in).
         y=Math.min(sp.launchHeight,2.05)*Math.pow(1-u,1.5);
         drift=.3+(L-.3)*Math.pow(u,.8);
-        spin=-Math.PI-Math.PI*1.5*Math.min(1,u/.85);
+        // upside-down → on its side in one direction only (the 1½-turn roll
+        // passed back through upright mid-air and read as a reversal)
+        spin=-Math.PI+(Math.PI/2)*ease(Math.min(1,u/.85));yaw=(event.attacker===0?1:-1)*1.2*ease(u);
       }
       launch=Object.freeze({u,landed:false,y,drift:away*drift,spin,axis,yaw});
     }else{
@@ -403,7 +408,8 @@ function soloView(event,elapsed,nativeMs){
       const age=landAge;
       const bounce=sp.launch==='blast'?(age<200?.34*Math.sin(Math.PI*age/200):
         age<380?.12*Math.sin(Math.PI*(age-200)/180):0):
-        sp.launch==='roll'&&age<220?.14*Math.sin(Math.PI*age/220):0;
+        sp.launch==='roll'&&age<220?.14*Math.sin(Math.PI*age/220):
+        sp.launch==='skid'&&age<180?.12*Math.sin(Math.PI*age/180):0;
       const downFor=SOLO_MS.downHold+(event.resurrected?SOLO_MS.reviveHold:0),getUp=SOLO_MS.getUp;
       const rising=!event.knockout&&age>downFor?clamp((age-downFor)/getUp,0,1):0;
       launch=Object.freeze({u:1,landed:true,y:bounce,drift:away*L,spin:0,axis:'x',yaw:0,
@@ -489,7 +495,7 @@ function camera(event,elapsed,nativeMs){
     }else{x=0;targetX=0;y=2.8;z=12.2;targetY=1.23;zoom=1;}
     const k=reducedShake(view.shake)*(view.slam?1.8:1);
     return Object.freeze({x:x+.11*k,y:y+.06*k*(view.slam?3:1),z,targetX,targetY,zoom,shake:k,slam:view.slam||0,
-      angle:(event.attacker===0?1:-1)*(beat.shot==='lunge'?(view.tilt||0):beat.shot==='contact'?.26:0),
+      angle:(event.attacker===0?1:-1)*(beat.shot==='lunge'?(view.tilt||0):beat.shot==='contact'?(view.slam?.31:.26):0),
       beat:beat.beat,shot:beat.shot,cut:true,lunge:view.lunge,
       snap:beat.shot==='launch'||beat.shot==='lunge'||beat.shot==='contact'});
   }else if(beat.beat==='VICTORY'){

@@ -208,6 +208,23 @@ Each turn both players secretly pick one action; both resolve simultaneously.
     nothing), cutting clouds at u=0/1; each wrapped copy gets its own gradient.
   - *Post-match:* REMATCH + MODE SELECT · 1P / 2P (→ MODE_MENU, where 2 PLAYERS lives).
 
+- **Iteration 6 (2026-11-26, 9:59/10:01 PM recordings + forwarded review).**
+  - *One clock.* `applyCamera` uses `sequence.elapsed` when the overlay is on
+    the same event; the overlay clock ran a frame behind, so every cut showed
+    one frame of the old shot with the new pose (Moose "sliding off screen"
+    after the get-up, belly frame before the lying pose).
+  - Knockout pose at landing is instant (`native('knockout',0)`).
+  - *Launch arcs.* Guts = ballistic hop `y=4·0.7·u(1−u)`, 440 ms, steady drift,
+    small skid bounce. Technique = one-way quarter roll onto its flank + 2.4 rad
+    flat yaw spin. Power = upside-down → side, one way (+ yaw). No roll passes
+    back through upright (test). Title white-out 60 ms.
+  - *Launch light.* Ordinary launches use a half-strength red wash (runtime
+    scales `redSky` ×0.5). Super Miracle stays cosmic from the blow through
+    the flight (core `redSky`=1 from contactAt), 18° contact tilt.
+  - Hit pops 2+ carry "N HITS!" so equal numbers read as separate blows.
+  - Our-roar jaw cap 0.34 rad (was 0.5; the gold coat made the mouth a dark box).
+  - Victory kept as the reference grammar (walk-in, vicWide). User decides.
+
 ## Delivering work to the user
 - The user runs the game on his Mac from `~/Desktop/animal-arcade`. When that
   folder is connected to the session, apply commits there directly

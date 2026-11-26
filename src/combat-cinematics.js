@@ -227,13 +227,16 @@ function draw(time){
    const n=Math.min(3,hits.length),contactHit=timing.actionLead+timing.contact+20;
    const at=n===1?[timing.landAt]:n===2?[contactHit,timing.landAt]:
      [contactHit,timing.launchAt+.45*(timing.landAt-timing.launchAt),timing.landAt];
-   const OFF=n===1?[[0,0]]:n===2?[[-.07,.02],[0,0]]:[[-.08,.03],[.07,-.03],[0,0]];
+   const OFF=n===1?[[0,0]]:n===2?[[-.06,.05],[.04,-.04]]:[[-.07,.05],[.07,-.05],[0,0]];
    const age=elapsed-(timing.landAt||0);
    overlay.querySelectorAll('[data-ark-hitpop]').forEach((el,i)=>{
      if(i>=n||reduce()){el.style.opacity='0';return;}
      const a=elapsed-at[i],last=i===n-1,life=last?(event.resurrected?550:api.SOLO_MS.pop):550;
      if(a<0||a>=life){el.style.opacity='0';if(a<0)el.dataset.placed='';return;}
      if(el.textContent!==String(hits[i]))el.textContent=String(hits[i]);
+     // from the second blow on, a hit counter under the number, so two equal
+     // numbers in a row read as two hits, not one lingering pop
+     el.dataset.n=i>0?(i+1)+' HITS!':'';
      if(a<90||!el.dataset.placed){
        const p=window.NoahsArena3D?.getPopAnchor?.();
        const x=p&&Number.isFinite(p.x)?p.x:(event.defender===1?.7:.3),y=p&&Number.isFinite(p.y)?p.y:.35;

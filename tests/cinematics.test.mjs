@@ -90,7 +90,7 @@ test('reel input, storyboard, model camera and sound scripts are wired after the
  assert.ok(ui.includes('ark-reel-lamps'));
  assert.ok(model.includes('cinematics.camera(event,time,nativeLength(event))'));
  assert.ok(model.includes("defender?.native(sequence.solo||!event.knockout?'hit':'knockout')"));
- assert.ok(model.includes("defender.currentKey=null;defender.native('knockout',.05);"),'film victims land body-first, lying');
+ assert.ok(model.includes("defender.currentKey=null;defender.native('knockout',0);"),'film victims land body-first, lying (no crossfade from the standing hit pose)');
  assert.ok(model.includes("ko.timeScale=-Math.max("),'survivors get back up: the knockout fall played backwards');
  assert.ok(audio.includes("case 'cinemaMiracle'"));
  assert.ok(audio.includes("case 'cinemaVictory'"));
@@ -559,7 +559,22 @@ test('each move has its own impact: hit-stop, tilt and launch; victims land lyin
   const r=((end.spin%(2*Math.PI))+2*Math.PI)%(2*Math.PI);
   assert.ok(Math.abs(r-1.5*Math.PI)<.05,m+' lands on its side, not on its antlers');
  }
- assert.ok(mid('G').y<=.6,'Guts stays low');
+ assert.ok(mid('G').y<=.7,'Guts stays low');
+ // a real hop for Guts (fast, never hanging), and every roll turns ONE way:
+ // never back through upright on the way to its side (reviewer: mid-air reversal)
+ assert.ok(T.G.landAt-T.G.launchAt<=450,'Guts airtime ≤ 450 ms');
+ for(const m of ['G','T','P']){
+  let prev=null,up=0,left=false;
+  for(let t=T[m].launchAt;t<T[m].landAt;t+=10){
+   const sp=director.soloView(mk(m),t,3000).launch.spin;
+   if(prev!==null)assert.ok((sp-prev)*(m==='P'?1:-1)>=-1e-9,m+' rolls monotonically');
+   const r=((sp%(2*Math.PI))+2*Math.PI)%(2*Math.PI);
+   const near=r<.15||r>2*Math.PI-.15;
+   if(!near)left=true;else if(left)up++;
+   prev=sp;
+  }
+  assert.equal(up,0,m+' never passes back through upright mid-air');
+ }
  // the victim is blown away from the lens and lands far off
  for(const m of ['G','T','P']){
   const first=director.soloView(mk(m),T[m].launchAt,3000).launch,last=director.soloView(mk(m),T[m].landAt-1,3000).launch;

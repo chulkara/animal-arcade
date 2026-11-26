@@ -692,7 +692,7 @@
         jawAngle=2*Math.acos(Math.min(1,Math.abs(jawBone.quaternion.dot(jawRest))));
         // the roar (our own jaw rig + mouth interior) may open ~29°; a source
         // clip only ~12°, past which its lips stretch into a striped panel
-        const max=(actor.howlJaw||0)>.02||lvl>.02?.5:.21;
+        const max=(actor.howlJaw||0)>.02||lvl>.02?.34:.21;
         if(jawAngle>max){jawBone.quaternion.copy(jawRest).slerp(jawBone.quaternion,max/jawAngle);jawAngle=max;}
       }
       if(actor.mouthBag)actor.mouthBag.visible=Math.max(lvl*.5,actor.howlJaw||0,jawAngle)>.05;
@@ -1238,7 +1238,10 @@
       const a=spinFeature.age;
       spinFeature.actor.roarLevel=.55*Math.min(1,a/260)*(a>1150?Math.max(0,1-(a-1150)/300):1);
     }
-    setStage(view?.stage==='red'?view.redSky:0,sequence?.event?.superMiracle?'cosmic':'red');
+    // Super Miracle keeps its full cosmic sky; the ordinary launch is a warm
+    // half-strength wash so the forest still reads as the same daylight place.
+    const sup=Boolean(sequence?.event?.superMiracle);
+    setStage(view?.stage==='red'?view.redSky*(sup?1:.5):0,sup?'cosmic':'red');
     if(forestRoot)forestRoot.visible=!(view?.fire>.55);
     paintGlint(view,attacker,time||0);
     paintLaunchShadow(view,defender);
@@ -1657,7 +1660,7 @@
       sequence.thumpX=defender?.pivot.position.x??0;
       if(defender){
         // Body-first: straight into the lying end of the knockout clip.
-        defender.currentKey=null;defender.native('knockout',.05);
+        defender.currentKey=null;defender.native('knockout',0);
         if(defender.current){const d=defender.current.getClip().duration;defender.current.time=Math.max(0,d-.04);}
       }
       if(!reduced())window.NoahsAudio?.cue('thud');
@@ -1877,8 +1880,13 @@
   function applyCamera(dt){
     if(!camera||!THREE||!cameraLook)return;
     const live=window.NoahsCinematics?.getState();
-    const event=live?.event||sequence?.event;
-    const time=live?.elapsed??sequence?.elapsed??0;
+    // One clock for the camera and the bodies: the overlay's clock runs a
+    // frame behind the 3D sequence, so on every cut the camera showed one
+    // frame of the old shot with the new pose (the Moose "sliding off
+    // screen" after the get-up, the belly frame before the lying pose).
+    const own=sequence?.event&&(!live?.event||live.event.key===sequence.event.key);
+    const event=own?sequence.event:live?.event||sequence?.event;
+    const time=own?sequence.elapsed??0:live?.elapsed??sequence?.elapsed??0;
     const wants=(!reduced()&&event&&cinematics)?
       cinematics.camera(event,time,nativeLength(event)):(!reduced()?spinCamera():null);
     const fit=layout?.scale?.x??1;
