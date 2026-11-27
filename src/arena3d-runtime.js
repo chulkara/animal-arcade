@@ -1943,7 +1943,15 @@
         // a swimmer is knocked out of its hover: the launch arc carries its
         // body, not body + hover (the Power blast threw the shark out of frame)
         const sink=defender.swim?window.NoahsSharkActionCore.HOVER:0;
-        if(l.axis==='x'){
+        if(defender.swim){
+          // A long body turned end over end stood the shark on its tail
+          // (Nov 27 recordings): it spins about its own length instead, the
+          // swim group's roll (centred on the body), nose dipping as it flies.
+          defender.pivot.position.set(defender.baseX+l.drift,l.y-sink,0);
+          defender.pivot.rotation.set(0,l.yaw||0,0);
+          defender.swim.rotation.z+=th*(defender.slot===0?-1:1);
+          defender.swim.rotation.x+=.22*Math.sin(Math.min(Math.PI,th));
+        }else if(l.axis==='x'){
           defender.pivot.position.x=defender.baseX+l.drift;
           defender.pivot.position.y=l.y-sink+h*(1-Math.cos(th));
           defender.pivot.position.z=-h*Math.sin(th);
