@@ -175,7 +175,7 @@ function draw(time){
      overlay.querySelectorAll('[data-ark-hitpop]').forEach(el=>{el.textContent='';el.dataset.placed='';});
      const portrait=overlay.querySelector('[data-ark-focus-portrait]');
      if(portrait){const src=window.NoahsArena3D?.getPortrait?.(event.defenderId)||
-       (event.defenderId==='moose'?'./assets/moose-placeholder.svg':'./assets/bear-placeholder.svg');
+       (window.NoahsRoster?.ANIMALS?.[event.defenderId]?.art||'./assets/bear-placeholder.svg');
        portrait.style.backgroundImage='url("'+src+'")';}
      const guard=overlay.querySelector('[data-ark-callin="guard"] small');
      if(guard)guard.textContent=event.focusGuard?'−'+Math.round((event.guarded||0)*(api.DISPLAY_SCALE||1)):'';
@@ -294,6 +294,7 @@ function draw(time){
  if(p.beat==='VICTORY'&&!reduce()&&!window.NoahsForestfall?.getStatus?.().playing){
    if(p.local>=api.VICTORY_HOWL_CUE_MS&&!howlCued){
      if(event.attackerId==='moose')window.NoahsAudio?.cue('mooseBellow');
+     else if(event.attackerId==='shark')window.NoahsAudio?.cue('sharkThrash');
      else window.NoahsAudio?.cue('bearHowl');
      howlCued=true;
    }

@@ -35,6 +35,12 @@ const ATTACKS=Object.freeze({
     T:Object.freeze({name:'CROSS-ANTLER SWEEP',shots:['sweep','hunter','impact','recoil'],accent:'jade'}),
     P:Object.freeze({name:'TWO-HOOF STOMP',shots:['ground','rising','impact','recoil'],accent:'ember'}),
     S:Object.freeze({name:'LEAPING ANTLER DRIVE',shots:['highHero','rising','impact','recoil'],accent:'gold'})
+  }),
+  shark:Object.freeze({
+    G:Object.freeze({name:'RAMMING BITE',shots:['hunter','wide','impact','recoil'],accent:'earth'}),
+    T:Object.freeze({name:'TAIL LASH',shots:['sweep','hunter','impact','recoil'],accent:'jade'}),
+    P:Object.freeze({name:'BREACH STRIKE',shots:['ground','rising','impact','recoil'],accent:'ember'}),
+    S:Object.freeze({name:'DEEP-SEA FRENZY',shots:['highHero','rising','impact','recoil'],accent:'gold'})
   })
 });
 const MIRACLES=Object.freeze({
@@ -74,6 +80,13 @@ const SOLO=Object.freeze({
     T:Object.freeze({...SOLO_STYLE.T,launchHeight:2.3,spin:.9}),
     P:Object.freeze({...SOLO_STYLE.P,launchHeight:2.5,spin:1}),
     S:Object.freeze({...SOLO_STYLE.S,launchHeight:2.8,spin:1.2})
+  }),
+  // Ramming Bite charges the lens; Breach Strike / Frenzy burn in the fire void.
+  shark:Object.freeze({
+    G:Object.freeze({...SOLO_STYLE.G,launchHeight:2.3,spin:.8}),
+    T:Object.freeze({...SOLO_STYLE.T,launchHeight:2.4,spin:.9}),
+    P:Object.freeze({...SOLO_STYLE.P,launchHeight:2.6,spin:1}),
+    S:Object.freeze({...SOLO_STYLE.S,launchHeight:2.9,spin:1.2})
   })
 });
 const LAUNCH_MS=Object.freeze({blast:720,skid:440,roll:700});
@@ -81,7 +94,8 @@ const LAUNCH_MS=Object.freeze({blast:720,skid:440,roll:700});
 // scale. Display only: every rule and outcome is unchanged.
 const DISPLAY_SCALE=50;
 // Body height relative to the Bear, so framing fits each animal.
-const SOLO_SCALE=Object.freeze({bear:1,moose:1.18});
+// The shark swims ~0.9 m up, so its body sits higher in the frame.
+const SOLO_SCALE=Object.freeze({bear:1,moose:1.18,shark:1.12});
 const SOLO_MS=Object.freeze({titleIn:1100,lead:2880,lunge:170,
   hitStop:110,launchDelay:330,launch:720,land:1500,ret:300,pop:950,koHold:1250,downHold:450,getUp:700,whiteOut:60,impact:240,redFade:400,
   // Resurrection: HP drains to 0 on the landing, holds there, then the victim
@@ -91,8 +105,15 @@ const reducedShake=v=>Number.isFinite(v)?v:0;
 // event.film===false forces the older shared-frame grammar (the fallback for
 // animals without a film entry; also how the tests keep covering it).
 function soloSpec(event){return event?.film===false?null:SOLO[event?.attackerId]?.[event?.move]||null;}
+// Animals whose attacks are our own keyframes (no native attack clip):
+// exact lengths and contact frames, mirrored from moose-action-core.js and
+// shark-action-core.js (tests keep them in step).
+const AUTHORED_LENGTH=Object.freeze({
+  moose:Object.freeze({G:1450,T:1300,P:1840,S:2280}),
+  shark:Object.freeze({G:1450,T:1300,P:1850,S:2300})
+});
 const length=(event,nativeMs)=>{
-  if(event.attackerId==='moose')return {G:1450,T:1300,P:1840,S:2280}[event.move];
+  if(AUTHORED_LENGTH[event.attackerId])return AUTHORED_LENGTH[event.attackerId][event.move];
   return Number.isFinite(nativeMs)&&nativeMs>100?nativeMs:1450;
 };
 function spec(id,move){
@@ -189,6 +210,8 @@ const STAGING=Object.freeze({
 });
 // Authored contact frames of the Moose's keyframed attacks (clip time).
 const MOOSE_CONTACT=Object.freeze({G:830,T:680,P:1220,S:1330});
+const SHARK_CONTACT=Object.freeze({G:840,T:700,P:1250,S:1400});
+const AUTHORED_CONTACT=Object.freeze({moose:MOOSE_CONTACT,shark:SHARK_CONTACT});
 function staging(attackerId,move,clipContactMs,clipLengthMs){
   const st=STAGING[attackerId]?.[move];
   if(!st||!Number.isFinite(clipContactMs)||!Number.isFinite(clipLengthMs)||
@@ -216,12 +239,12 @@ function clearMeasuredContacts(){for(const key of Object.keys(MEASURED))delete M
 function duration(event,nativeMs){
   if(!ATTACKS[event?.attackerId]?.[event?.move])throw new RangeError('Invalid battle event');
   const measured=MEASURED[event.attackerId]?.[event.move]??
-    (event.attackerId==='moose'?MOOSE_CONTACT[event.move]:undefined);
+    AUTHORED_CONTACT[event.attackerId]?.[event.move];
   const staged=Number.isFinite(nativeMs)?staging(event.attackerId,event.move,measured,nativeMs):null;
   if(staged)return timeline(event,staged.realLength,staged.realContact,
     Math.round(staged.realAt(staged.windupEnd)));
   const attack=length(event,nativeMs);
-  const contact=event.attackerId==='moose'?MOOSE_CONTACT[event.move]:
+  const contact=AUTHORED_CONTACT[event.attackerId]?AUTHORED_CONTACT[event.attackerId][event.move]:
     Number.isFinite(measured)&&Number.isFinite(nativeMs)?
       clamp(measured,180,Math.min(attack+180,2400)):
     clamp(Math.round(attack*{G:.58,T:.68,P:.74,S:.69}[event.move]),
@@ -676,7 +699,8 @@ function hitStop(event,elapsed,nativeMs){
 // strike lands with ~0.25 units of bone clearance (skin on skin).
 const CONTACT_KEEP=Object.freeze({
   bear:Object.freeze({G:1.50,T:1.22,P:1.55,S:1.55}),
-  moose:Object.freeze({G:1.05,T:0.35,P:0.70,S:1.00})
+  moose:Object.freeze({G:1.05,T:0.35,P:0.70,S:1.00}),
+  shark:Object.freeze({G:0.95,T:0.60,P:0.80,S:0.95})
 });
 function contactKeep(attackerId,move){
   return (CONTACT_KEEP[attackerId]||CONTACT_KEEP.bear)[move]??1.3;
@@ -741,5 +765,5 @@ return Object.freeze({ATTACKS,MIRACLES,POSES,HIT_STOP_MS,
   VICTORY_LOWER_START_MS,VICTORY_LOWER_READY_MS,
   VICTORY_APPROACH_START_MS,VICTORY_APPROACH_END_MS,
   VICTORY_HOWL_START_MS,VICTORY_HOWL_CUE_MS,VICTORY_BANNER_MS,VICTORY_END_MS,VICTORY_OUTRO_MS,VICTORY_SHOTS,victoryShot,
-  spec,miracle,duration,shot,camera,victoryApproach,bearHowl,hitStop,blocking,contactKeep,setMeasuredContact,clearMeasuredContacts,measuredContact,staging,MOOSE_CONTACT,keyPose,KEY_POSES,POSE_FIELDS,SOLO,SOLO_MS,SOLO_SCALE,LAUNCH_MS,DISPLAY_SCALE,soloSpec,soloView,panel});
+  spec,miracle,duration,shot,camera,victoryApproach,bearHowl,hitStop,blocking,contactKeep,setMeasuredContact,clearMeasuredContacts,measuredContact,staging,MOOSE_CONTACT,SHARK_CONTACT,AUTHORED_LENGTH,keyPose,KEY_POSES,POSE_FIELDS,SOLO,SOLO_MS,SOLO_SCALE,LAUNCH_MS,DISPLAY_SCALE,soloSpec,soloView,panel});
 });

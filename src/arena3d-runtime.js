@@ -7,8 +7,8 @@
   const bearReviewCore=window.NoahsBearReviewCore;
   const game=document.getElementById('game'),ui=document.getElementById('ui');
   if(!core||!loader||!game||!ui)return;
-  const selected={bear:null,moose:null},loaded={bear:null,moose:null};
-  const yaw={bear:0,moose:0};
+  const selected={bear:null,moose:null,shark:null},loaded={bear:null,moose:null,shark:null};
+  const yaw={bear:0,moose:0,shark:0};
   let panel=null,stage=null,layer=null,THREE=null,renderer=null,scene=null,camera=null,filmCamera=null,layout=null;
   let actors=[null,null],running=0,lastFrame=0,shownEvent=null,sequence=null,loading=false;
   let cameraLook=null,lastCameraShot=null,focusLight=null,
@@ -20,7 +20,7 @@
   const state=()=>window.NoahsCombat?.getState();
   const reduced=()=>Boolean(window.__arkade?.getSettings()?.reducedMotion)||
     Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
-  const label=id=>id==='bear'?'BROWN BEAR':'MOUNTAIN MOOSE';
+  const label=id=>window.NoahsRoster?.ANIMALS?.[id]?.name||(id==='bear'?'BROWN BEAR':id==='moose'?'MOUNTAIN MOOSE':'GREAT WHITE SHARK');
   function status(msg){
     message=msg;
     const node=panel?.querySelector('[data-ark3d-status]');
@@ -48,6 +48,9 @@
         '<div class="ark-fbx-import-actions"><button type="button" data-ark3d-load="'+id+'">LOAD '+id.toUpperCase()+'</button>'+
         '<button type="button" data-ark3d-turn="'+id+'">TURN '+id.toUpperCase()+' 90°</button>'+
         '<button type="button" data-ark3d-unload="'+id+'">REMOVE</button></div></div>').join('')+
+      '<div class="ark-fbx-import" data-ark3d-species="shark"><strong>'+label('shark')+'</strong><small data-ark3d-loaded="shark">'+
+        (loaded.shark?'READY · BUNDLED':'Bundled with the game · loads automatically')+'</small>'+
+        '<small>"Great White Shark" by Mateus Schwaab, CC BY 4.0.</small></div>'+
       '<p class="ark-fbx-status" data-ark3d-status role="status"></p>'+
       '<p class="ark-fbx-legal">Choose the extracted Bear and Moose folders. Models load locally in this browser session.</p>';
     game.append(panel);
@@ -64,16 +67,32 @@
     if(!asset||!THREE||!layout)return null;
     const model=asset.clone(asset.model);
     const geometry=new THREE.Group(),pivot=new THREE.Group(),orientation=new THREE.Group();
-    geometry.add(model);orientation.add(geometry);pivot.add(orientation);layout.add(pivot);
+    // Shark: an extra "swim" group between orientation and the model holds
+    // its hover height and its pitch/roll about the BODY CENTRE (orientation
+    // turns about the floor under it, which would swing a hovering body wide).
+    const swim=id==='shark'?new THREE.Group():null;
+    geometry.add(model);
+    if(swim){swim.add(geometry);orientation.add(swim);}else orientation.add(geometry);
+    pivot.add(orientation);layout.add(pivot);
+    if(asset.bundled){
+      // A cloned glTF skin measures from stale bone matrices (and caches the
+      // result): the shark came out ~100x too big and was scaled to a speck.
+      model.updateMatrixWorld(true);
+      model.traverse(o=>{if(o.isSkinnedMesh)o.boundingBox=null;});
+    }
     const box=new THREE.Box3().setFromObject(model);
     const size=box.getSize(new THREE.Vector3());
     if(!Number.isFinite(size.y)||size.y<.0001)throw Error('Cannot fit '+id+' skeleton to the 3D stage');
-    const scale=Math.min(2.75/size.y,3.1/Math.max(size.x,.001),3.1/Math.max(size.z,.001));
+    const reach=asset.fitLength||3.1;
+    const scale=Math.min(2.75/size.y,reach/Math.max(size.x,.001),reach/Math.max(size.z,.001));
     model.scale.multiplyScalar(scale);
     model.updateMatrixWorld(true);
     const fitted=new THREE.Box3().setFromObject(model);
     const center=fitted.getCenter(new THREE.Vector3());
     model.position.set(-center.x,-fitted.min.y,-center.z);
+    // body centre height above its own belly line (the swim group's pivot)
+    const bodyMid=(fitted.max.y-fitted.min.y)/2;
+    if(swim)geometry.position.y=-bodyMid;
     // Keep a stable stage anchor for authored clip playback. Some motion
     // files include local root translation that can otherwise accumulate
     // into a disappearing fighter during the long victory montage.
@@ -91,6 +110,11 @@
       if(/^RigRoot$/i.test(node.name)||(!node.parent?.isBone&&/^root$/i.test(node.name)))
         rootAnchors.push({bone:node,x:node.position.x,z:node.position.z});
     });
+    // Rig* names the shared layers (roar, flinch, hit react) address, mapped
+    // to this model's own bones. Absent limbs are simply skipped.
+    for(const [alias,name] of Object.entries(asset.aliases||{})){
+      const bone=joint.get(name);if(bone&&!joint.has(alias))joint.set(alias,bone);
+    }
     const hindFeet=['RigLBLeg3','RigRBLeg3','RigLBLegAnkle','RigRBLegAnkle']
       .map(name=>joint.get(name)).filter(Boolean);
     const footTemp=new THREE.Vector3();
@@ -106,7 +130,16 @@
     };
     const actor={id,slot,asset,model,pivot,orientation,mixer,joint,rootAnchors,additive:new Map(),
       current:null,currentKey:null,proc:null,procElapsed:0,baseX:pivot.position.x,
-      soleRest:null,soleHeight};
+      soleRest:null,soleHeight,swim,bodyMid};
+    if(swim){
+      // Extents/contact from the deforming bones only: Rigify's control and
+      // mechanism bones can sit off the body.
+      actor.extentBones=[...new Set(joint.values())].filter(b=>/^DEF-/.test(b.name));
+      // launches tumble about the body centre: hover + half the body height
+      actor.spinCentre=window.NoahsSharkActionCore.HOVER+bodyMid;
+      actor.strikeBone=move=>move==='T'?joint.get('DEF-spine001_0143')||null:null;
+      actor.sharkClock=0;
+    }
     // Find when each native strike actually lands: sample the clip offline
     // and take the frame where the striking bones reach furthest forward
     // (in the actor's own facing frame, root travel anchored like at runtime).
@@ -267,7 +300,7 @@
     };
     actor.native=(key,fadeSeconds=.15)=>{
       if(key!=='victory'&&key!=='roar')actor.resetHowlFace?.();
-      resetApplied(actor);actor.proc=null;actor.procElapsed=0;
+      resetApplied(actor);actor.proc=null;actor.procElapsed=0;actor.sproc=null;
       const name=asset.clips[key]?key:'idle',clip=asset.clips[name];
       if(!clip)return;
       if(actor.currentKey===name&&actor.current?.isRunning())return;
@@ -277,7 +310,7 @@
       next.reset();next.enabled=true;next.setEffectiveWeight(1);next.timeScale=1;
       actor.staged=null;actor.stagedAction=null;
       if(name==='knockout'&&actor.knockoutLead)next.time=actor.knockoutLead;
-      const oneShot=!['idle','run','walk','breathing','jump','victory','angry'].includes(name);
+      const oneShot=!['idle','run','walk','breathing','jump','victory','angry','swimFast'].includes(name);
       next.setLoop(oneShot?THREE.LoopOnce:THREE.LoopRepeat,oneShot?1:Infinity);
       next.clampWhenFinished=name==='knockout'||name==='roar';
       next.fadeIn(fadeSeconds).play();
@@ -296,6 +329,15 @@
         return;
       }
       const code={G:'Guts',T:'Technique',P:'Power',S:'Special'}[move];
+      if(swim){
+        // Scrub the move's own clip (jaws snap on the authored beat) under
+        // our body staging; tick() drives both from procElapsed.
+        const clipKey=window.NoahsSharkActionCore.MOVES[code].clip;
+        actor.native(clipKey,.1);
+        if(actor.current){actor.current.setLoop(THREE.LoopRepeat,Infinity);actor.current.timeScale=0;}
+        actor.sproc=code;actor.procElapsed=0;
+        return;
+      }
       const base=window.NoahsMooseActionCore.MOVES[code].base.toLowerCase();
       actor.native(base);actor.proc=code;actor.procElapsed=0;
       // Same wind-up / snap / linger / recover timing as the director uses.
@@ -376,7 +418,7 @@
     // Discover actual facial articulation rather than assuming the FBX
     // has a fixed jaw name. If it has either jaw bones or mouth-open morph
     // targets, the howl visibly opens the mouth. All changes are reversible.
-    const jawBone=[...joint.entries()].find(([name])=>
+    const jawBone=(asset.aliases?.RigJaw&&joint.get('RigJaw'))||[...joint.entries()].find(([name])=>
       /(?:^|rig)(?:lower)?jaw|mandible/i.test(name))?.[1]||null;
     // The source Bear has no modelled mouth interior: opening the jaw only
     // stretches lip skin around an empty hole, which reads as a black box.
@@ -636,10 +678,65 @@
         }
       }
     };
+    // Shark body layer: hover + bob, move staging (lift/pitch/roll/yaw),
+    // an S-bend through the body and tail, head yaw, extra jaw, the
+    // procedural knockout roll and the victory gape. Absolute each frame.
+    const sharkLayer=(delta)=>{
+      const S=window.NoahsSharkActionCore,still=reduced();
+      actor.sharkClock+=still?0:delta*1000;
+      const pose=actor.sproc&&actor.sharkSample?actor.sharkSample.pose:null;
+      let koP=0;
+      if(actor.currentKey==='knockout'&&actor.current){
+        const d=actor.current.getClip().duration||1;koP=actor.current.time/d;
+      }
+      const ko=S.knockout(still?(koP>.5?1:0):koP);
+      const vic=actor.sharkVic||null;actor.sharkVic=null;
+      // + = toward the lens, mirrored for either slot
+      const lens=slot===0?-1:1;
+      const lift=(pose?.lift||0)+(vic?.lift||0);
+      swim.position.y=bodyMid+(S.hover(actor.sharkClock,{reducedMotion:still})+lift)*(1-ko.sink);
+      swim.rotation.set(-((pose?.pitch||0)+(vic?.pitch||0)),0,(pose?.roll||0)+ko.roll*lens);
+      if(pose){
+        orientation.rotation.y=(slot===0?Math.PI/2:-Math.PI/2)+yaw[id]+lens*pose.yaw;
+        pivot.position.x=actor.baseX+(slot===0?1:-1)*pose.travel;
+      }
+      swim.updateMatrixWorld(true);
+      const q=swim.getWorldQuaternion(new THREE.Quaternion());
+      const dorsal=new THREE.Vector3(0,1,0).applyQuaternion(q),left=new THREE.Vector3(1,0,0).applyQuaternion(q);
+      const bend=(pose?.bend||0)+ko.bend,tail=(pose?.tail||0)+(vic?.tail||0)+(actor.sharkRoarTail||0);
+      actor.sharkRoarTail=0;
+      const chain=asset.body||[];
+      chain.forEach((pair,i)=>{
+        const angle=lens*(bend/Math.max(1,chain.length)+(i>=chain.length-2?tail*.5:0));
+        for(const name of pair)addRot(name,dorsal,angle);
+      });
+      const headYaw=(pose?.headYaw||0)+(vic?.headYaw||0);
+      if(Math.abs(headYaw)>.0001)addRot('RigNeck',dorsal,lens*headYaw);
+      if(vic?.headUp)addRot('RigNeck',left,-.5*vic.headUp);
+      const jaw=(pose?.jaw||0)+(vic?.jaw||0);
+      if(jaw>.0001)addRot('RigJaw',left,.55*jaw);
+    };
+    actor.sharkVictory=(t)=>{
+      if(!swim)return;
+      if(reduced()){actor.sharkVic=null;return;}
+      const howl=cinematics.bearHowl(t),s=t/1000;
+      // circles its spot with a lazy bob and tail swish; on the howl beat it
+      // throws its head up and gapes, thrashing side to side
+      actor.sharkVic={lift:.12*Math.sin(s*Math.PI*2*.45),tail:.3*Math.sin(s*Math.PI*2*.9),
+        pitch:howl.active?-howl.headPitch*.35:0,headUp:howl.active?-howl.headPitch:0,
+        jaw:howl.active?howl.jawOpen:0,headYaw:howl.active?.22*Math.sin(s*15)*howl.jawOpen:0};
+    };
     actor.tick=(delta)=>{
       resetApplied(actor);
       if(actor.staged&&actor.stagedAction===actor.current)
         actor.current.timeScale=actor.staged.speedAt(actor.current.time*1000);
+      if(swim&&actor.sproc&&actor.current){
+        // scrub the move's clip to the authored beat (frozen in hit-stop)
+        actor.procElapsed+=reduced()?0:delta*1000;
+        actor.sharkSample=window.NoahsSharkActionCore.sampleMove(actor.sproc,actor.procElapsed,{reducedMotion:reduced()});
+        const d=actor.current.getClip().duration,ct=actor.sharkSample.pose.clipTime;
+        actor.current.time=actor.currentKey==='swimFast'?((ct%d)+d)%d:Math.max(0,Math.min(d-.001,ct));
+      }
       mixer.update(reduced()?0:delta);
       // Root travel is staged explicitly on pivot, not by imported FBX.
       // Preserve vertical lift and all bone articulation for the strike.
@@ -656,6 +753,12 @@
         updateFacing();
         addPitch('RigNeck1',.16*lvl);addPitch('RigHead',.26*lvl);addPitch('RigChest',.07*lvl);
         addPitch('RigJaw',-.2*lvl);
+        if(swim){
+          // The shark thrashes its head and lashes its tail, jaws agape.
+          actor.roarClock=(actor.roarClock||0)+delta;const w=actor.roarClock;
+          addRot('RigNeck',UP,.3*lvl*Math.sin(w*8));addPitch('RigJaw',-.3*lvl);
+          actor.sharkRoarTail=.55*lvl*Math.sin(w*6.5);
+        }
         if(id==='moose'){
           // The Moose is not a statue under its title: it tosses its antlers
           // side to side and rakes the ground with a forehoof.
@@ -692,11 +795,13 @@
         jawAngle=2*Math.acos(Math.min(1,Math.abs(jawBone.quaternion.dot(jawRest))));
         // the roar (our own jaw rig + mouth interior) may open ~29°; a source
         // clip only ~12°, past which its lips stretch into a striped panel
-        const max=(actor.howlJaw||0)>.02||lvl>.02?.34:.21;
+        // (the shark's mouth is modelled for its bites: no cap)
+        const max=swim?Infinity:(actor.howlJaw||0)>.02||lvl>.02?.34:.21;
         if(jawAngle>max){jawBone.quaternion.copy(jawRest).slerp(jawBone.quaternion,max/jawAngle);jawAngle=max;}
       }
       if(actor.mouthBag)actor.mouthBag.visible=Math.max(lvl*.5,actor.howlJaw||0,jawAngle)>.05;
       actor.howlJaw=0;
+      if(swim)sharkLayer(delta);
       // Hind-foot correction runs AFTER victoryGesture and applyBlocking
       // so the animated roar's weight shift does not overwrite grounding.
       if(actor.proc){
@@ -719,7 +824,7 @@
     };
     actor.idle=()=>{
       actor.resetHowlFace?.();
-      resetApplied(actor);actor.proc=null;actor.procElapsed=0;
+      resetApplied(actor);actor.proc=null;actor.procElapsed=0;actor.sproc=null;
       actor.soleRest=null;
       actor.react=null;orientation.position.y=0;
       pivot.position.set(actor.baseX,0,0);pivot.rotation.set(0,0,0);if(actor.mouthLight)actor.mouthLight.intensity=0;
@@ -1792,10 +1897,11 @@
     // Use a bounded offset from the beginning of each frame, never '+='.
     // Accumulating frame-by-frame movement caused visible skating/teleports.
     if(attacker){
-      const source=attacker.id==='moose'&&attacker.proc?
-        attacker.pivot.position.x:attacker.baseX;
+      // keyframed animals (Moose, Shark) already placed their own travel in tick()
+      const keyed=(attacker.id==='moose'&&attacker.proc)||(attacker.swim&&attacker.sproc);
+      const source=keyed?attacker.pivot.position.x:attacker.baseX;
       attacker.pivot.position.x=source+direction*(choreo.attackerTravel*
-        (attacker.id==='moose'?.27:1)+(sequence.closeDist||0)*choreo.closing);
+        (attacker.id==='moose'||attacker.swim?.27:1)+(sequence.closeDist||0)*choreo.closing);
       if(attacker.id==='bear'){
         attacker.pivot.position.y=choreo.attackerLift;
         attacker.orientation.rotation.z=direction*choreo.attackerLean;
@@ -1833,15 +1939,18 @@
       const l=view.launch;
       if(!l.landed){
         // Thrown into the sky, tumbling about its body centre.
-        const h=.95*(cinematics.SOLO_SCALE?.[defender.id]||1),th=l.spin;
+        const h=defender.spinCentre??.95*(cinematics.SOLO_SCALE?.[defender.id]||1),th=l.spin;
+        // a swimmer is knocked out of its hover: the launch arc carries its
+        // body, not body + hover (the Power blast threw the shark out of frame)
+        const sink=defender.swim?window.NoahsSharkActionCore.HOVER:0;
         if(l.axis==='x'){
           defender.pivot.position.x=defender.baseX+l.drift;
-          defender.pivot.position.y=l.y+h*(1-Math.cos(th));
+          defender.pivot.position.y=l.y-sink+h*(1-Math.cos(th));
           defender.pivot.position.z=-h*Math.sin(th);
           defender.pivot.rotation.set(th,l.yaw||0,0);
         }else{
           defender.pivot.position.x=defender.baseX+l.drift+h*Math.sin(th);
-          defender.pivot.position.y=l.y+h*(1-Math.cos(th));
+          defender.pivot.position.y=l.y-sink+h*(1-Math.cos(th));
           defender.pivot.position.z=0;
           defender.pivot.rotation.set(0,0,th);
         }
@@ -2005,10 +2114,10 @@
   // The strike ends with the attacker driving its face into the lens: dolly
   // from the shot's framing to just in front of the live head bone.
   // Snout / antler reach beyond the last bone (attacker front, victim near side).
-  const REACH={bear:.28,moose:.45},REACH_D={bear:.18,moose:.32};
+  const REACH={bear:.28,moose:.45,shark:.16},REACH_D={bear:.18,moose:.32,shark:.12};
   function bonePositions(actor){
     actor.model.updateMatrixWorld(true);
-    const out=[];for(const b of actor.joint?.values?.()||[])out.push(b.getWorldPosition(new THREE.Vector3()));
+    const out=[];for(const b of actor.extentBones||actor.joint?.values?.()||[])out.push(b.getWorldPosition(new THREE.Vector3()));
     if(!out.length)out.push(actor.pivot.getWorldPosition(new THREE.Vector3()));
     return out;
   }
@@ -2047,7 +2156,9 @@
   }
   function applyLunge(event,u){
     const actor=actors[event.attacker];
-    const head=actor?.joint?.get('RigHead')||actor?.joint?.get('RigNeck');
+    // the striking part: the head, or the shark's tail for its Tail Lash
+    // (its head is turned away then; dollying at it put the lens in its flank)
+    const head=actor?.strikeBone?.(event.move)||actor?.joint?.get('RigHead')||actor?.joint?.get('RigNeck');
     if(!head||!filmCamera)return;
     actor.model.updateMatrixWorld(true);
     const h=head.getWorldPosition(new THREE.Vector3());
@@ -2120,6 +2231,9 @@
     }else if(winner?.id==='moose'&&sequence.finished){
       const start=cinematics.duration(sequence.event,nativeLength(sequence.event)).victoryStart;
       if(sequence.elapsed>=start)winner.mooseVictory(sequence.elapsed-start);
+    }else if(winner?.swim&&sequence.finished){
+      const start=cinematics.duration(sequence.event,nativeLength(sequence.event)).victoryStart;
+      if(sequence.elapsed>=start)winner.sharkVictory(sequence.elapsed-start);
     }
     applyBlocking();
     // The finishing actor has already received native FBX and additive
@@ -2145,6 +2259,9 @@
     }
     const battlefield=ui.querySelector('.combat-battlefield'),s=state();
     if(!battlefield||!s)return;
+    const ids=(s.animals||[]).map(a=>a?.id).filter(Boolean);
+    if(renderer||ids.every(id=>core.BUNDLED?.[id]))
+      for(const id of ids)if(core.BUNDLED?.[id]&&!loaded[id])ensureBundled(id);
     if(renderer&&layer){
       if(battlefield!==stage){stage=battlefield;stage.append(layer);fitStage();}
       let changed=force;
@@ -2215,6 +2332,24 @@
       for(const o of [glint,impactStar,impactRing,blob,fireVoid])if(o)o.visible=false;
       step(()=>{for(const a of actors)snapPortrait(a);});
     }catch(err){console.warn('[arena3d] prewarm skipped',err);}
+  }
+  // Bundled models (the shark) load themselves: once a 3D arena exists (the
+  // player imported a pack) or when every fighter in the duel is bundled.
+  const bundling={};
+  async function ensureBundled(id){
+    if(loaded[id]||bundling[id]||!core.BUNDLED?.[id]||!loader.loadBundled)return;
+    bundling[id]=true;
+    try{
+      const result=await loader.loadBundled(id,status);
+      loaded[id]=result;
+      await createScene();
+      status(label(id)+' ready (bundled model, CC BY 4.0 Mateus Schwaab).');
+      const el=panel?.querySelector('[data-ark3d-loaded="'+id+'"]');if(el)el.textContent='READY · BUNDLED';
+      syncScene(true);
+      window.dispatchEvent(new CustomEvent('arkade:forestfall-assetschange'));
+    }catch(error){
+      console.warn('[arena3d] bundled',id,'failed',error);status('Could not load the bundled '+id+' model: '+error.message);
+    }finally{bundling[id]=false;}
   }
   async function importSelected(id){
     if(loading)return;
@@ -2319,7 +2454,7 @@
   document.addEventListener('visibilitychange',()=>{if(document.hidden)stopLoop();else startLoop();});
   window.addEventListener('pagehide',()=>{
     stopBearReview(false);
-    stopLoop();clearActors();for(const id of ['bear','moose'])loaded[id]?.dispose();
+    stopLoop();clearActors();for(const id of ['bear','moose','shark'])loaded[id]?.dispose();
     fxGeometry?.dispose();fxMaterials.forEach(m=>m.dispose());fxMaterials=[];
     shockGeometry?.dispose();shockMaterial?.dispose();
     shockRing=null;shockGeometry=null;shockMaterial=null;
@@ -2333,7 +2468,7 @@
   const forestfallCore=window.NoahsForestfallCollisionCore;
   function forestfallCanStage(event){
     return Boolean(forestfallCore?.supports(event,{
-      bear:!!loaded.bear,moose:!!loaded.moose,
+      bear:!!loaded.bear,moose:!!loaded.moose,shark:!!loaded.shark,
       webgl:!!THREE&&!!renderer&&!loading
     })&&screen()==='BATTLE_PLAY'&&!bearReview?.active);
   }
@@ -2548,7 +2683,7 @@
         if(v.x<min)min=v.x;if(v.x>max)max=v.x;}
       return {id:actor.id,pivotX:actor.pivot.position.x,min,max};
     }),
-    getStatus:()=>({bear:Boolean(loaded.bear),moose:Boolean(loaded.moose),
+    getStatus:()=>({bear:Boolean(loaded.bear),moose:Boolean(loaded.moose),shark:Boolean(loaded.shark),
       sceneReady:Boolean(renderer),active:actors.filter(Boolean).length,
       // The private FBX may not have a jaw bone or mouth morph. Expose
       // only the detected capability, not the private model data itself.

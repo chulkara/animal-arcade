@@ -225,6 +225,33 @@ Each turn both players secretly pick one action; both resolve simultaneously.
   - Our-roar jaw cap 0.34 rad (was 0.5; the gold coat made the mouth a dark box).
   - Victory: user chose winner-faces-camera (see Victory grammar).
 
+## Great White Shark (third fighter, 2026-11-27, user-approved plan)
+- Model: `assets/models/shark/great_white_shark.glb`, CC BY 4.0 by Mateus
+  Schwaab (credited in THIRD_PARTY_ASSETS.md, OPTIONS credits line, animal
+  select note). Bundled: `NoahsArena3DLoader.loadBundled('shark')` (GLTFLoader),
+  auto-loaded once a 3D arena exists or when every fighter is bundled.
+  Materials swapped to Phong (gold-change path, no black PBR metal).
+- Roster: moves G RAMMING BITE / T TAIL LASH / P BREACH STRIKE / S DEEP-SEA
+  FRENZY; starter card `animal:shark` for both players; solo rival = Bear.
+  Engine validates picks against `NoahsRoster.ids` (rules unchanged).
+- Motion: `src/shark-action-core.js` (pure, tests in `tests/shark.test.mjs`)
+  keyframes each move and SCRUBS the model's own clip (Bite1/Bite2/SwimFast)
+  so the jaws snap on the authored contact. Lengths/contacts are mirrored in
+  `combat-cinematics-core` (`AUTHORED_LENGTH`, `SHARK_CONTACT`) and
+  `arena3d-core` (`AUTHORED`); a test keeps all three in step.
+- Runtime: a `swim` group between orientation and the model carries the
+  0.9 m hover + bob and pitch/roll about the BODY CENTRE. Bone aliases map
+  RigHead/RigNeck/RigChest/RigJaw/RigPelvis to the Rigify ORG/DEF bones; the
+  body S-bend rotates DEF and ORG spine chains alike (fins follow ORG).
+  Knockout = an empty 1 s clip whose clock drives a belly-up roll + sink (the
+  get-up plays it backwards like the others). Fit length 3.7 m. Launches
+  tumble about `spinCentre`. Contact extents use DEF bones only. Tail Lash's
+  lunge dollies at the tail (`strikeBone`). Victory: faces the lens, bob,
+  gape + head thrash on the howl beat; `sharkThrash` audio (no voice).
+- A cloned glTF skin measures its box from stale bone matrices and caches
+  it: `makeActor` refreshes bundled models before fitting (it was scaled to
+  a speck).
+
 ## Delivering work to the user
 - The user runs the game on his Mac from `~/Desktop/animal-arcade`. When that
   folder is connected to the session, apply commits there directly

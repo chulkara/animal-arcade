@@ -52,7 +52,7 @@ await run('desktop-1440x900',{width:1440,height:900},async page=>{
   assert.equal(await page.locator('#game').getAttribute('data-screen'),'MODE_MENU');
   await page.locator('[data-mode="SOLO_SELECT"]').click();
   assert.equal(await page.locator('#game').getAttribute('data-screen'),'ANIMAL_SELECT');
-  assert.match(await page.locator('.prototype-note').innerText(),/Active roster: Bear and Moose/);
+  assert.match(await page.locator('.prototype-note').innerText(),/Active roster: Bear, Moose and Great White Shark/);
   await page.locator('[data-prototype-mode]').click();
   assert.equal(await page.locator('#game').getAttribute('data-screen'),'MODE_MENU');
   await page.locator('[data-back]').click();
@@ -106,11 +106,26 @@ await run('landscape-844x390',{width:844,height:390},async page=>{
   assert.equal(await page.locator('#game').getAttribute('data-screen'),'MAIN_MENU');
 });
 
+await run('solo-shark-1440x900',{width:1440,height:900},async page=>{
+  await page.locator('.painted-hotspots [data-art-action="PLAY"]').click();
+  await page.locator('[data-mode="SOLO_SELECT"]').click();
+  await page.locator('[data-animal="shark"]').click();
+  assert.equal(await page.locator('#game').getAttribute('data-screen'),'BATTLE_STAGE');
+  assert.match(await page.locator('.arena').innerText(),/GREAT WHITE/);
+  assert.match(await page.locator('.arena').innerText(),/BROWN BEAR/);
+  await page.locator('[data-prototype-intro]').click();
+  await page.locator('[data-prototype-fight]').click();
+  assert.equal(await page.locator('#game').getAttribute('data-screen'),'BATTLE_PLAY');
+  assert.equal(await page.locator('.combat-fighter[data-animal-id="shark"]').count(),1);
+  // no private packs here: the bundled shark waits for a 3D arena, no errors
+  await page.waitForTimeout(600);
+});
+
 await run('solo-prototype-1440x900',{width:1440,height:900},async page=>{
   await page.locator('.painted-hotspots [data-art-action="PLAY"]').click();
   await page.locator('[data-mode="SOLO_SELECT"]').click();
   assert.equal(await page.locator('#game').getAttribute('data-screen'),'ANIMAL_SELECT');
-  assert.equal(await page.locator('[data-animal]').count(),2);
+  assert.equal(await page.locator('[data-animal]').count(),3);
   await page.locator('[data-animal="bear"]').click();
   assert.equal(await page.locator('#game').getAttribute('data-screen'),'BATTLE_STAGE');
   assert.match(await page.locator('.arena').innerText(),/BROWN BEAR/);
@@ -203,8 +218,8 @@ await run('combat-duel-390x844',{width:390,height:844},async page=>{
 await run('card-collection-desktop-1440x900',{width:1440,height:900},async page=>{
   await page.locator('.painted-hotspots [data-art-action="MY_CARDS"]').click();
   assert.equal(await page.locator('#game').getAttribute('data-screen'),'CARDS');
-  assert.equal(await page.locator('.ark-card-tile').count(),12);
-  assert.equal(await page.locator('.ark-unlocked').count(),6);
+  assert.equal(await page.locator('.ark-card-tile').count(),13);
+  assert.equal(await page.locator('.ark-unlocked').count(),7);
   assert.match(await page.locator('.ark-card-local-note').innerText(),/not synced online/);
   await page.locator('[data-card-filter="miracle"]').click();
   assert.equal(await page.locator('.ark-card-tile').count(),5);
@@ -279,12 +294,12 @@ await run('card-reward-solo-1440x900',{width:1440,height:900},async page=>{
   assert.equal(await page.locator('.combat-card-reward').count(),1);
   await page.locator('[data-combat-view-cards]').click();
   assert.equal(await page.locator('#game').getAttribute('data-screen'),'CARDS');
-  assert.equal(await page.locator('.ark-unlocked').count(),7);
-  assert.match(await page.locator('.ark-collection-summary').innerText(),/7/);
+  assert.equal(await page.locator('.ark-unlocked').count(),8);
+  assert.match(await page.locator('.ark-collection-summary').innerText(),/8/);
   await page.reload({waitUntil:'domcontentloaded'});
   await page.locator('#painted-stage').waitFor({state:'visible',timeout:45000});
   await page.locator('.painted-hotspots [data-art-action="MY_CARDS"]').click();
-  assert.equal(await page.locator('.ark-unlocked').count(),7);
+  assert.equal(await page.locator('.ark-unlocked').count(),8);
 });
 
 

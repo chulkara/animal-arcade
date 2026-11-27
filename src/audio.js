@@ -130,6 +130,10 @@
         burst(.28,.08,3200,.30);break;
       case 'bearHowl':bearHowl();break;
       case 'mooseBellow':bearHowl(78,1.95,320,1.5);break;
+      // Sharks have no voice: a churning water thrash over a low rumble.
+      case 'sharkThrash':
+        burst(.55,.17,850);burst(.4,.13,2300,.18);burst(.3,.10,1400,.42);
+        tone(62,.75,'sawtooth',.07);tone(93,.5,'triangle',.06,.1);break;
       // comeback / ✦ cut-ins (original synth stings)
       case 'goldChange':[523.2,659.3,784,1046.5,1318.5].forEach((f,i)=>tone(f,.32,'triangle',.09,i*.055));tone(2093,.6,'sine',.04,.3);break;
       case 'focus':tone(880,.09,'square',.07);tone(1174.7,.14,'square',.06,.07);break;

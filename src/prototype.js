@@ -41,7 +41,7 @@
           <span class="animal-legend">${animal.legend}</span>
         </button>`).join('')}
       </div>
-      <p class="prototype-note">Active roster: Bear and Moose. Temporary original silhouettes appear until the reviewed 3D models are cleared for public use. Equipped Strong and Miracle cards still apply.</p>
+      <p class="prototype-note">Active roster: Bear, Moose and Great White Shark. Original silhouettes stand in until a 3D model is loaded. Equipped Strong and Miracle cards still apply. Shark model: Mateus Schwaab, CC BY 4.0.</p>
       <button type="button" class="arcade-back" data-prototype-mode>← BACK TO PLAY MENU</button>
     </section>`;
   }

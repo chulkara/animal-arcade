@@ -16,6 +16,9 @@
     {id:'animal:moose',type:'animal',name:'MOUNTAIN MOOSE',tag:'HIGHLAND TITAN',symbol:'鹿',
       animalId:'moose',affinity:'highland',art:'./assets/moose-placeholder.svg',
       description:'The thunder of hooves across the highland.'},
+    {id:'animal:shark',type:'animal',name:'GREAT WHITE SHARK',tag:'ABYSSAL HUNTER',symbol:'鮫',
+      animalId:'shark',affinity:'ocean',art:'./assets/shark-placeholder.svg',
+      description:'It swims through the air as if the forest were the sea.'},
     {id:'strong:fang',type:'strong',name:'FANG STANDARD',tag:'POWER · +8',symbol:'⚔',
       technique:'P',bonusDamage:8,description:'A sharpened strike for the relentless hunter.'},
     {id:'strong:guard',type:'strong',name:'OAKEN GUARD',tag:'GUTS · +7',symbol:'◆',
@@ -38,7 +41,7 @@
       affinity:'sun',bonusDamage:15,description:'A crown of night over the savanna.'}
   ].map(card=>Object.freeze(card)));
   const BY_ID=Object.freeze(Object.fromEntries(CARDS.map(card=>[card.id,card])));
-  const STARTER_IDS=Object.freeze(['animal:bear','animal:moose','strong:fang','strong:guard','miracle:meteor','miracle:dawn']);
+  const STARTER_IDS=Object.freeze(['animal:bear','animal:moose','animal:shark','strong:fang','strong:guard','miracle:meteor','miracle:dawn']);
   const DEFAULT_DECKS=Object.freeze({
     p1:Object.freeze({animal:'animal:bear',strong:'strong:fang',miracle:'miracle:meteor'}),
     p2:Object.freeze({animal:'animal:moose',strong:'strong:guard',miracle:'miracle:dawn'})

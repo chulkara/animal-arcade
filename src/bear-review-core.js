@@ -15,7 +15,7 @@
    const attacker=animals.findIndex(a=>a?.id==='bear');
    if(attacker<0)throw new RangeError('Select Brown Bear as one of the battle animals');
    const defender=1-attacker;
-   if(!['bear','moose'].includes(animals[defender]?.id))throw new RangeError('Unknown opponent');
+   if(!['bear','moose','shark'].includes(animals[defender]?.id))throw new RangeError('Unknown opponent');
    return Object.freeze(MOVES.map((move,index)=>Object.freeze({
      key:'bear-review:'+attacker+':'+index,
      review:true,attacker,defender,attackerId:'bear',

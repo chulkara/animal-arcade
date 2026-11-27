@@ -10,10 +10,12 @@ const bear=require('../src/bear-motion-core.js');
 const moose=require('../src/moose-action-core.js');
 const mooseAssets=require('../src/moose-assets-core.js');
 
-test('only approved Bear and Moose are active, menu artwork stays unchanged',()=>{
- assert.deepEqual(roster.ids,['bear','moose']);
+test('approved Bear, Moose and Shark are active, menu artwork stays unchanged',()=>{
+ assert.deepEqual(roster.ids,['bear','moose','shark']);
  assert.equal(roster.opponentOf('bear'),'moose');
  assert.equal(roster.opponentOf('moose'),'bear');
+ assert.equal(roster.opponentOf('shark'),'bear');
+ assert.deepEqual(roster.ANIMALS.shark.moves,{G:'RAMMING BITE',T:'TAIL LASH',P:'BREACH STRIKE',S:'DEEP-SEA FRENZY'});
  assert.throws(()=>roster.opponentOf('tiger'),RangeError);
  assert.deepEqual(cards.CARDS.filter(c=>c.type==='animal').map(c=>c.animalId),roster.ids);
  const menu=readFileSync('src/painted-menu.js','utf8');
