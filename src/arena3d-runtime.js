@@ -139,6 +139,8 @@
       actor.spinCentre=window.NoahsSharkActionCore.HOVER+bodyMid;
       actor.strikeBone=move=>move==='T'?joint.get('DEF-spine001_0143')||null:null;
       actor.sharkClock=0;
+      // lying on its flank: centre at about half the torso's thickness
+      actor.lieHeight=.4*(asset.fitLength||3.1)/3.7;
     }
     // Find when each native strike actually lands: sample the clip offline
     // and take the frame where the striking bones reach furthest forward
@@ -694,7 +696,10 @@
       // + = toward the lens, mirrored for either slot
       const lens=slot===0?-1:1;
       const lift=(pose?.lift||0)+(vic?.lift||0);
-      swim.position.y=bodyMid+(S.hover(actor.sharkClock,{reducedMotion:still})+lift)*(1-ko.sink);
+      // down: on its flank ON the dirt (centre at half its body thickness);
+      // belly-up at bodyMid left the dorsal fin propping it above the ground
+      const swimY=bodyMid+S.hover(actor.sharkClock,{reducedMotion:still})+lift;
+      swim.position.y=swimY*(1-ko.sink)+actor.lieHeight*ko.sink;
       swim.rotation.set(-((pose?.pitch||0)+(vic?.pitch||0)),0,(pose?.roll||0)+ko.roll*lens);
       if(pose){
         orientation.rotation.y=(slot===0?Math.PI/2:-Math.PI/2)+yaw[id]+lens*pose.yaw;
@@ -703,11 +708,17 @@
       swim.updateMatrixWorld(true);
       const q=swim.getWorldQuaternion(new THREE.Quaternion());
       const dorsal=new THREE.Vector3(0,1,0).applyQuaternion(q),left=new THREE.Vector3(1,0,0).applyQuaternion(q);
-      const bend=(pose?.bend||0)+ko.bend,tail=(pose?.tail||0)+(vic?.tail||0)+(actor.sharkRoarTail||0);
+      // idle swim: a slow travelling S-wave through the body on top of the
+      // Swim clip (it barely moves the tail), fading out while it attacks,
+      // is knocked down or reduced motion is on; a faint tail twitch when down
+      const calm=pose||still?0:1-ko.sink,ph=actor.sharkClock/1000*Math.PI*2*.55;
+      const twitch=still?0:ko.sink*.05*Math.sin(actor.sharkClock/70)*Math.max(0,Math.sin(actor.sharkClock/900));
+      const bend=(pose?.bend||0)+ko.bend+twitch,tail=(pose?.tail||0)+(vic?.tail||0)+(actor.sharkRoarTail||0);
       actor.sharkRoarTail=0;
       const chain=asset.body||[];
       chain.forEach((pair,i)=>{
-        const angle=lens*(bend/Math.max(1,chain.length)+(i>=chain.length-2?tail*.5:0));
+        const wave=calm*.07*(.5+i/chain.length)*Math.sin(ph-i*.9);
+        const angle=lens*(bend/Math.max(1,chain.length)+(i>=chain.length-2?tail*.5:0))+wave;
         for(const name of pair)addRot(name,dorsal,angle);
       });
       const headYaw=(pose?.headYaw||0)+(vic?.headYaw||0);
@@ -715,6 +726,9 @@
       if(vic?.headUp)addRot('RigNeck',left,-.5*vic.headUp);
       const jaw=(pose?.jaw||0)+(vic?.jaw||0);
       if(jaw>.0001)addRot('RigJaw',left,.55*jaw);
+      // victory: pectoral fins swept back along the body (spread down and
+      // out head-on, they read as a stiff airplane)
+      if(vic?.fins){addRot('DEF-side_finL_0122',dorsal,.55*vic.fins);addRot('DEF-side_finR_0133',dorsal,-.55*vic.fins);}
     };
     actor.sharkVictory=(t)=>{
       if(!swim)return;
@@ -722,9 +736,13 @@
       const howl=cinematics.bearHowl(t),s=t/1000;
       // circles its spot with a lazy bob and tail swish; on the howl beat it
       // throws its head up and gapes, thrashing side to side
-      actor.sharkVic={lift:.12*Math.sin(s*Math.PI*2*.45),tail:.3*Math.sin(s*Math.PI*2*.9),
+      // the jaws SNAP (gape, clamp, gape) through the roar beat instead of
+      // hanging open; tail sweeps and head thrash keep it swimming
+      const snap=howl.active?howl.jawOpen*(.25+.75*Math.pow(Math.abs(Math.sin(s*Math.PI*1.6)),.6)):0;
+      actor.sharkVic={lift:.12*Math.sin(s*Math.PI*2*.45),tail:.45*Math.sin(s*Math.PI*2*.9),
         pitch:howl.active?-howl.headPitch*.35:0,headUp:howl.active?-howl.headPitch:0,
-        jaw:howl.active?howl.jawOpen:0,headYaw:howl.active?.22*Math.sin(s*15)*howl.jawOpen:0};
+        jaw:snap,headYaw:.12*Math.sin(s*Math.PI*2*.9+1.2)+(howl.active?.18*Math.sin(s*15)*howl.jawOpen:0),
+        fins:Math.min(1,s/.4)};
     };
     actor.tick=(delta)=>{
       resetApplied(actor);
@@ -827,7 +845,7 @@
       resetApplied(actor);actor.proc=null;actor.procElapsed=0;actor.sproc=null;
       actor.soleRest=null;
       actor.react=null;orientation.position.y=0;
-      pivot.position.set(actor.baseX,0,0);pivot.rotation.set(0,0,0);if(actor.mouthLight)actor.mouthLight.intensity=0;
+      pivot.position.set(actor.baseX,0,0);pivot.rotation.set(0,0,0,'XYZ');if(actor.mouthLight)actor.mouthLight.intensity=0;
       orientation.rotation.set(0,(slot===0?Math.PI/2:-Math.PI/2)+yaw[id],0);
       actor.native('idle');
     };
@@ -1347,7 +1365,9 @@
     // half-strength wash so the forest still reads as the same daylight place.
     const sup=Boolean(sequence?.event?.superMiracle);
     setStage(view?.stage==='red'?view.redSky*(sup?1:.5):0,sup?'cosmic':'red');
-    if(forestRoot)forestRoot.visible=!(view?.fire>.55);
+    // the cosmic void is opaque from its first frame (the fire one fades in):
+    // hide the forest with it, or a strip of ground and grass shows under it
+    if(forestRoot)forestRoot.visible=!(view?.fire>(view?.fireKind==='cosmic'?0:.55));
     paintGlint(view,attacker,time||0);
     paintLaunchShadow(view,defender);
     paintImpact(view,defender);
@@ -1952,10 +1972,16 @@
           defender.swim.rotation.z+=th*(defender.slot===0?-1:1);
           defender.swim.rotation.x+=.22*Math.sin(Math.min(Math.PI,th));
         }else if(l.axis==='x'){
-          defender.pivot.position.x=defender.baseX+l.drift;
+          // Roll about the body's OWN length, then turn the rolled body flat
+          // (Euler 'YXZ': yaw outermost). With the default order the roll was
+          // about the world X axis, which the yaw spin carried across the
+          // body: Technique/Power launches ended sitting upright on the rump
+          // or on the neck, then snapped flat at the landing (Nov 27 clips).
+          const yw=l.yaw||0,s=h*Math.sin(th);
+          defender.pivot.position.x=defender.baseX+l.drift-s*Math.sin(yw);
           defender.pivot.position.y=l.y-sink+h*(1-Math.cos(th));
-          defender.pivot.position.z=-h*Math.sin(th);
-          defender.pivot.rotation.set(th,l.yaw||0,0);
+          defender.pivot.position.z=-s*Math.cos(yw);
+          defender.pivot.rotation.set(th,yw,0,'YXZ');
         }else{
           defender.pivot.position.x=defender.baseX+l.drift+h*Math.sin(th);
           defender.pivot.position.y=l.y-sink+h*(1-Math.cos(th));
@@ -1966,7 +1992,7 @@
         // Landed on its feet in the arena wide, a short bounce, then its reaction.
         defender.pivot.position.x=defender.baseX+l.drift;
         defender.pivot.position.y=l.y;defender.pivot.position.z=0;
-        defender.pivot.rotation.set(0,0,0);
+        defender.pivot.rotation.set(0,0,0,'XYZ');
       }
       return;
     }
@@ -2306,7 +2332,14 @@
     actor.model.updateMatrixWorld(true);
     const h=head.getWorldPosition(new THREE.Vector3());
     const cam=new THREE.PerspectiveCamera(26,W/H,.05,200);
-    cam.position.set(h.x+f*1.7*sc,h.y+.12*sc,h.z+1.0*sc);cam.lookAt(h.x+f*.15*sc,h.y-.05*sc,h.z);
+    if(actor.swim&&actor.joint.get('RigJaw')){
+      // shark: its head bone rides the top of a long snout, so frame the
+      // face (eye to jaw) from low 3/4 front, tight like the Bear's portrait
+      const face=h.clone().lerp(actor.joint.get('RigJaw').getWorldPosition(new THREE.Vector3()),.2);
+      cam.position.set(face.x+f*1.05,face.y+.14,face.z+.85);cam.lookAt(face.x-f*.15,face.y-.06,face.z);
+    }else{
+      cam.position.set(h.x+f*1.7*sc,h.y+.12*sc,h.z+1.0*sc);cam.lookAt(h.x+f*.15*sc,h.y-.05*sc,h.z);
+    }
     const others=actors.filter(a=>a&&a!==actor),was=others.map(a=>a.pivot.visible);
     others.forEach(a=>{a.pivot.visible=false;});
     renderer.render(scene,cam);

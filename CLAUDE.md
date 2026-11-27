@@ -251,6 +251,20 @@ Each turn both players secretly pick one action; both resolve simultaneously.
 - A cloned glTF skin measures its box from stale bone matrices and caches
   it: `makeActor` refreshes bundled models before fitting (it was scaled to
   a speck).
+- Nov 27 review fixes (from the user's two shark match recordings):
+  - Launch roll: Euler order 'YXZ' (yaw outermost) so the roll stays about
+    the body length while it yaws. With the default order the Technique/Power
+    yaw carried the roll axis across the body: Bear launches ended sitting on
+    the rump or on its neck. Swimmers roll in the swim group instead.
+  - Shark KO on its flank (`KO_ROLL` 1.75 rad) at `lieHeight` on the dirt;
+    belly-up, its dorsal fin propped it above the ground. Faint tail twitch.
+  - Idle: a travelling S-wave through the body on top of the Swim clip.
+  - Victory: jaws snap through the roar, tail sweeps, pectoral fins swept
+    back (no stiff airplane). Still faces the lens (user decision).
+  - Roar starts 360 ms into every victory (was 700; inhale→cue 720).
+  - Cosmic void hides the forest from its first frame (ground strip showed).
+  - Hit pops: each is gone before the next one pops (they overlapped).
+  - Shark FOCUS!! portrait framed on its face.
 
 ## Delivering work to the user
 - The user runs the game on his Mac from `~/Desktop/animal-arcade`. When that

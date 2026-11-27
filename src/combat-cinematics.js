@@ -231,7 +231,8 @@ function draw(time){
    const age=elapsed-(timing.landAt||0);
    overlay.querySelectorAll('[data-ark-hitpop]').forEach((el,i)=>{
      if(i>=n||reduce()){el.style.opacity='0';return;}
-     const a=elapsed-at[i],last=i===n-1,life=last?(event.resurrected?550:api.SOLO_MS.pop):550;
+     // a blow's number is gone by the time the next one pops (they overlapped)
+     const a=elapsed-at[i],last=i===n-1,life=last?(event.resurrected?550:api.SOLO_MS.pop):Math.max(120,Math.min(550,at[i+1]-at[i]));
      if(a<0||a>=life){el.style.opacity='0';if(a<0)el.dataset.placed='';return;}
      if(el.textContent!==String(hits[i]))el.textContent=String(hits[i]);
      // from the second blow on, a hit counter under the number, so two equal
@@ -245,7 +246,8 @@ function draw(time){
        if(a>=90)el.dataset.placed='1';
      }
      const sc=a<80?.6+.6*a/80:a<180?1.2-.2*(a-80)/100:1;
-     el.style.opacity=String(a<40?a/40:a>life-200?Math.max(0,(life-a)/200):1);
+     const fade=Math.min(200,life*.4);
+     el.style.opacity=String(a<40?a/40:a>life-fade?Math.max(0,(life-a)/fade):1);
      el.style.transform='translate(-50%,-50%) translateY('+(-32*a/life).toFixed(1)+'px) scale('+sc.toFixed(3)+')';
    });
    overlay.style.setProperty('--pop-op','0');

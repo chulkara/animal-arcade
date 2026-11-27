@@ -639,8 +639,10 @@ function camera(event,elapsed,nativeMs){
 // through the roar - no profile walk-in, no cuts, no wide pull-back.
 const VICTORY_SHOTS=Object.freeze([['vicHold',0]]);
 const VICTORY_BANNER_MS=280;       // "You win!" (PERFECT! lands at 0 when earned)
-const VICTORY_HOWL_START_MS=700;   // inhale
-const VICTORY_HOWL_CUE_MS=1060;    // roar sound with the jaw drop, on the close-up
+// The roar starts right after the banner (a 1 s static stand under "You
+// lose…" read as a freeze; Nov 27 review).
+const VICTORY_HOWL_START_MS=360;   // inhale
+const VICTORY_HOWL_CUE_MS=720;     // roar sound with the jaw drop
 const VICTORY_APPROACH_END_MS=2300;
 const VICTORY_OUTRO_MS=2450;
 const VICTORY_END_MS=4700;

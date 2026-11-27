@@ -80,9 +80,10 @@ test('reduced motion: shark stays at rest and at its plain hover height',()=>{
   assert.ok(Math.abs(shark.HOVER-.9)<1e-9,'swims ~0.9 m above the floor');
 });
 
-test('procedural knockout rolls belly-up onto the floor and reverses cleanly',()=>{
+test('procedural knockout rolls onto its flank on the floor and reverses cleanly',()=>{
   assert.deepEqual(shark.knockout(0),{roll:0,sink:0,bend:0});
-  const end=shark.knockout(1);assert.ok(end.roll>2.2&&end.sink===1&&Math.abs(end.bend)<1e-9);
+  // on its flank (~90-110°), not belly-up (its dorsal fin propped it up)
+  const end=shark.knockout(1);assert.ok(end.roll>1.5&&end.roll<1.95&&end.sink===1&&Math.abs(end.bend)<1e-9);
   let r=0;for(let p=0;p<=1;p+=.02){const k=shark.knockout(p);assert.ok(k.roll>=r-1e-9);r=k.roll;}
 });
 
@@ -123,4 +124,14 @@ test('bundled shark model: CC-BY credited, present and the right size',()=>{
   const head=readFileSync(url).subarray(0,8);
   assert.equal(head.toString('ascii',0,4),'glTF');assert.equal(head.readUInt32LE(4),2);
   for(const clip of Object.values(core.BUNDLED.shark.clips))assert.match(clip,/^rig\|(Swim|SwimFast|Bite1|Bite2|Hit|Hit01)$/);
+});
+
+test('launch roll stays about the body length while it yaws (no sitting/headstand landings)',()=>{
+  const src=readFileSync('src/arena3d-runtime.js','utf8');
+  // yaw must be the OUTER rotation, or the yaw spin carries the roll axis across the body
+  assert.match(src,/defender\.pivot\.rotation\.set\(th,yw,0,'YXZ'\)/);
+  // a swimmer spins about its own length in the swim group, never end over end on the pivot
+  assert.match(src,/defender\.swim\.rotation\.z\+=th/);
+  // multi-hit pops: each one is gone before the next pops
+  assert.match(readFileSync('src/combat-cinematics.js','utf8'),/Math\.min\(550,at\[i\+1\]-at\[i\]\)/);
 });

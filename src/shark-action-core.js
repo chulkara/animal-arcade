@@ -100,11 +100,13 @@ function hover(t,{reducedMotion=false}={}){
  if(reducedMotion||!Number.isFinite(t))return HOVER;
  return HOVER+BOB*Math.sin(t/1000*TAU*BOB_HZ);
 }
-// Knockout (no clip of its own): rolls belly-up and sinks to the floor.
-// p 0..1 along the fall; the get-up plays it backwards.
+// Knockout (no clip of its own): rolls onto its flank, pale belly to the
+// lens, and drops onto the dirt. p 0..1 along the fall; the get-up plays it
+// backwards. (Belly-up, its dorsal fin propped it above the ground.)
+const KO_ROLL=1.75;
 function knockout(p){
  const u=Math.max(0,Math.min(1,p)),e=u*u*(3-2*u);
- return {roll:2.6*e,sink:Math.min(1,e*1.15),bend:.35*Math.sin(Math.PI*u)};
+ return {roll:KO_ROLL*e,sink:Math.min(1,e*1.15),bend:.35*Math.sin(Math.PI*u)};
 }
-return Object.freeze({FIELDS,MOVES,CODE,LENGTH,CONTACT,HOVER,BOB,sampleMove,hover,knockout});
+return Object.freeze({FIELDS,MOVES,CODE,LENGTH,CONTACT,HOVER,BOB,KO_ROLL,sampleMove,hover,knockout});
 });
