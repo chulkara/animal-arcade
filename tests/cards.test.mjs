@@ -24,7 +24,7 @@ test('catalog has distinct original cards in all three scanned card classes',()=
 test('starter collection is playable and independently editable for two players',()=>{
   const db=cards.createStore(storage());
   const s=db.getState();
-  assert.equal(Object.values(s.inventory).filter(n=>n>0).length,7);
+  assert.equal(Object.values(s.inventory).filter(n=>n>0).length,8);
   assert.equal(s.inventory['animal:bear'],1);
   assert.equal(s.inventory['animal:moose'],1);
   assert.equal(s.inventory['animal:shark'],1,'the shark is a starter card');
@@ -111,11 +111,14 @@ test('Strong card applies to its G/T/P feature, Miracle only to special mark',()
   };
   const base=sameTechnique({},false);
   const strong=sameTechnique(m,false);
-  assert.equal(strong.damage-base.damage,8);
+  // Strong +8 and the Bear card's Power level 5: (5-3)*STAT_STEP
+  const lvl=(5-3)*combat.STAT_STEP;
+  assert.equal(strong.damage-base.damage,8+lvl);
+  assert.equal(strong.statBonus,lvl);
   assert.equal(strong.miracleBonus,0);
   const specialBase=sameTechnique({},true);
   const special=sameTechnique(m,true);
-  assert.equal(special.damage-specialBase.damage,8+14);
+  assert.equal(special.damage-specialBase.damage,8+14+lvl);
   assert.equal(special.strongBonus,8);
   assert.equal(special.miracleBonus,14);
   const gBattle=combat.createBattle({mode:'DUEL',picks:['bear','moose'],modifiers:[m,{}]});

@@ -34,17 +34,24 @@
     if(interval!==null){cancelAnimationFrame(interval);interval=null;}
   }
   function start({mode,picks}){
+    // the solo CPU fights with its own fitting deck (cards-core CPU_DECKS)
     const modifiers=picks.map((animalId,i)=>
-      mode==='SOLO'&&i===1?{}:(window.NoahsCards?.getModifiers(i,animalId)||{}));
+      mode==='SOLO'&&i===1?(window.ArkadeCardsCore?.cpuModifiers?.(animalId)||{}):
+        (window.NoahsCards?.getModifiers(i,animalId)||{}));
     battle=matchApi.createMatch({mode,picks,modifiers});
     matchReward=null;rewardClaimed=false;
     slotIndex=0;
     open();
   }
-  function activeValues(){
+  // A player's reel strip (a card can add faces or swap the power strip).
+  function activeValues(player){
     const s=current();
-    return s?.phase==='ATTACK'?api.TECHNIQUES:api.POWERS;
+    if(!s)return null;
+    const phase=s.phase==='ATTACK'?'ATTACK':'POWER';
+    const p=Number.isInteger(player)?player:s.actor||0;
+    return battle?.reel?.(p,phase)||(phase==='ATTACK'?api.TECHNIQUES:api.POWERS);
   }
+  const bothValues=()=>[activeValues(0),activeValues(1)];
   function valueNow(){return activeValues()?.[slotIndex%activeValues().length];}
   function token(value){
     return value==='MARK'?'✦':String(value??'—');
@@ -59,11 +66,12 @@
     return flow;
   }
   function paintFlow(){
-    const s=current(),values=activeValues();
-    if(!flow||!s||!values)return;
+    const s=current();
+    if(!flow||!s||!activeValues(0))return;
     for(const i of [0,1]){
       const box=ui.querySelector('[data-reel-player="'+i+'"]');
       if(!box)continue;
+      const values=activeValues(i);
       const v=flowApi.view({...flow,elapsed:Math.max(0,flow.elapsed)},i,values);
       const at=v.index%values.length;
       // Drum roll: each new symbol slides down into the window from above
@@ -86,7 +94,7 @@
     const s=current();
     if(!flow||!s||screen()!=='BATTLE_PLAY'||!['ATTACK','POWER'].includes(s.phase))return;
     const before=flow.locks[player];
-    flow=flowApi.lock(flow,player,activeValues());
+    flow=flowApi.lock(flow,player,bothValues());
     if(flow.locks[player]!=null&&before==null){
       window.NoahsAudio?.cue('arcadeStop');
       paintFlow();
@@ -194,7 +202,7 @@
       // cap each frame's share: a long main-thread stall never eats the clock
       const dt=paused()?0:Math.min(100,Math.max(0,time-flowAt));flowAt=time;
       const step=Math.floor(Math.max(0,flow.elapsed)/flowApi.STEP_MS);
-      flow=flowApi.tick(flow,dt,values);
+      flow=flowApi.tick(flow,dt,bothValues());
       if(Math.floor(Math.max(0,flow.elapsed)/flowApi.STEP_MS)!==step&&step%3===0)window.NoahsAudio?.cue('reelTick');
       paintFlow();
       const node=ui.querySelector('[data-combat-countdown]');
@@ -325,6 +333,7 @@
         <span class="ark-hud-health-value${struck?' is-struck':''}">${struck?`<i class="hp-before">${SHOW(before)}</i><i class="hp-zero">0</i>`:''}<i class="hp-after">${SHOW(f.hp)}</i> / ${SHOW(f.maxHp)}</span>
       </div>
       <div class="ark-hud-meter${struck?' is-struck':''}" aria-hidden="true"><span style="--held:${held}%;--from:${from}%;width:${remaining}%"></span></div>
+      ${s.regen?.[i]&&s.phase==='ATTACK'?`<span class="ark-hud-heal" role="status">+${SHOW(s.regen[i].heal)} ${s.regen[i].name}</span>`:''}
       <div class="ark-hud-techniques" aria-hidden="true">
         <span>G ${s.selected[i].technique==='G'?'◆':'·'}</span>
         <span>T ${s.selected[i].technique==='T'?'◆':'·'}</span>
@@ -408,7 +417,7 @@
         <b>${token(val)}</b><em class="fight-slot-cap">${type==='ATTACK'?TECH_LABEL[val]:cap}</em></div>`;
     // The other side's reel is spinning while this phase is open (CPU or the waiting player).
     if(s.phase===type){
-      const strip=(type==='ATTACK'?api.TECHNIQUES:api.POWERS).map(token);
+      const strip=(battle?.reel?.(i,type)||(type==='ATTACK'?api.TECHNIQUES:api.POWERS)).map(token);
       return `<div class="fight-slot fight-slot-${kind} is-spinning" aria-hidden="true">
         <span class="fight-strip">${[...strip,...strip].map(v=>`<i>${v}</i>`).join('')}</span><em class="fight-slot-cap">${cap}</em></div>`;
     }

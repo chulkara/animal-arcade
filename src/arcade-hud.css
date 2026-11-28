@@ -253,3 +253,11 @@
 .game.reduce-motion .ark-reference-layout .fight-clash.is-tie{display:none}
 @media (prefers-reduced-motion:reduce){.game .ark-reference-layout .fight-clash.is-tie{display:none}}
 .game.reduce-motion .ark-reference-layout .fight-shard{display:none}
+
+/* a healing card's round-start mend, under the health bar (Nov 28) */
+.ark-hud-heal{display:inline-block;margin-top:4px;padding:2px 8px;font:700 12px Impact,'Arial Black',sans-serif;
+  letter-spacing:.08em;color:#163314;background:linear-gradient(#d9ffb0,#8fdc5a);border:1px solid #234a16;
+  animation:ark-heal-in 1.6s ease-out both}
+.ark-arena-hud-player-1 .ark-hud-heal{float:right}
+@keyframes ark-heal-in{0%{opacity:0;transform:translateY(6px)}12%{opacity:1;transform:none}80%{opacity:1}100%{opacity:0}}
+.game.reduce-motion .ark-hud-heal{animation:none}

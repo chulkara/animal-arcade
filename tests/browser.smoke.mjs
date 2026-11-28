@@ -106,6 +106,17 @@ await run('landscape-844x390',{width:844,height:390},async page=>{
   assert.equal(await page.locator('#game').getAttribute('data-screen'),'MAIN_MENU');
 });
 
+await run('binder-card-rules-1440x900',{width:1440,height:900},async page=>{
+  await page.evaluate(()=>window.NoahsCards.open('BINDER'));
+  const summary=await page.locator('.ark-deck-summary').innerText();
+  assert.match(summary,/FANG STANDARD: POWER \+8/);
+  assert.match(summary,/FALLING STAR: A second ✦ on your power reel/);
+  assert.equal(await page.locator('.ark-deck-summary .ark-card-levels dd i.on').count(),12);
+  assert.match(await page.locator('[data-card-id="miracle:meteor"] .ark-card-fit').innerText(),/FITS BEAR/);
+  assert.match(await page.locator('[data-card-id="miracle:dawn"] .ark-card-fit').innerText(),/DAMAGE ONLY ON BEAR/);
+  assert.equal(await page.locator('[data-card-id="strong:guard"] .ark-card-rules li').count(),2);
+});
+
 await run('solo-shark-1440x900',{width:1440,height:900},async page=>{
   await page.locator('.painted-hotspots [data-art-action="PLAY"]').click();
   await page.locator('[data-mode="SOLO_SELECT"]').click();
@@ -219,7 +230,7 @@ await run('card-collection-desktop-1440x900',{width:1440,height:900},async page=
   await page.locator('.painted-hotspots [data-art-action="MY_CARDS"]').click();
   assert.equal(await page.locator('#game').getAttribute('data-screen'),'CARDS');
   assert.equal(await page.locator('.ark-card-tile').count(),13);
-  assert.equal(await page.locator('.ark-unlocked').count(),7);
+  assert.equal(await page.locator('.ark-unlocked').count(),8);
   assert.match(await page.locator('.ark-card-local-note').innerText(),/not synced online/);
   await page.locator('[data-card-filter="miracle"]').click();
   assert.equal(await page.locator('.ark-card-tile').count(),5);
@@ -294,12 +305,12 @@ await run('card-reward-solo-1440x900',{width:1440,height:900},async page=>{
   assert.equal(await page.locator('.combat-card-reward').count(),1);
   await page.locator('[data-combat-view-cards]').click();
   assert.equal(await page.locator('#game').getAttribute('data-screen'),'CARDS');
-  assert.equal(await page.locator('.ark-unlocked').count(),8);
-  assert.match(await page.locator('.ark-collection-summary').innerText(),/8/);
+  assert.equal(await page.locator('.ark-unlocked').count(),9);
+  assert.match(await page.locator('.ark-collection-summary').innerText(),/9/);
   await page.reload({waitUntil:'domcontentloaded'});
   await page.locator('#painted-stage').waitFor({state:'visible',timeout:45000});
   await page.locator('.painted-hotspots [data-art-action="MY_CARDS"]').click();
-  assert.equal(await page.locator('.ark-unlocked').count(),8);
+  assert.equal(await page.locator('.ark-unlocked').count(),9);
 });
 
 

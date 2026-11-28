@@ -54,7 +54,8 @@ function createOverlay(){
   '<div class="ark-hitpops" aria-hidden="true"><b data-ark-hitpop="0"></b><b data-ark-hitpop="1"></b><b data-ark-hitpop="2"></b></div>'+
   '<div class="ark-callin ark-callin-focus" data-ark-callin="focus" aria-hidden="true"><i data-ark-focus-portrait></i><b>FOCUS!!</b></div>'+
   '<div class="ark-callin ark-callin-guard" data-ark-callin="guard" aria-hidden="true"><b>FOCUS GUARD!</b><small></small></div>'+
-  '<div class="ark-callin ark-callin-revive" data-ark-callin="revive" aria-hidden="true"><b>RESURRECTION!</b></div>'+
+  '<div class="ark-callin ark-callin-revive" data-ark-callin="revive" aria-hidden="true"><b>RESURRECTION!</b><small></small></div>'+
+  '<div class="ark-callin ark-callin-card" data-ark-callin="card" aria-hidden="true"><b></b><small></small></div>'+
   '<div class="ark-cinema-lines"></div>'+
   '<div class="ark-cinema-streak"></div>'+
   '<div class="ark-cinema-slash"><i></i><i></i><i></i></div>'+
@@ -178,7 +179,10 @@ function draw(time){
        (window.NoahsRoster?.ANIMALS?.[event.defenderId]?.art||'./assets/bear-placeholder.svg');
        portrait.style.backgroundImage='url("'+src+'")';}
      const guard=overlay.querySelector('[data-ark-callin="guard"] small');
-     if(guard)guard.textContent=event.focusGuard?'−'+Math.round((event.guarded||0)*(api.DISPLAY_SCALE||1)):'';
+     // Focus Guard's own share (a guard card's cut is called out separately)
+     if(guard)guard.textContent=event.focusGuard?'−'+Math.round(((event.guarded||0)-(event.cardGuard?.amount||0))*(api.DISPLAY_SCALE||1)):'';
+     const revive=overlay.querySelector('[data-ark-callin="revive"] small');
+     if(revive)revive.textContent=event.reviveCard?event.reviveCard+' · 40%':'';
    }
    if(sub)sub.textContent=rehearsal?
      beat==='CONTACT'?'STAGED CONTACT · NO HP CHANGES':
@@ -264,6 +268,25 @@ function draw(time){
      cue('focus',event.focusGuard&&elapsed>=contactAt-520&&elapsed<contactAt);
      cue('focusGuard',event.focusGuard&&elapsed>=timing.landAt+120&&elapsed<timing.returnAt);
      cue('resurrect',event.resurrected&&elapsed>=timing.reviveAt&&elapsed<timing.returnAt);
+   }
+   // Card effects that fired, each called out on its owner's side when it
+   // happens: a tie won, Focus Guard pierced, a hit cut by a guard card.
+   if(!sequence.cardCalls){
+     const S=api.DISPLAY_SCALE||1,calls=[];
+     if(event.tieBreak)calls.push({from:timing.titleIn,to:timing.titleIn+1300,side:event.attacker,name:event.tieBreak,text:'TIE BROKEN'});
+     if(event.pierced)calls.push({from:contactAt-520,to:contactAt+260,side:event.attacker,name:event.pierced,text:'PIERCES FOCUS GUARD'});
+     if(event.cardGuard)calls.push({from:timing.landAt+(event.focusGuard?560:120),to:timing.landAt+(event.resurrected?620:1250),
+       side:event.defender,name:event.cardGuard.name,text:'−'+Math.round(event.cardGuard.amount*S)});
+     sequence.cardCalls=calls;
+   }
+   const call=reduce()?null:sequence.cardCalls.find(c=>elapsed>=c.from&&elapsed<c.to)||null;
+   const plate=overlay.querySelector('[data-ark-callin="card"]');
+   if(plate){
+     const key=call?call.name+call.text:'';
+     if(plate.dataset.key!==key){plate.dataset.key=key;plate.querySelector('b').textContent=call?call.name+'!':'';
+       plate.querySelector('small').textContent=call?call.text:'';plate.dataset.side=call?String(call.side):'';}
+     overlay.style.setProperty('--callin-card',call?win(call.from,call.to,90).toFixed(3):'0');
+     if(call&&!rehearsal&&!sequence['cue_card'+call.name]){sequence['cue_card'+call.name]=true;window.NoahsAudio?.cue('focusGuard');}
    }
    overlay.style.setProperty('--callin-revive',event.resurrected?win(timing.reviveAt,Math.min(timing.returnAt,timing.reviveAt+1300)).toFixed(3):'0');
    // where the victim lands: the guard / revive tags sit under it

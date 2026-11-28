@@ -46,10 +46,14 @@ function reelIndex(state,player,count){
   return (state.seed+OFFSETS[player]+Math.floor(t/STEP_MS))%count;
 }
 function humans(state){return state.mode==='DUEL'?[0,1]:[0];}
+// `values` is one strip for both players, or [strip0, strip1] when a card
+// gives one player extra faces.
+function stripOf(values,player){return Array.isArray(values?.[0])?values[player]:values;}
 function lock(state,player,values){
   if(state.phase==='REVEAL'||!humans(state).includes(player)||state.locks[player]!=null)return state;
   const locks=[...state.locks],lockedAt=[...state.lockedAt];
-  locks[player]=values[reelIndex(state,player,values.length)];
+  const strip=stripOf(values,player);
+  locks[player]=strip[reelIndex(state,player,strip.length)];
   lockedAt[player]=state.elapsed;
   return finish({...state,locks:Object.freeze(locks),lockedAt:Object.freeze(lockedAt)});
 }
@@ -66,7 +70,8 @@ function tick(state,ms,values){
 function lockRaw(state,player,values){
   const locks=[...state.locks],lockedAt=[...state.lockedAt];
   lockedAt[player]=Math.min(state.elapsed,LIMIT_MS);
-  locks[player]=values[reelIndex({...state,lockedAt},player,values.length)];
+  const strip=stripOf(values,player);
+  locks[player]=strip[reelIndex({...state,lockedAt},player,strip.length)];
   return {...state,locks:Object.freeze(locks),lockedAt:Object.freeze(lockedAt)};
 }
 function finish(state){
@@ -76,6 +81,7 @@ function finish(state){
 // What a reel window shows: the live symbol while spinning, a LOCKED shutter
 // once that player has locked but the other has not, the value on reveal.
 function view(state,player,values){
+  values=stripOf(values,player);
   const locked=state.locks[player]!=null;
   if(state.mode==='SOLO'&&player===1)
     return Object.freeze({spinning:!state.ready,shutter:false,value:null,
@@ -90,5 +96,5 @@ function commits(state){
   if(!state.ready)return [];
   return humans(state).map(p=>Object.freeze({player:p,value:state.locks[p]}));
 }
-return Object.freeze({LIMIT_MS,STEP_MS,PHASES,KEYS,playerForKey,start,lock,tick,view,reelIndex,secondsLeft,commits});
+return Object.freeze({LIMIT_MS,STEP_MS,PHASES,KEYS,playerForKey,start,lock,tick,view,reelIndex,secondsLeft,commits,stripOf});
 });

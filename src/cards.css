@@ -106,6 +106,44 @@
 .ark-card-footnote,.ark-card-local-note{font:12px/1.5 Georgia,serif;
   color:#c9bea8;max-width:710px;margin:12px auto;}
 .ark-card-local-note{border-top:1px solid #c0a47466;padding-top:12px;font-size:11px;}
+/* Card rules (Nov 27): G/T/P level pips, effect lines, Miracle fit badge,
+   the technique / ✦ emblem on Strong and Miracle faces, loadout summary. */
+.ark-card-levels{display:grid;gap:4px;margin:6px 0 4px;}
+.ark-card-levels>div{display:flex;align-items:center;gap:8px;}
+.ark-card-levels dt{width:20px;height:20px;display:grid;place-content:center;
+  font:700 12px Impact,'Arial Black',sans-serif;color:#142333;background:#d9b878;
+  clip-path:polygon(30% 0,70% 0,100% 30%,100% 70%,70% 100%,30% 100%,0 70%,0 30%);}
+.ark-card-levels [data-tech="G"] dt{background:#e98b4f}
+.ark-card-levels [data-tech="T"] dt{background:#6fc6d9}
+.ark-card-levels [data-tech="P"] dt{background:#e4c357}
+.ark-card-levels dd{display:flex;gap:3px;margin:0}
+.ark-card-levels dd i{width:15px;height:8px;background:#0b1c29;border:1px solid #6d7d86;transform:skewX(-14deg);}
+.ark-card-levels dd i.on{background:#ffdf8c;border-color:#fff2c4;box-shadow:0 0 5px #ffd36a88;}
+.ark-card-rules{list-style:none;margin:6px 0 2px;padding:0;display:grid;gap:4px;}
+.ark-card-rules li{font:700 12px/1.35 Arial,sans-serif;color:#f4e3bd;padding-left:14px;position:relative;}
+.ark-card-rules li::before{content:'◆';position:absolute;left:0;top:1px;font-size:9px;color:#d9b878;}
+.ark-card-fit{margin:4px 0 0;font:700 10px Arial,sans-serif;letter-spacing:.1em;color:#a9d8c8;}
+.ark-card-fit[data-fit="false"]{color:#f0a37c;}
+.ark-card-emblem{position:absolute;z-index:2;right:12px;top:38px;width:36px;height:36px;display:grid;place-content:center;
+  font:700 19px Impact,'Arial Black',sans-serif;color:#142333;background:linear-gradient(#fff2c9,#c99a4c);
+  clip-path:polygon(30% 0,70% 0,100% 30%,100% 70%,70% 100%,30% 100%,0 70%,0 30%);
+  filter:drop-shadow(0 2px 0 #071827);}
+.ark-card-face[data-tech="G"] .ark-card-emblem{background:linear-gradient(#ffd0a8,#d9672c)}
+.ark-card-face[data-tech="T"] .ark-card-emblem{background:linear-gradient(#d4f6ff,#3a9fbf)}
+.ark-card-face[data-tech="P"] .ark-card-emblem{background:linear-gradient(#fff4b8,#d6a82c)}
+.ark-card-face.ark-strong[data-tech="G"]{background:radial-gradient(ellipse at center,#7a4a32,#2a1810 74%);}
+.ark-card-face.ark-strong[data-tech="T"]{background:radial-gradient(ellipse at center,#2f6670,#0f2b34 74%);}
+.ark-card-face.ark-strong[data-tech="P"]{background:radial-gradient(ellipse at center,#6f6230,#262010 74%);}
+.ark-card-face.ark-miracle[data-affinity="forest"]{background:radial-gradient(ellipse at center,#3f6a46,#13261c 75%);}
+.ark-card-face.ark-miracle[data-affinity="highland"]{background:radial-gradient(ellipse at center,#7a6a4c,#262016 75%);}
+.ark-card-face.ark-miracle[data-affinity="ocean"]{background:radial-gradient(ellipse at center,#2f5a86,#0d1d33 75%);}
+.ark-card-face.ark-miracle[data-affinity="all"]{background:radial-gradient(ellipse at center,#5f5382,#152740 75%);}
+.ark-deck-summary{max-width:940px;margin:0 auto 14px;padding:12px 14px;text-align:left;
+  display:grid;grid-template-columns:auto 1fr;gap:4px 22px;align-items:start;
+  background:#0a2133;border:1px solid #c1a27399;}
+.ark-deck-summary>strong{grid-column:1/-1;font:700 11px Arial,sans-serif;letter-spacing:.2em;color:#d8bb82;}
+.ark-deck-summary ul{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:5px;}
+.ark-deck-summary li{font:13px/1.4 Georgia,serif;color:#eadcbf;}
 @media(max-width:620px){
   .game .ark-collection-panel{width:96vw;max-height:94svh;padding:15px 10px;}
   .ark-collection-summary{gap:4px;}
@@ -125,5 +163,11 @@
   .ark-deck-slot button{padding:4px;font-size:10px;}
   .ark-backup-grid{grid-template-columns:1fr;}
   .ark-backup-grid>button{grid-row:auto;}
+  .ark-deck-summary{grid-template-columns:1fr;}
+  /* REMOVE spilled past the narrow slot */
+  .game.painted-enabled .ark-collection-panel .ark-deck .ark-deck-slot button[data-card-unequip][type]{
+    max-width:100%;padding:8px 10px 7px;font-size:11px;letter-spacing:.04em;}
+  .ark-card-rules li{font-size:11px;}
+  .ark-card-emblem{width:28px;height:28px;font-size:15px;right:8px;top:32px;}
 }
 @media(max-height:520px){.game .ark-collection-panel{max-height:96svh}}

@@ -65,7 +65,9 @@
       return getState();
     }
     reset();
-    return Object.freeze({stop,nextRound,nextBout,reset,getState});
+    // a player's reel strip right now (card effects can add faces)
+    function reel(player,phase){return battle.reel(player,phase);}
+    return Object.freeze({stop,nextRound,nextBout,reset,getState,reel});
   }
   return Object.freeze({createMatch});
 });

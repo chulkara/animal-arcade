@@ -600,3 +600,15 @@
  visibility:visible!important;pointer-events:auto!important;animation:ark-vic-controls .45s ease-out both}
 @keyframes ark-vic-controls{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){.ark-reference-layout[data-vic-controls="1"] .combat-finish{animation:none}}
+
+/* Card call-out (Nov 28): the owner's card name on a parchment plate,
+   sliding in from that player's edge, with what it just did. */
+.ark-callin-card{top:21%;left:3%;right:auto;font-size:clamp(17px,2vw,30px);text-align:left;
+  padding:.45em .9em .5em;background:linear-gradient(160deg,#173149f2,#0a1d2df2);border:3px double #dcc18c;
+  box-shadow:0 6px 18px #0009;opacity:var(--callin-card,0);
+  transform:translateX(calc((1 - var(--callin-card,0)) * -40px));}
+.ark-callin-card[data-side="1"]{left:auto;right:3%;text-align:right;transform:translateX(calc((1 - var(--callin-card,0)) * 40px));}
+.ark-callin-card b{font-family:Impact,'Arial Black',sans-serif;letter-spacing:.06em;color:#ffe3a0;
+  text-shadow:0 2px 0 #3a2208;}
+.ark-callin-card small{color:#aef4ff;font-family:Impact,'Arial Black',sans-serif;font-size:.62em;letter-spacing:.1em;margin-top:.2em}
+.ark-callin-revive small{color:#fff3b8;font-size:.32em;letter-spacing:.16em;-webkit-text-fill-color:#fff3b8}

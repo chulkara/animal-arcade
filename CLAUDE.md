@@ -266,6 +266,15 @@ Each turn both players secretly pick one action; both resolve simultaneously.
   - Hit pops: each is gone before the next one pops (they overlapped).
   - Shark FOCUS!! portrait framed on its face.
 
+## Card effects v2 (2026-11-28; user chose "card effects + binder")
+Data in `cards-core.js` (`effects`, `rules`, Miracle `fits`, Animal `stats`,
+`CPU_DECKS`, `modifiersFor`, `cpuModifiers`); hooks in `combat-engine.js`
+(`cleanEffects`: stat, guard, tieWin, reel, revive, regen, pierce,
+desperate; `battle.reel(player, phase)` = that player's strip). The match flow
+takes per-player strips (`stripOf`). Full table: docs/phase4-cards.md.
+Event fields: statBonus, cardGuard, tieBreak, pierced, reviveCard; state.regen.
+Film call-out `.ark-callin-card` (owner's side). Tests: tests/card-effects.test.mjs.
+
 ## Delivering work to the user
 - The user runs the game on his Mac from `~/Desktop/animal-arcade`. When that
   folder is connected to the session, apply commits there directly

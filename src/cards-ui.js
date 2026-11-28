@@ -15,8 +15,32 @@
     '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
   }[c]));
   const typeLabel=type=>type==='animal'?'ANIMAL':type==='strong'?'STRONG':'MIRACLE';
-  const typeHelp=type=>type==='animal'?'Choose your champion':
-    type==='strong'?'Boost one fighting feature':'Amplify a ✦ special attack';
+  const typeHelp=type=>type==='animal'?'Your fighter and its G / T / P levels':
+    type==='strong'?'Boosts one attack, plus its own effect':'✦ damage, plus a special effect on animals it fits';
+  const TECH=Object.freeze({G:'GUTS',T:'TECHNIQUE',P:'POWER'});
+  const animalName=id=>core.BY_ID['animal:'+id]?.name||id.toUpperCase();
+  const shortName=id=>({bear:'BEAR',moose:'MOOSE',shark:'SHARK'}[id]||id.toUpperCase());
+  // G/T/P levels as five pips each (Animal cards)
+  function levels(card){
+    return `<dl class="ark-card-levels" aria-label="Attack levels">${['G','T','P'].map(t=>
+      `<div data-tech="${t}"><dt title="${TECH[t]}">${t}</dt><dd aria-label="${TECH[t]} level ${card.stats[t]} of 5">${
+        Array.from({length:5},(_,i)=>`<i${i<card.stats[t]?' class="on"':''}></i>`).join('')}</dd></div>`).join('')}</dl>`;
+  }
+  // Miracle compatibility: which animals it fits, and whether it fits the
+  // animal in this loadout (it still adds ✦ damage when it does not)
+  function fitLine(card,deck){
+    if(card.type!=='miracle')return '';
+    const all=card.fits.length>=3;
+    const who=all?'EVERY ANIMAL':card.fits.map(shortName).join(' · ');
+    if(!deck)return `<p class="ark-card-fit">FITS ${who}</p>`;
+    const id=core.BY_ID[deck.animal]?.animalId;
+    const ok=core.fits(card,id);
+    return `<p class="ark-card-fit" data-fit="${ok}">${ok?'✓ FITS '+(all?who:shortName(id)):'✦ DAMAGE ONLY ON '+shortName(id)+' · FITS '+who}</p>`;
+  }
+  function rules(card){
+    if(card.type==='animal')return levels(card);
+    return `<ul class="ark-card-rules">${card.rules.map(r=>`<li>${escape(r)}</li>`).join('')}</ul>`;
+  }
   function open(view='CARDS'){
     filter='all';message='';showBackup=false;importText='';
     window.__arkade?.openScreen(view==='BINDER'?'BINDER':'CARDS');
@@ -27,10 +51,14 @@
     if(!owned)return `<div class="ark-card-face ark-locked" aria-label="Locked card">
       <span class="ark-card-ornament">✦ ◈ ✦</span><span class="ark-card-mystery">?</span>
       <span class="ark-card-face-foot">UNRECOVERED</span></div>`;
-    return `<div class="ark-card-face ark-${card.type}">
+    // Strong cards carry their attack's emblem (the reel's octagon), Miracle
+    // cards a ✦ seal, both tinted by technique / affinity
+    const emblem=card.type==='strong'?`<b class="ark-card-emblem" aria-hidden="true">${card.technique}</b>`:
+      card.type==='miracle'?'<b class="ark-card-emblem" aria-hidden="true">✦</b>':'';
+    return `<div class="ark-card-face ark-${card.type}" data-tech="${card.technique||''}" data-affinity="${card.affinity||''}">
       <span class="ark-card-ornament">✦ ${typeLabel(card.type)} ✦</span>
       ${card.art?`<img src="${card.art}" alt="" loading="lazy">`:
-        `<span class="ark-card-glyph" aria-hidden="true">${card.symbol}</span>`}
+        `<span class="ark-card-glyph" aria-hidden="true">${card.symbol}</span>`}${emblem}
       <span class="ark-card-face-foot">${card.tag}</span></div>`;
   }
   function cardTile(card,s,deck=null){
@@ -41,6 +69,7 @@
       <div class="ark-card-info">
         <div class="ark-card-meta"><span>${typeLabel(card.type)}</span><span>${owned?'OWNED ×'+count:'LOCKED'}</span></div>
         <h3>${owned?card.name:'UNDISCOVERED '+typeLabel(card.type)}</h3>
+        ${owned?rules(card)+fitLine(card,deck):''}
         <p>${owned?card.description:'Win a battle to discover this card.'}</p>
         ${owned&&deck?`<button type="button" data-card-equip="${card.id}" ${equipped?'disabled':''}>
           ${equipped?'✓ EQUIPPED':'EQUIP FOR '+side.toUpperCase()}</button>`:''}
@@ -74,7 +103,15 @@
   }
   function binderScreen(s){
     const deck=s.decks[side];
-    return `<p class="ark-binder-explainer">Build a three-card loadout: one Animal, one Strong, and one Miracle. These prototype bonuses apply during battles. Both local players share this browser's collection.</p>
+    const animal=core.BY_ID[deck.animal];
+    const m=animal?core.modifiersFor(animal,core.BY_ID[deck.strong],core.BY_ID[deck.miracle]):null;
+    const effects=m?[
+      ...(m.strongName?[`${m.strongName}: ${TECH[m.strongTechnique]} +${m.strongBonus}`]:[]),
+      ...(m.miracleName?[`${m.miracleName}: ✦ +${m.miracleBonus}${m.fits?'':' (does not fit '+shortName(animal.animalId)+': no special effect)'}`]:[])
+    ]:[];
+    const extras=[core.BY_ID[deck.strong],m?.fits?core.BY_ID[deck.miracle]:null].filter(Boolean)
+      .flatMap(c=>c.rules.slice(1).map(r=>c.name+': '+r));
+    return `<p class="ark-binder-explainer">Build a three-card loadout: one Animal, one Strong and one Miracle. Both local players share this browser's collection. In solo, each CPU fighter brings its own fitting deck.</p>
     <div class="ark-player-tabs" role="group" aria-label="Player loadout">
       <button type="button" data-card-side="p1" aria-pressed="${side==='p1'}">PLAYER 1</button>
       <button type="button" data-card-side="p2" aria-pressed="${side==='p2'}">PLAYER 2</button>
@@ -89,6 +126,10 @@
         </div>`;
       }).join('')}
     </div>
+    ${animal?`<div class="ark-deck-summary" aria-label="What this loadout does">
+      <strong>IN BATTLE</strong>${levels(animal)}
+      <ul>${[...effects,...extras].map(t=>`<li>${escape(t)}</li>`).join('')||'<li>No Strong or Miracle card equipped.</li>'}</ul>
+    </div>`:''}
     <p class="ark-binder-tip">Choose any owned card below to equip it. When picking an animal before battle, that selection updates its Animal slot automatically.</p>
     <div class="ark-card-grid">${core.CARDS.filter(c=>s.inventory[c.id]>0)
       .map(c=>cardTile(c,s,deck)).join('')}</div>
