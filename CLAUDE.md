@@ -275,6 +275,15 @@ takes per-player strips (`stripOf`). Full table: docs/phase4-cards.md.
 Event fields: statBonus, cardGuard, tieBreak, pierced, reviveCard; state.regen.
 Film call-out `.ark-callin-card` (owner's side). Tests: tests/card-effects.test.mjs.
 
+## Rare finishes (2026-11-28; user's agreed next step after card effects)
+DOODLE 16% / PORCELAIN 7% / CHROME 2.5% per won match, cosmetic only.
+Save: `finishes`, `deck.finish`, `lastFinish` (cards-core). 3D coats built in
+`arena3d-runtime.js` `applyFinish` (Phong + canvas equirect env for chrome
+and porcelain, Toon + ink hull for doodle), applied in `syncScene` from
+`NoahsCards.getFinish(slot,id)`; Solo CPU stays standard. Any traversal
+that tints/collects coat materials must skip `ArkInk` (the outline hull)
+and `MouthBag`. Full table: docs/phase4-cards.md.
+
 ## Delivering work to the user
 - The user runs the game on his Mac from `~/Desktop/animal-arcade`. When that
   folder is connected to the session, apply commits there directly

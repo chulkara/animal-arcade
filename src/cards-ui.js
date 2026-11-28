@@ -47,7 +47,24 @@
   }
   function refresh(){const current=screen();if(['CARDS','BINDER'].includes(current))openScreen(current);}
   function openScreen(which){window.__arkade?.openScreen(which);}
-  function cardFace(card,owned){
+  // Rare finishes on Animal cards (cosmetic): chips to wear one, and the
+  // card face drawn in it. The binder shows the finish the side wears.
+  const FINISH=Object.fromEntries(core.FINISHES.map(f=>[f.id,f]));
+  function finishChips(card,s,deck){
+    if(card.type!=='animal')return '';
+    const owned=s.finishes?.[card.id]||[];
+    const worn=deck&&deck.animal===card.id?deck.finish||'standard':null;
+    return `<div class="ark-finishes" role="group" aria-label="${card.name} finishes, ${owned.length} of 3 found">
+      <span>FINISHES ${owned.length}/3</span>
+      ${core.FINISH_IDS.map(f=>{
+        const have=f==='standard'||owned.includes(f);
+        const label=have?FINISH[f].name:'???';
+        if(!deck||!have)return `<i data-finish-chip="${f}" data-have="${have}" title="${have?FINISH[f].note:'Not found yet'}">${label}</i>`;
+        return `<button type="button" data-card-finish="${f}" data-card-for="${card.id}" aria-pressed="${worn===f}" title="${FINISH[f].note}">${label}</button>`;
+      }).join('')}
+    </div>`;
+  }
+  function cardFace(card,owned,finish='standard'){
     if(!owned)return `<div class="ark-card-face ark-locked" aria-label="Locked card">
       <span class="ark-card-ornament">✦ ◈ ✦</span><span class="ark-card-mystery">?</span>
       <span class="ark-card-face-foot">UNRECOVERED</span></div>`;
@@ -55,8 +72,9 @@
     // cards a ✦ seal, both tinted by technique / affinity
     const emblem=card.type==='strong'?`<b class="ark-card-emblem" aria-hidden="true">${card.technique}</b>`:
       card.type==='miracle'?'<b class="ark-card-emblem" aria-hidden="true">✦</b>':'';
-    return `<div class="ark-card-face ark-${card.type}" data-tech="${card.technique||''}" data-affinity="${card.affinity||''}">
-      <span class="ark-card-ornament">✦ ${typeLabel(card.type)} ✦</span>
+    const fin=card.type==='animal'&&finish!=='standard'?finish:'';
+    return `<div class="ark-card-face ark-${card.type}" data-tech="${card.technique||''}" data-affinity="${card.affinity||''}"${fin?` data-finish="${fin}"`:''}>
+      <span class="ark-card-ornament">✦ ${fin?FINISH[fin].name:typeLabel(card.type)} ✦</span>
       ${card.art?`<img src="${card.art}" alt="" loading="lazy">`:
         `<span class="ark-card-glyph" aria-hidden="true">${card.symbol}</span>`}${emblem}
       <span class="ark-card-face-foot">${card.tag}</span></div>`;
@@ -64,13 +82,16 @@
   function cardTile(card,s,deck=null){
     const count=s.inventory[card.id]||0,owned=count>0;
     const equipped=deck?.[card.type]===card.id;
+    // binder: the face wears this side's finish; MY CARDS: the rarest owned
+    const finish=deck?(equipped?deck.finish||'standard':'standard'):(s.finishes?.[card.id]||[]).at(-1)||'standard';
     return `<article class="ark-card-tile ${owned?'ark-unlocked':'ark-unknown'}" data-card-id="${card.id}">
-      ${cardFace(card,owned)}
+      ${cardFace(card,owned,finish)}
       <div class="ark-card-info">
         <div class="ark-card-meta"><span>${typeLabel(card.type)}</span><span>${owned?'OWNED ×'+count:'LOCKED'}</span></div>
         <h3>${owned?card.name:'UNDISCOVERED '+typeLabel(card.type)}</h3>
         ${owned?rules(card)+fitLine(card,deck):''}
         <p>${owned?card.description:'Win a battle to discover this card.'}</p>
+        ${owned?finishChips(card,s,deck):''}
         ${owned&&deck?`<button type="button" data-card-equip="${card.id}" ${equipped?'disabled':''}>
           ${equipped?'✓ EQUIPPED':'EQUIP FOR '+side.toUpperCase()}</button>`:''}
       </div>
@@ -121,6 +142,7 @@
         const card=core.BY_ID[deck[type]];
         return `<div class="ark-deck-slot">
           <span>${typeLabel(type)}</span><strong>${card?.name||'EMPTY SLOT'}</strong>
+          ${type==='animal'&&deck.finish?`<em class="ark-deck-finish" data-finish="${deck.finish}">${FINISH[deck.finish].name} FINISH</em>`:''}
           <small>${typeHelp(type)}</small>
           ${card&&type!=='animal'?`<button type="button" data-card-unequip="${type}">REMOVE</button>`:''}
         </div>`;
@@ -140,6 +162,7 @@
       <button type="button" data-card-copy>COPY SAVE</button>
       <label>RESTORE BACKUP <textarea rows="5" data-card-import-text placeholder="Paste your saved JSON here">${escape(importText)}</textarea></label>
       <button type="button" data-card-import>IMPORT SAVE</button>
+      <button type="button" data-card-dev-finishes title="For testing the looks: adds every finish to this browser's save">DEV · UNLOCK ALL FINISHES</button>
       </div>`:''}
     </div>`;
   }
@@ -156,10 +179,12 @@
     </section>`;
   }
   function updateMessage(msg){message=msg;refresh();}
-  function grantBattleReward(){
+  // a won match: a card, plus maybe a rare finish for the animal P1 fought with
+  function grantBattleReward(animalId){
     const reward=store.grantReward();
-    if(reward)message=`DUEL REWARD: ${reward.name}`;
-    return reward;
+    const finish=animalId?store.grantFinish(animalId):null;
+    if(reward)message=`DUEL REWARD: ${reward.name}`+(finish?` · NEW ${finish.name} ${core.BY_ID[finish.card].name}!`:'');
+    return reward?{...reward,finish}:finish?{finish}:null;
   }
   ui.addEventListener('click',async event=>{
     const target=event.target;
@@ -176,6 +201,19 @@
       const ok=store.equip(side,equip.dataset.cardEquip);
       updateMessage(ok?'CARD EQUIPPED':'CARD NOT OWNED');
       return;
+    }
+    const fin=target.closest('[data-card-finish]');
+    if(fin){
+      // wearing a finish equips its animal on this side first
+      if(store.getDeck(side).animal!==fin.dataset.cardFor)store.equip(side,fin.dataset.cardFor);
+      const ok=store.setFinish(side,fin.dataset.cardFinish);
+      updateMessage(ok?(fin.dataset.cardFinish==='standard'?'STANDARD FINISH':FINISH[fin.dataset.cardFinish].name+' FINISH ON'):'FINISH NOT FOUND YET');
+      return;
+    }
+    if(target.closest('[data-card-dev-finishes]')){
+      for(const c of core.CARDS.filter(c=>c.type==='animal'))
+        for(const v of [0,.03,.1])store.grantFinish(c.animalId,()=>v);
+      updateMessage('DEV: EVERY FINISH ADDED TO THIS SAVE');return;
     }
     const remove=target.closest('[data-card-unequip]');
     if(remove){store.unequip(side,remove.dataset.cardUnequip);updateMessage('SLOT CLEARED');return;}
@@ -196,6 +234,7 @@
   window.NoahsCards=Object.freeze({
     render,open,store,grantBattleReward,
     equipAnimal:(playerIndex,animalId)=>store.equip(playerIndex===1?'p2':'p1','animal:'+animalId),
-    getModifiers:(playerIndex,animalId)=>store.getModifiers(playerIndex===1?'p2':'p1',animalId)
+    getModifiers:(playerIndex,animalId)=>store.getModifiers(playerIndex===1?'p2':'p1',animalId),
+    getFinish:(playerIndex,animalId)=>store.getFinish(playerIndex===1?'p2':'p1',animalId)
   });
 })();

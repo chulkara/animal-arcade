@@ -78,6 +78,25 @@
     shark:Object.freeze({strong:'strong:wind',miracle:'miracle:tidal'})
   });
   const fits=(miracle,animalId)=>Boolean(miracle?.fits?.includes(animalId));
+  // Rare FINISHES for Animal cards: cosmetic only (no rules change). A
+  // finish changes the card's look and the animal's coat in the 3D arena.
+  // After a won match the animal P1 fought with may earn one: Doodle is
+  // rare, Porcelain rarer, Chrome rarest. `odds` are per won match.
+  const FINISHES=Object.freeze([
+    Object.freeze({id:'standard',name:'STANDARD',odds:0,note:'The animal as it is in the wild.'}),
+    Object.freeze({id:'doodle',name:'DOODLE',odds:.16,note:'Drawn in crayon and ink, as if it walked out of a sketchbook.'}),
+    Object.freeze({id:'porcelain',name:'PORCELAIN',odds:.07,note:'Fired white and painted in cobalt blue.'}),
+    Object.freeze({id:'chrome',name:'CHROME',odds:.025,note:'Polished mirror metal. The rarest finish.'})
+  ]);
+  const FINISH_IDS=Object.freeze(FINISHES.map(f=>f.id));
+  const RARE_FINISHES=Object.freeze(FINISH_IDS.slice(1));
+  const ANIMAL_IDS=()=>CARDS.filter(c=>c.type==='animal').map(c=>c.id);
+  // one roll in [0,1): rarest first, so Chrome is the narrowest band
+  function rollFinish(value){
+    let edge=0;
+    for(const f of [...FINISHES].reverse()){if(!f.odds)continue;edge+=f.odds;if(value<edge)return f.id;}
+    return null;
+  }
   const DEFAULT_DECKS=Object.freeze({
     p1:Object.freeze({animal:'animal:bear',strong:'strong:fang',miracle:'miracle:meteor'}),
     p2:Object.freeze({animal:'animal:moose',strong:'strong:guard',miracle:'miracle:dawn'})
@@ -90,7 +109,8 @@
   const safeCount=n=>Number.isSafeInteger(n)&&n>=0&&n<=99?n:0;
   const clone=obj=>JSON.parse(JSON.stringify(obj));
   const init=()=>({schema:1,inventory:Object.fromEntries(CARDS.map(c=>[c.id,STARTER_IDS.includes(c.id)?1:0])),
-    decks:clone(DEFAULT_DECKS),wins:0,lastReward:null});
+    decks:clone(DEFAULT_DECKS),wins:0,lastReward:null,
+    finishes:Object.fromEntries(ANIMAL_IDS().map(id=>[id,[]])),lastFinish:null});
   function clean(raw){
     const result=init();
     if(!raw||typeof raw!=='object'||Array.isArray(raw)||raw.schema!==1)return result;
@@ -108,6 +128,20 @@
     result.wins=Number.isSafeInteger(raw.wins)?Math.max(0,Math.min(1000000,raw.wins)):0;
     const reward=migrateAnimal(raw.lastReward);
     if(typeof reward==='string'&&BY_ID[reward])result.lastReward=reward;
+    // finishes (added Nov 28; older saves have none): only known rare ids,
+    // no repeats, and a deck only wears a finish its animal owns
+    for(const id of ANIMAL_IDS()){
+      const list=Array.isArray(raw.finishes?.[id])?raw.finishes[id]:[];
+      result.finishes[id]=RARE_FINISHES.filter(f=>list.includes(f));
+    }
+    for(const side of ['p1','p2']){
+      const f=raw.decks?.[side]?.finish;
+      const animal=result.decks[side].animal;
+      if(typeof f==='string'&&result.finishes[animal]?.includes(f))result.decks[side].finish=f;
+    }
+    const lf=raw.lastFinish;
+    if(lf&&typeof lf==='object'&&result.finishes[lf.card]?.includes(lf.finish))
+      result.lastFinish={card:lf.card,finish:lf.finish};
     return result;
   }
   // Engine modifiers for one fighter: the Animal card's G/T/P levels, the
@@ -152,14 +186,45 @@
       const card=BY_ID[id];
       if(!card||!state.inventory[id])return false;
       state.decks[side][card.type]=id;
+      // a different animal keeps a finish only if that animal owns it too
+      if(card.type==='animal'&&!state.finishes[id]?.includes(state.decks[side].finish))delete state.decks[side].finish;
       persist();
       return true;
+    }
+    // Wear an owned finish on the side's equipped animal ('standard' removes it).
+    function setFinish(side,finish){
+      if(side!=='p1'&&side!=='p2'||!FINISH_IDS.includes(finish))return false;
+      const animal=state.decks[side].animal;
+      if(finish==='standard'){delete state.decks[side].finish;persist();return true;}
+      if(!state.finishes[animal]?.includes(finish))return false;
+      state.decks[side].finish=finish;persist();return true;
+    }
+    // The finish a fighter wears: only when that side's Animal card is the
+    // animal actually fighting.
+    function getFinish(side='p1',animalId){
+      const deck=state.decks[side==='p2'?'p2':'p1'];
+      return deck.animal==='animal:'+animalId&&deck.finish?deck.finish:'standard';
     }
     function unequip(side,type){
       if(!['p1','p2'].includes(side)||!['strong','miracle'].includes(type))return false;
       state.decks[side][type]=null;
       persist();
       return true;
+    }
+    // After a won match: a chance at a rare finish for the animal P1 fought
+    // with. A finish it already owns is no drop. Returns the new finish or null.
+    function grantFinish(animalId,rng=Math.random){
+      if(typeof rng!=='function')throw new TypeError('Random source must be a function');
+      const card='animal:'+animalId;
+      if(!state.finishes[card])return null;
+      const value=Number(rng());
+      const finish=rollFinish(Number.isFinite(value)?Math.max(0,Math.min(.999999,value)):1);
+      if(!finish||state.finishes[card].includes(finish))return null;
+      state.finishes[card].push(finish);
+      state.finishes[card].sort((a,b)=>FINISH_IDS.indexOf(a)-FINISH_IDS.indexOf(b));
+      state.lastFinish={card,finish};
+      persist();
+      return {card,animalId,finish,name:FINISHES.find(f=>f.id===finish).name};
     }
     function grantReward(rng=Math.random){
       if(typeof rng!=='function')throw new TypeError('Random source must be a function');
@@ -186,7 +251,8 @@
       return modifiersFor(actual,owned(deck.strong),owned(deck.miracle));
     }
     function exportSave(){return JSON.stringify({schema:1,inventory:state.inventory,
-      decks:state.decks,wins:state.wins,lastReward:state.lastReward},null,2);}
+      decks:state.decks,wins:state.wins,lastReward:state.lastReward,
+      finishes:state.finishes,lastFinish:state.lastFinish},null,2);}
     function importSave(value){
       if(typeof value!=='string'||value.length>32000)return false;
       let raw;
@@ -195,8 +261,9 @@
          Array.isArray(raw.inventory)||typeof raw.decks!=='object'||!raw.decks)return false;
       state=clean(raw);persist();return true;
     }
-    return Object.freeze({getState,getCard,getDeck,equip,unequip,grantReward,getModifiers,
-      exportSave,importSave,getPersistence:()=>persistence});
+    return Object.freeze({getState,getCard,getDeck,equip,unequip,grantReward,grantFinish,setFinish,getFinish,
+      getModifiers,exportSave,importSave,getPersistence:()=>persistence});
   }
-  return Object.freeze({KEY,CARDS,TYPES,STARTER_IDS,CPU_DECKS,BY_ID,init,clean,createStore,modifiersFor,cpuModifiers,fits});
+  return Object.freeze({KEY,CARDS,TYPES,STARTER_IDS,CPU_DECKS,BY_ID,FINISHES,FINISH_IDS,rollFinish,
+    init,clean,createStore,modifiersFor,cpuModifiers,fits});
 });

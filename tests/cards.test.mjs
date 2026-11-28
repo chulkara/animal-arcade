@@ -149,7 +149,7 @@ test('collection scripts and routing are present without changing menu original'
   assert.ok(app.includes("MY_CARDS:'CARDS'")&&app.includes("BINDER:'BINDER'"));
   assert.ok(app.includes("window.NoahsCards.render(screen)"));
   assert.ok(p.includes('window.NoahsCards?.equipAnimal('));
-  assert.ok(battle.includes('window.NoahsCards?.grantBattleReward()'));
+  assert.ok(battle.includes('window.NoahsCards?.grantBattleReward('));
   assert.ok(ui.includes('Cloud Binder is planned'));
   assert.ok(readFileSync('src/painted-menu.js','utf8').includes("const ART='./assets/approved-menu.png'"));
 });

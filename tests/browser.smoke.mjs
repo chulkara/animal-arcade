@@ -117,6 +117,19 @@ await run('binder-card-rules-1440x900',{width:1440,height:900},async page=>{
   assert.equal(await page.locator('[data-card-id="strong:guard"] .ark-card-rules li').count(),2);
 });
 
+await run('binder-finishes-1440x900',{width:1440,height:900},async page=>{
+  await page.evaluate(()=>window.NoahsCards.open('BINDER'));
+  assert.equal(await page.locator('[data-card-finish="chrome"]').count(),0,'No finish is owned on a fresh save');
+  await page.locator('[data-card-backup-toggle]').click();
+  await page.locator('[data-card-dev-finishes]').click();
+  await page.locator('[data-card-finish="chrome"][data-card-for="animal:bear"]').click();
+  assert.equal(await page.locator('[data-card-finish="chrome"][data-card-for="animal:bear"]').getAttribute('aria-pressed'),'true');
+  assert.equal(await page.locator('[data-card-id="animal:bear"] .ark-card-face').getAttribute('data-finish'),'chrome');
+  assert.equal(await page.evaluate(()=>window.NoahsCards.getFinish(0,'bear')),'chrome');
+  assert.equal(await page.evaluate(()=>window.NoahsCards.getFinish(0,'moose')),'standard');
+  await page.screenshot({path:`${screenshots}/binder-finishes-1440x900.png`});
+});
+
 await run('solo-shark-1440x900',{width:1440,height:900},async page=>{
   await page.locator('.painted-hotspots [data-art-action="PLAY"]').click();
   await page.locator('[data-mode="SOLO_SELECT"]').click();

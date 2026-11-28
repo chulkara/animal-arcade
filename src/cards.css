@@ -144,6 +144,56 @@
 .ark-deck-summary>strong{grid-column:1/-1;font:700 11px Arial,sans-serif;letter-spacing:.2em;color:#d8bb82;}
 .ark-deck-summary ul{list-style:none;margin:6px 0 0;padding:0;display:grid;gap:5px;}
 .ark-deck-summary li{font:13px/1.4 Georgia,serif;color:#eadcbf;}
+/* Rare finishes (Nov 28, cosmetic). The art is the same silhouette; each
+   finish re-colours it and changes the card's stock. */
+.ark-card-face[data-finish]{border-style:solid;}
+.ark-card-face[data-finish] img{position:relative;z-index:1;}
+.ark-card-face[data-finish]>.ark-card-ornament,.ark-card-face[data-finish]>.ark-card-face-foot{position:relative;z-index:2;}
+.ark-card-face[data-finish]::after{content:'';position:absolute;inset:0;pointer-events:none;z-index:1;
+  transform:none;background:none;width:auto;height:auto;}
+/* DOODLE: crayon on ruled sketchbook paper, ink-blue lettering */
+.ark-card-face[data-finish="doodle"]{border:3px dashed #2c3c86;
+  background:repeating-linear-gradient(transparent 0 21px,#9fb6d966 21px 22px),#f7f0de;}
+.ark-card-face[data-finish="doodle"] img{filter:sepia(.35) saturate(1.6) contrast(1.15) drop-shadow(3px 3px 0 #2c3c86);}
+.ark-card-face[data-finish="doodle"]::after{
+  background:repeating-linear-gradient(-38deg,transparent 0 7px,#d86a3a22 7px 9px);mix-blend-mode:multiply;}
+.ark-card-face[data-finish="doodle"]>.ark-card-ornament,.ark-card-face[data-finish="doodle"]>.ark-card-face-foot{
+  color:#2c3c86;background:transparent;font-family:'Marker Felt','Chalkboard SE','Comic Sans MS',cursive;letter-spacing:.12em;}
+/* PORCELAIN: white glaze, cobalt brushwork, a glossy highlight */
+.ark-card-face[data-finish="porcelain"]{border:3px double #1f4a9a;
+  background:radial-gradient(ellipse at 50% 42%,#ffffff,#e6eef6 70%,#c9d8ea);}
+.ark-card-face[data-finish="porcelain"] img{filter:grayscale(1) sepia(1) hue-rotate(180deg) saturate(4.5) brightness(.82) contrast(1.35) drop-shadow(0 8px 6px #1f4a9a55);}
+.ark-card-face[data-finish="porcelain"]::after{
+  background:linear-gradient(118deg,transparent 38%,#ffffffaa 47%,transparent 57%),
+    radial-gradient(circle at 50% 0,transparent 9px,#1f4a9a 10px 12px,transparent 13px) 0 0/26px 22px repeat-x,
+    radial-gradient(circle at 50% 100%,transparent 9px,#1f4a9a 10px 12px,transparent 13px) 0 100%/26px 22px repeat-x;}
+.ark-card-face[data-finish="porcelain"]>.ark-card-ornament,.ark-card-face[data-finish="porcelain"]>.ark-card-face-foot{
+  color:#1f4a9a;background:#ffffffcc;}
+/* CHROME: mirror metal, a light sweep across it */
+.ark-card-face[data-finish="chrome"]{border:3px solid #eef3f7;box-shadow:inset 0 0 0 2px #59646f;
+  background:linear-gradient(165deg,#3b4652,#dfe6ec 30%,#78848f 47%,#ffffff 58%,#a7b2bc 70%,#36414c);}
+.ark-card-face[data-finish="chrome"] img{filter:grayscale(1) contrast(1.7) brightness(1.18) drop-shadow(0 10px 7px #0b141c99);}
+.ark-card-face[data-finish="chrome"]::after{
+  background:linear-gradient(105deg,transparent 30%,#ffffffcc 45%,#bfe9ff66 50%,transparent 62%) -160% 0/220% 100% no-repeat;
+  animation:ark-chrome-sweep 3.4s ease-in-out infinite;}
+.ark-card-face[data-finish="chrome"]>.ark-card-ornament,.ark-card-face[data-finish="chrome"]>.ark-card-face-foot{
+  color:#17212b;background:linear-gradient(#ffffffdd,#b9c4cedd);}
+@keyframes ark-chrome-sweep{0%,55%{background-position:-160% 0}100%{background-position:260% 0}}
+.game.reduce-motion .ark-card-face[data-finish="chrome"]::after{animation:none;background-position:40% 0}
+@media(prefers-reduced-motion:reduce){.ark-card-face[data-finish="chrome"]::after{animation:none;background-position:40% 0}}
+/* finish chips on Animal cards */
+.ark-finishes{display:flex;flex-wrap:wrap;align-items:center;gap:5px;margin:8px 0 4px;}
+.ark-finishes>span{font:700 10px Arial,sans-serif;letter-spacing:.14em;color:#d8bb82;margin-right:4px;}
+.ark-finishes i,.ark-collection-panel .ark-finishes button[data-card-finish]{font:700 10px Arial,sans-serif;font-style:normal;
+  letter-spacing:.1em;padding:4px 7px;border:1px solid #6d7d86;color:#8d9aa2;background:#0a1c29;min-height:0;}
+.ark-finishes i[data-have="true"]{color:#eadcbf;border-color:#c1a273;}
+.game.painted-enabled .ark-collection-panel .ark-finishes button[data-card-finish][type]{
+  padding:4px 7px;min-height:0;font:700 10px Arial,sans-serif;letter-spacing:.1em;color:#eadcbf;background:#0a1c29;
+  border:1px solid #c1a273;clip-path:none;}
+.game.painted-enabled .ark-collection-panel .ark-finishes button[data-card-finish][type][aria-pressed="true"]{
+  color:#1a1206;background:linear-gradient(#ffe9a8,#d6a94c);border-color:#fff2c4;}
+.ark-deck-finish{display:block;margin-top:4px;font:700 10px Arial,sans-serif;font-style:normal;letter-spacing:.14em;color:#bfe9ff;}
+.ark-deck-finish[data-finish="doodle"]{color:#f4b38f}.ark-deck-finish[data-finish="porcelain"]{color:#a9c6ff}
 @media(max-width:620px){
   .game .ark-collection-panel{width:96vw;max-height:94svh;padding:15px 10px;}
   .ark-collection-summary{gap:4px;}

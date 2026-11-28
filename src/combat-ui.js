@@ -439,8 +439,10 @@
         <strong>${winLabel}</strong>
         <span>${actorName(s,s.winner)} — ${animal[s.animals[s.winner].id].label} is victorious.</span>
         ${complete?
-          `${matchReward?`<p class="combat-card-reward">MATCH REWARD — ${matchReward.newCard?'NEW CARD':'DUPLICATE'}:
+          `${matchReward?.name?`<p class="combat-card-reward">MATCH REWARD — ${matchReward.newCard?'NEW CARD':'DUPLICATE'}:
           <strong>${matchReward.name}</strong> ${matchReward.newCard?'UNLOCKED':'×'+matchReward.count}</p>`:''}
+          ${matchReward?.finish?`<p class="combat-card-reward combat-finish-reward" data-finish="${matchReward.finish.finish}">RARE FINISH —
+          <strong>${matchReward.finish.name} ${window.ArkadeCardsCore?.BY_ID?.[matchReward.finish.card]?.name||''}</strong> FOUND</p>`:''}
           <button type="button" data-combat-rematch data-initial-focus>REMATCH</button>
           <button type="button" data-combat-mode-select>MODE SELECT · 1P / 2P</button>
           <button type="button" data-combat-view-cards>VIEW MY CARDS</button>`:
@@ -498,7 +500,10 @@
     if(!s)return `<section class="panel combat-panel"><h1>BATTLE UNAVAILABLE</h1>
       <button type="button" data-combat-quit>← RETURN TO ARENA</button></section>`;
     if(s.phase==='FINISHED'&&s.session.complete&&!rewardClaimed){
-      rewardClaimed=true;matchReward=window.NoahsCards?.grantBattleReward()||null;
+      rewardClaimed=true;
+      // a rare finish can drop for the WINNING side's animal (none on a solo defeat)
+      const ses=s.session,champ=ses.mode==='SOLO'?(ses.result==='CLEARED'?0:null):(ses.wins[0]>=ses.wins[1]?0:1);
+      matchReward=window.NoahsCards?.grantBattleReward(champ===null?null:s.animals[champ]?.id)||null;
     }
     const filmedHit=['RESULT','FINISHED'].includes(s.phase)&&s.lastEvent?.kind==='HIT'&&Boolean(window.NoahsCinematics);
     const hitKey=filmedHit?window.NoahsArena3DCore?.battleEvent?.(s)?.key:null;

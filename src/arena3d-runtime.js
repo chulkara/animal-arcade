@@ -62,6 +62,145 @@
     for(const [bone,quaternion] of actor.additive)bone.quaternion.copy(quaternion);
     actor.additive.clear();
   }
+  // ---- Rare card finishes (Doodle / Porcelain / Chrome) on the 3D coat ----
+  // Each finish swaps a fighter's coat for its own materials (cached per
+  // slot + source material, so a mirror match never shares a coat and a
+  // rematch reuses compiled shaders). The source materials stay untouched.
+  const finishCache=new Map(),finishTex=new Map();
+  let chromeEnv=null,glazeEnv=null,toonRamp=null;
+  function envTexture(kind){
+    const c=document.createElement('canvas');c.width=512;c.height=256;
+    const g=c.getContext('2d'),grad=g.createLinearGradient(0,0,0,256);
+    if(kind==='chrome'){
+      // a dark studio sky, one thin bright horizon band and a near-black
+      // floor: high-contrast reflections are what read as polished metal
+      grad.addColorStop(0,'#1d2a38');grad.addColorStop(.3,'#4d6a86');grad.addColorStop(.45,'#bfd3e4');
+      grad.addColorStop(.49,'#ffffff');grad.addColorStop(.52,'#5a4a3c');grad.addColorStop(.7,'#2b221b');grad.addColorStop(1,'#120e0b');
+    }else{
+      grad.addColorStop(0,'#e9eef6');grad.addColorStop(.5,'#ffffff');grad.addColorStop(.56,'#c9c4bb');grad.addColorStop(1,'#8d8780');
+    }
+    g.fillStyle=grad;g.fillRect(0,0,512,256);
+    if(kind==='chrome'){
+      // a few soft window streaks so highlights travel across the body
+      g.globalAlpha=.55;g.fillStyle='#ffffff';
+      for(const x of [40,170,300,420])g.fillRect(x,58,18,52);
+      g.globalAlpha=1;
+    }
+    const t=new THREE.CanvasTexture(c);t.mapping=THREE.EquirectangularReflectionMapping;
+    t.colorSpace=THREE.SRGBColorSpace;return t;
+  }
+  function rampTexture(){
+    const data=new Uint8Array([70,70,70,255,165,165,165,255,255,255,255,255]);
+    const t=new THREE.DataTexture(data,3,1,THREE.RGBAFormat);
+    t.minFilter=t.magFilter=THREE.NearestFilter;t.generateMipmaps=false;t.needsUpdate=true;return t;
+  }
+  // Repaint a coat texture for a finish (canvas, ≤1024 px, keeps alpha).
+  function finishMap(src,finish){
+    if(!src?.image)return null;
+    const key=src.uuid+'|'+finish;if(finishTex.has(key))return finishTex.get(key);
+    let out=null;
+    try{
+      const img=src.image,w0=img.width||img.videoWidth||0,h0=img.height||img.videoHeight||0;
+      if(!w0||!h0)throw Error('texture not ready');
+      const k=Math.min(1,1024/Math.max(w0,h0)),w=Math.max(1,Math.round(w0*k)),h=Math.max(1,Math.round(h0*k));
+      const c=document.createElement('canvas');c.width=w;c.height=h;
+      const g=c.getContext('2d',{willReadFrequently:true});g.drawImage(img,0,0,w,h);
+      const px=g.getImageData(0,0,w,h),d=px.data;
+      // normalise to this coat's own range (a grey shark and a brown bear
+      // both get their full light-to-dark spread of glaze/steel/crayon)
+      const hist=new Uint32Array(256);let n=0;
+      for(let i=0;i<d.length;i+=4)if(d[i+3]>8){hist[(d[i]*.299+d[i+1]*.587+d[i+2]*.114)|0]++;n++;}
+      const pct=q=>{let acc=0;for(let v=0;v<256;v++){acc+=hist[v];if(acc>=q*n)return v/255;}return 1;};
+      const lo=pct(.08),hi=Math.max(lo+.05,pct(.92));
+      for(let i=0;i<d.length;i+=4){
+        const lum=Math.max(0,Math.min(1,((d[i]*.299+d[i+1]*.587+d[i+2]*.114)/255-lo)/(hi-lo)));
+        if(finish==='chrome'){
+          // grey steel that keeps the fur's light/dark grain
+          const v=Math.round(255*(.3+lum*.68));d[i]=v;d[i+1]=Math.min(255,v+3);d[i+2]=Math.min(255,v+8);
+        }else if(finish==='porcelain'){
+          // blue-and-white glaze: dark fur becomes cobalt brushwork
+          const ink=Math.max(0,Math.min(1,(.62-lum)*1.7));
+          d[i]=Math.round(246-ink*214);d[i+1]=Math.round(246-ink*186);d[i+2]=Math.round(250-ink*92);
+        }else{
+          // doodle: crayon on warm paper, three flat tones of the coat's own hue
+          const p=(i>>2),x=p%w,y=(p/w)|0,q=lum<.28?.38:lum<.55?.68:.95;
+          const r=d[i]/255,gg=d[i+1]/255,b=d[i+2]/255,m=Math.max(r,gg,b,.001);
+          const hatch=((x+y)%7===0)&&lum<.55?.84:1;
+          d[i]=Math.round(255*Math.min(1,(r/m*.68+.32)*q*hatch*1.02));
+          d[i+1]=Math.round(255*Math.min(1,(gg/m*.68+.32)*q*hatch*.98));
+          d[i+2]=Math.round(255*Math.min(1,(b/m*.68+.32)*q*hatch*.9));
+        }
+      }
+      g.putImageData(px,0,0);
+      out=new THREE.CanvasTexture(c);
+      for(const p of ['flipY','wrapS','wrapT','colorSpace','channel'])if(p in src)out[p]=src[p];
+      out.repeat.copy(src.repeat);out.offset.copy(src.offset);out.anisotropy=4;out.needsUpdate=true;
+    }catch(err){console.warn('[arena3d] finish texture skipped',err);out=null;}
+    finishTex.set(key,out);return out;
+  }
+  function finishMaterial(src,finish,slot){
+    const key=slot+'|'+finish+'|'+src.uuid;if(finishCache.has(key))return finishCache.get(key);
+    const base={name:src.name+'·'+finish,map:finishMap(src.map,finish),normalMap:src.normalMap||null,
+      transparent:!!src.transparent,alphaTest:src.alphaTest||0,side:src.side,
+      emissive:src.emissive?src.emissive.clone():new THREE.Color(0)};
+    if(src.emissiveMap){base.emissiveMap=finishMap(src.emissiveMap,finish);base.emissiveIntensity=src.emissiveIntensity*.6;}
+    let m;
+    if(finish==='chrome'){
+      chromeEnv||=envTexture('chrome');
+      m=new THREE.MeshPhongMaterial({...base,color:0xb9c2cc,specular:0xffffff,shininess:140,
+        envMap:chromeEnv,combine:THREE.MixOperation,reflectivity:.66});
+    }else if(finish==='porcelain'){
+      glazeEnv||=envTexture('glaze');
+      m=new THREE.MeshPhongMaterial({...base,color:0xffffff,specular:0x9aa3b0,shininess:70,
+        envMap:glazeEnv,combine:THREE.MixOperation,reflectivity:.12});
+    }else{
+      toonRamp||=rampTexture();
+      m=new THREE.MeshToonMaterial({...base,color:0xffffff,gradientMap:toonRamp});
+    }
+    if(src.normalScale&&m.normalScale)m.normalScale.copy(src.normalScale);
+    if(!base.map)m.color.copy(src.color||new THREE.Color(1,1,1));
+    finishCache.set(key,m);return m;
+  }
+  // Doodle ink line: an inverted hull that shares the skin's geometry and
+  // skeleton, pushed out along the skinned normal (object space).
+  function inkOutline(mesh){
+    const s=mesh.getWorldScale(new THREE.Vector3()).x||1;
+    const mat=new THREE.MeshBasicMaterial({color:0x241a12,side:THREE.BackSide});
+    const width={value:.024/s};
+    mat.onBeforeCompile=shader=>{
+      shader.uniforms.uInk=width;
+      shader.vertexShader='uniform float uInk;\n'+shader.vertexShader.replace('#include <skinning_vertex>',
+        '#include <skinning_vertex>\n#ifdef USE_SKINNING\ntransformed+=normalize(objectNormal)*uInk;\n#else\ntransformed+=normalize(normal)*uInk;\n#endif');
+    };
+    mat.customProgramCacheKey=()=>'ark-ink';
+    const hull=mesh.isSkinnedMesh?new THREE.SkinnedMesh(mesh.geometry,mat):new THREE.Mesh(mesh.geometry,mat);
+    if(mesh.isSkinnedMesh){hull.bindMode=mesh.bindMode;hull.bind(mesh.skeleton,mesh.bindMatrix);}
+    hull.name='ArkInk';hull.castShadow=false;hull.receiveShadow=false;hull.frustumCulled=false;
+    hull.position.copy(mesh.position);hull.quaternion.copy(mesh.quaternion);hull.scale.copy(mesh.scale);
+    return hull;
+  }
+  function applyFinish(actor,finish){
+    finish=['doodle','porcelain','chrome'].includes(finish)?finish:'standard';
+    if(actor.finish===finish)return;
+    actor.finish=finish;
+    for(const ink of actor.inks||[]){ink.parent?.remove(ink);ink.material.dispose();}
+    actor.inks=[];
+    actor.model.updateMatrixWorld(true);
+    const meshes=[];
+    actor.model.traverse(o=>{if(o.isMesh&&o.name!=='MouthBag'&&o.name!=='ArkInk')meshes.push(o);});
+    for(const o of meshes){
+      o.userData.arkBaseMaterial??=o.material;
+      const src=o.userData.arkBaseMaterial;
+      o.material=finish==='standard'?src:Array.isArray(src)?src.map(m=>finishMaterial(m,finish,actor.slot)):finishMaterial(src,finish,actor.slot);
+      if(finish==='doodle'&&o.isSkinnedMesh&&o.parent){const ink=inkOutline(o);o.parent.add(ink);actor.inks.push(ink);}
+    }
+    actor.tintMats=null;
+  }
+  function finishFor(slot,id){
+    const s=state();
+    if(slot===1&&s?.session?.mode==='SOLO')return 'standard';
+    try{return window.NoahsCards?.getFinish?.(slot,id)||'standard';}catch{return 'standard';}
+  }
   function makeActor(id,slot){
     const asset=loaded[id];
     if(!asset||!THREE||!layout)return null;
@@ -218,7 +357,7 @@
         }
         actor.tintMats=[];
         model.traverse(o=>{
-          if(!o.isMesh||o.name==='MouthBag')return;
+          if(!o.isMesh||o.name==='MouthBag'||o.name==='ArkInk')return;
           for(const m of [].concat(o.material))
             if(m?.color&&!actor.tintMats.includes(m)){
               if(!m.userData.baseColor)m.userData.baseColor=m.color.clone();
@@ -849,7 +988,7 @@
       orientation.rotation.set(0,(slot===0?Math.PI/2:-Math.PI/2)+yaw[id],0);
       actor.native('idle');
     };
-    actor.destroy=()=>{resetApplied(actor);mixer.stopAllAction();layout.remove(pivot);};
+    actor.destroy=()=>{resetApplied(actor);mixer.stopAllAction();for(const ink of actor.inks||[])ink.material.dispose();layout.remove(pivot);};
     actor.idle();
     return actor;
   }
@@ -2304,6 +2443,7 @@
         if(actors[i]?.id!==id||(!actors[i]&&loaded[id])){
           actors[i]?.destroy();actors[i]=loaded[id]?makeActor(id,i):null;changed=true;
         }
+        if(actors[i]){const f=finishFor(i,id);if(actors[i].finish!==f){applyFinish(actors[i],f);changed=true;}}
       }
       const nodes=battlefield.querySelectorAll('.combat-fighter[data-animal-id]');
       nodes.forEach((node,i)=>{

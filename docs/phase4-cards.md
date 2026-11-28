@@ -74,3 +74,29 @@ Every card now does something of its own, through rule hooks in
 - Binder: G/T/P level pips, each card's rules, Miracle fit for the equipped
   animal, and an IN BATTLE summary of the loadout.
 - Tests: `tests/card-effects.test.mjs`.
+
+## Rare finishes (2026-11-28)
+Cosmetic only: a finish never changes a rule or a number.
+
+| Finish | Odds per won match | Card face | 3D coat |
+|---|---|---|---|
+| DOODLE | 16 % | ruled paper, ink border, crayon hatch | flat crayon tones + ink outline (inverted hull on the skin) |
+| PORCELAIN | 7 % | white glaze, cobalt art | blue-and-white glaze, soft gloss |
+| CHROME | 2.5 % | polished steel, sweeping glint | mirror steel reflecting a studio sky / dark floor |
+
+- `rollFinish(value)` checks the rarest band first; `grantFinish(animalId, rng)`
+  never grants a duplicate. A won match rolls for the winning side's animal
+  (Solo: only on a cleared run). The result screen names a find.
+- Each side wears at most one finish, on its equipped Animal
+  (`setFinish(side, finish)`; `getFinish(side, animalId)` is `standard`
+  unless that animal is the one fighting). The Solo CPU always fights
+  standard.
+- Binder: FINISHES n/3 chips on each Animal card (unfound ones read ???);
+  pressing a found one wears it. DEV · UNLOCK ALL FINISHES (in the backup
+  section) adds all of them for testing.
+- 3D: `applyFinish(actor, finish)` in `arena3d-runtime.js` swaps each mesh
+  to finish materials built from its own (textures repainted on a canvas,
+  normalised to that coat's light/dark range), cached per slot + material,
+  so a mirror match never shares a coat. The source material is kept in
+  `userData.arkBaseMaterial`. Gold Change and the aura rim still apply.
+- Tests: `tests/finishes.test.mjs`, smoke `binder-finishes-1440x900`.
