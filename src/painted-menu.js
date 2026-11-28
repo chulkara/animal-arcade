@@ -1,18 +1,52 @@
 /* Exact-art menu overlay: rendered only if the approved original PNG is present.
-   No image manipulation, crop, filters, re-lettering, or synthetic replacements. */
+   No image manipulation, crop, filters, re-lettering, or synthetic replacements of the art.
+   Everything interactive is an overlay positioned in the painting's own pixel space. */
 (function () {
   'use strict';
   const game=document.getElementById('game');
   const arkade=window.__arkade;
   if(!game||!arkade)return;
   const ART='./assets/approved-menu.png';
+  const ART_W=1672, ART_H=941;
+  // Painted button rectangles, measured from the artwork's cream borders (painting pixels).
   const actions=[
-    {id:'PLAY',label:'Play',x:38.1,y:52.3,w:23.4,h:6.8},
-    {id:'MY_CARDS',label:'My Cards',x:38.4,y:60.6,w:22.1,h:5.7},
-    {id:'BINDER',label:'Binder',x:38.4,y:67.5,w:22.1,h:5.7},
-    {id:'SHOP',label:'Shop',x:38.4,y:74.2,w:22.1,h:5.8},
-    {id:'SETTINGS',label:'Settings',x:38.4,y:81.0,w:22.1,h:5.8}
+    {id:'PLAY',label:'Play',r:[641,501,1031,561]},
+    {id:'MY_CARDS',label:'My Cards',r:[652,578,1021,631]},
+    {id:'BINDER',label:'Binder',r:[652,646,1021,699]},
+    {id:'SHOP',label:'Shop',r:[652,710,1021,763]},
+    {id:'SETTINGS',label:'Settings',r:[652,775,1021,828]}
   ];
+  const PX=x=>(x/ART_W*100)+'%';
+  const PY=y=>(y/ART_H*100)+'%';
+  const INTRO_KEY='noahs-arkade.painted-intro.v1';
+  // Panels sit over the painted button column (painting pixels).
+  const PLATE=[500,444,1172,888];
+  // Menu-family screens get the dimming veil; battles and selection screens do not.
+  const VEILED=['MODE_MENU','OPTIONS','SHOP_PREVIEW','HELP_PREVIEW','CARDS','BINDER','ANIMAL_SELECT','BATTLE_STAGE'];
+  const reducedMotion=()=>game.classList.contains('reduce-motion')||window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+
+  // Chamfered "pill" shapes matching the painted buttons.
+  function pillClip(w,h,inset=0){
+    const c=(h*0.5)/w*100;
+    return `polygon(0% 50%, ${c}% 0%, ${100-c}% 0%, 100% 50%, ${100-c}% 100%, ${c}% 100%)`;
+  }
+  function pillPoints(w,h,i=1.5){
+    const c=h*0.5;
+    return [[i,h/2],[c+i*.6,i],[w-c-i*.6,i],[w-i,h/2],[w-c-i*.6,h-i],[c+i*.6,h-i]].map(p=>p.map(v=>v.toFixed(1)).join(',')).join(' ');
+  }
+  function place(el,[x0,y0,x1,y1]){
+    el.style.left=PX(x0);el.style.top=PY(y0);el.style.width=PX(x1-x0);el.style.height=PY(y1-y0);
+  }
+  function pill(label,rect,lit,big){
+    const [x0,y0,x1,y1]=rect,w=x1-x0,h=y1-y0;
+    const el=document.createElement('span');
+    el.className='pm-pill'+(lit?' pm-pill--lit':'')+(big?' pm-pill--big':'');
+    el.setAttribute('aria-hidden','true');
+    place(el,rect);
+    el.innerHTML=`<span class="pm-pill__edge" style="clip-path:${pillClip(w,h)}"></span><span class="pm-pill__face" style="clip-path:${pillClip(w-6,h-6)}"></span><span class="pm-pill__label">${label.toUpperCase()}</span>`;
+    return el;
+  }
+
   const art=new Image();
   art.onload=()=>{
     if(art.naturalWidth<100||art.naturalHeight<100)return;
@@ -29,16 +63,49 @@
     const dock=document.createElement('nav');
     dock.className='painted-mobile-nav';
     dock.setAttribute('aria-label','Mobile main menu');
+
+    // --- selection layer (desktop) ---
+    const cursor=document.createElement('div');
+    cursor.className='pm-cursor';
+    cursor.setAttribute('aria-hidden','true');
+    const unlit=document.createElement('div');
+    unlit.className='pm-unlit';
+    const eraseL=document.createElement('span');eraseL.className='pm-erase';place(eraseL,[578,488,630,574]);eraseL.style.background='#414c55';
+    const eraseR=document.createElement('span');eraseR.className='pm-erase';place(eraseR,[1042,488,1094,574]);eraseR.style.background='#455050';
+    const halo=document.createElement('span');halo.className='pm-halo';place(halo,[633,494,1039,568]);
+    unlit.append(eraseL,eraseR,halo,pill('PLAY',actions[0].r,false,true));
+    const litSlot=document.createElement('div');litSlot.className='pm-lit-slot';
+    const sel=document.createElement('div');sel.className='pm-sel';
+    sel.innerHTML='<span class="pm-sel__shine"></span><span class="pm-sel__flash"></span>';
+    const arrowL=document.createElementNS('http://www.w3.org/2000/svg','svg');
+    const arrowR=document.createElementNS('http://www.w3.org/2000/svg','svg');
+    for(const [a,d,cls] of [[arrowL,'M1 1 L22 14 L1 27 Z','pm-arrow pm-arrow--l'],[arrowR,'M22 1 L1 14 L22 27 Z','pm-arrow pm-arrow--r']]){
+      a.setAttribute('viewBox','0 0 23 28');a.setAttribute('class',cls);
+      a.innerHTML=`<path d="${d}"/>`;
+    }
+    const runs=document.createElement('div');runs.className='pm-runs';
+    for(const [i,item] of actions.entries()){
+      const [x0,y0,x1,y1]=item.r;
+      const run=document.createElementNS('http://www.w3.org/2000/svg','svg');
+      run.setAttribute('class','pm-run');run.setAttribute('viewBox',`0 0 ${x1-x0} ${y1-y0}`);run.setAttribute('preserveAspectRatio','none');
+      run.style.setProperty('--i',i);
+      run.innerHTML=`<polygon points="${pillPoints(x1-x0,y1-y0)}"/>`;
+      place(run,item.r);runs.appendChild(run);
+    }
+    const glint=document.createElement('span');glint.className='pm-glint';glint.style.left=PX(1103);glint.style.top=PY(214);
+    cursor.append(glint,runs,unlit,litSlot,sel,arrowL,arrowR);
+
+    // --- CRT power-on (first visit per session, full motion only) ---
+    const crt=document.createElement('div');crt.className='pm-crt';crt.setAttribute('aria-hidden','true');
+    crt.innerHTML='<span class="pm-crt__half pm-crt__half--top"></span><span class="pm-crt__half pm-crt__half--bottom"></span><span class="pm-crt__beam"></span><span class="pm-crt__bloom"></span>';
+
     for(const item of actions){
       const hotspot=document.createElement('button');
       hotspot.type='button';
       hotspot.className='painted-hotspot';
       hotspot.dataset.artAction=item.id;
       hotspot.setAttribute('aria-label',item.label);
-      hotspot.style.left=item.x+'%';
-      hotspot.style.top=item.y+'%';
-      hotspot.style.width=item.w+'%';
-      hotspot.style.height=item.h+'%';
+      place(hotspot,item.r);
       hotspots.appendChild(hotspot);
       const mobile=document.createElement('button');
       mobile.type='button';
@@ -47,11 +114,35 @@
       mobile.textContent=item.label.toUpperCase();
       dock.appendChild(mobile);
     }
-    stage.append(art,hotspots,dock);
+    const veil=document.createElement('div');veil.className='pm-veil';veil.setAttribute('aria-hidden','true');
+    stage.append(art,cursor,veil,hotspots,crt,dock);
     game.appendChild(stage);
+    // Letterbox: a small, blurred copy of the painting fills the bars around it.
+    try{
+      const c=document.createElement('canvas');c.width=168;c.height=95;
+      c.getContext('2d').drawImage(art,0,0,c.width,c.height);
+      const ambient=document.createElement('div');ambient.className='pm-ambient';ambient.setAttribute('aria-hidden','true');
+      ambient.style.backgroundImage=`url(${c.toDataURL('image/jpeg',.8)})`;
+      game.insertBefore(ambient,stage);
+    }catch{/* the plain letterbox colour remains */}
     game.classList.add('painted-enabled','intro-complete');
     let selected=0;
+    let busy=false;
     const controls=[...stage.querySelectorAll('[data-art-action]')];
+
+    function drawSelection(){
+      const r=actions[selected].r,[x0,y0,x1,y1]=r,w=x1-x0,h=y1-y0,cy=(y0+y1)/2;
+      stage.dataset.selected=actions[selected].id;
+      unlit.classList.toggle('is-on',selected!==0);
+      litSlot.replaceChildren(...(selected!==0?[pill(actions[selected].label,r,true,false)]:[]));
+      place(sel,r);sel.style.clipPath=pillClip(w,h);
+      const shine=sel.querySelector('.pm-sel__shine');
+      shine.classList.remove('is-go');void shine.offsetWidth;shine.classList.add('is-go');
+      for(const [a,x] of [[arrowL,x0-46],[arrowR,x1+24]]){
+        a.style.left=PX(x);a.style.top=PY(cy-14);a.style.width=PX(23);a.style.height=PY(28);
+        a.classList.toggle('is-painted',selected===0); // the painting already draws PLAY's arrows
+      }
+    }
     function setSelection(index,focus=false){
       selected=(index+actions.length)%actions.length;
       for(const button of controls){
@@ -60,20 +151,184 @@
         button.setAttribute('aria-current',active?'true':'false');
         button.tabIndex=active?0:-1;
       }
+      drawSelection();
       if(focus){
         const useDock=window.matchMedia('(max-aspect-ratio: 4/5)').matches;
         const selector=useDock?'.painted-mobile-button.active':'.painted-hotspot.active';
         stage.querySelector(selector)?.focus({preventScroll:true});
       }
     }
-    function activate(action){
-      if(arkade.getScreen()!=='MAIN_MENU')return;
-      arkade.openPainted(action);
+    function setPanelOrigin(){
+      // Panels unfold out of the button that opened them.
+      const [x0,y0,x1,y1]=actions[selected].r,[px0,py0,px1,py1]=PLATE;
+      game.style.setProperty('--pm-ox',(((x0+x1)/2-px0)/(px1-px0)*100)+'%');
+      game.style.setProperty('--pm-oy',(((y0+y1)/2-py0)/(py1-py0)*100)+'%');
     }
+    function activate(action){
+      if(arkade.getScreen()!=='MAIN_MENU'||busy)return;
+      setPanelOrigin();
+      if(reducedMotion()){arkade.openPainted(action);return;}
+      // A short press beat: the button flashes and the arrows pinch in, then the panel opens.
+      busy=true;
+      window.NoahsAudio?.unlock?.();
+      stage.classList.add('is-pressing');
+      window.setTimeout(()=>{
+        stage.classList.remove('is-pressing');
+        busy=false;
+        arkade.openPainted(action);
+      },180);
+    }
+    function lightRun(){
+      if(reducedMotion())return;
+      stage.classList.remove('is-armed');void stage.offsetWidth;stage.classList.add('is-armed');
+      window.setTimeout(()=>stage.classList.remove('is-armed'),900);
+    }
+    const PLATE_TITLES={MODE_MENU:'SELECT MODE',OPTIONS:'SETTINGS',SHOP_PREVIEW:'SHOP',HELP_PREVIEW:'HOW TO PLAY'};
+    function decoratePanel(screen){
+      const ui=document.getElementById('ui');
+      if(!ui)return;
+      const plate=ui.querySelector('.painted-submenu,.preview-panel,.options-panel');
+      if(plate&&!plate.dataset.pmDecorated){
+        plate.dataset.pmDecorated='1';
+        const title=plate.querySelector('.panel-title');
+        if(title&&PLATE_TITLES[screen])title.textContent=PLATE_TITLES[screen];
+        const back=plate.querySelector('.arcade-back');
+        if(back)back.innerHTML='<span aria-hidden="true">◀</span> BACK <kbd>Esc</kbd>';
+      }
+      if(screen==='MODE_MENU'){
+        // One note line under the list, like the painted plates: it describes the lit choice.
+        const list=ui.querySelector('.mode-options');
+        if(list&&!ui.querySelector('.pm-note')){
+          const note=document.createElement('p');note.className='pm-note';note.setAttribute('aria-live','polite');
+          list.after(note);
+          const show=(b)=>{if(b?.dataset.mode)note.textContent=MODE_NOTES[b.dataset.mode]||b.querySelector('small')?.textContent||'';};
+          list.addEventListener('focusin',e=>show(e.target.closest('[data-mode]')));
+          list.addEventListener('pointerover',e=>{const b=e.target.closest('[data-mode]');if(b){b.focus({preventScroll:true});show(b);}});
+          show(list.querySelector('[data-mode]'));
+        }
+      }
+      if(screen==='OPTIONS')buildOptions(ui);
+    }
+    const MODE_NOTES={
+      SOLO_SELECT:'Battle the computer. Three wild challengers.',
+      DUEL_SELECT:'Two players, one keyboard. First to two victories.',
+      BINDER:'Choose your three-card battle set.',
+      HELP_PREVIEW:'Stop the attack reel, then the power reel. The stronger result strikes.'
+    };
+
+    // Settings in the painted-plate layout. The game's own inputs stay in the page
+    // (hidden) and are driven from these rows, so saving and audio work unchanged.
+    const OPT_ROWS=[
+      {key:'master',label:'MASTER',kind:'level'},
+      {key:'music',label:'MUSIC',kind:'level'},
+      {key:'sfx',label:'EFFECTS',kind:'level'},
+      {key:'mute',label:'SOUND',kind:'switch',invert:true},
+      {key:'reducedMotion',label:'MOTION',kind:'motion'},
+      {key:'reset',label:'DEFAULTS',kind:'reset'}
+    ];
+    let optRow=0;
+    function optInput(ui,key){return ui.querySelector(`[data-setting="${key}"]`);}
+    function setOpt(ui,key,value){
+      const input=optInput(ui,key);if(!input)return;
+      if(input.type==='range'){input.value=String(value);input.dispatchEvent(new Event('input',{bubbles:true}));}
+      else{input.checked=Boolean(value);input.dispatchEvent(new Event('change',{bubbles:true}));}
+    }
+    function renderOptions(ui){
+      const list=ui.querySelector('.pm-opts');if(!list)return;
+      list.querySelectorAll('.pm-opts__row').forEach((li,i)=>{
+        const row=OPT_ROWS[i];li.classList.toggle('is-selected',i===optRow);li.tabIndex=i===optRow?0:-1;
+        const ctl=li.querySelector('.pm-opts__control');
+        if(row.kind==='level'){
+          const level=Math.round(Number(optInput(ui,row.key)?.value||0)/10);
+          li.setAttribute('aria-valuenow',String(level));
+          ctl.innerHTML=`<span class="pm-bar"><button type="button" tabindex="-1" class="pm-bar__btn" data-step="-1">◀</button>${Array.from({length:10},(_,k)=>`<button type="button" tabindex="-1" class="pm-bar__seg${k<level?' is-on':''}" data-level="${k+1}"></button>`).join('')}<button type="button" tabindex="-1" class="pm-bar__btn" data-step="1">▶</button><span class="pm-bar__num">${String(level).padStart(2,'0')}</span></span>`;
+        }else if(row.kind==='switch'){
+          const raw=Boolean(optInput(ui,row.key)?.checked);const on=row.invert?!raw:raw;
+          li.setAttribute('aria-checked',String(on));
+          ctl.innerHTML=`<span class="pm-toggle"><span class="${on?'is-lit':''}">ON</span><span class="${!on?'is-lit':''}">OFF</span></span>`;
+        }else if(row.kind==='motion'){
+          const reduced=Boolean(optInput(ui,row.key)?.checked);
+          ctl.innerHTML=`<span class="pm-cycle">◀ <b>${reduced?'REDUCED':'FULL'}</b> ▶</span>`;
+        }else{
+          ctl.innerHTML='<span class="pm-cycle">PRESS ENTER</span>';
+        }
+      });
+    }
+    function adjustOpt(ui,i,dir,level){
+      const row=OPT_ROWS[i];
+      if(row.kind==='level'){
+        const cur=Math.round(Number(optInput(ui,row.key)?.value||0)/10);
+        const next=Math.max(0,Math.min(10,level!==undefined?level:cur+dir));
+        if(next!==cur){setOpt(ui,row.key,next*10);window.NoahsAudio?.cue('move');}
+      }else if(row.kind==='switch'||row.kind==='motion'){
+        setOpt(ui,row.key,!optInput(ui,row.key)?.checked);window.NoahsAudio?.cue('move');
+      }else if(row.kind==='reset'){
+        setOpt(ui,'master',65);setOpt(ui,'music',28);setOpt(ui,'sfx',75);setOpt(ui,'mute',false);
+        setOpt(ui,'reducedMotion',Boolean(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches));
+        window.NoahsAudio?.cue('confirm');
+      }
+      renderOptions(ui);
+    }
+    function buildOptions(ui){
+      const panel=ui.querySelector('.options-panel');
+      if(!panel||panel.querySelector('.pm-opts'))return;
+      optRow=0;
+      panel.classList.add('pm-options');
+      const list=document.createElement('ul');list.className='pm-opts';
+      OPT_ROWS.forEach((row,i)=>{
+        const li=document.createElement('li');li.className='pm-opts__row';li.dataset.row=String(i);
+        li.dataset.testid='pm-opt-'+row.key;
+        if(row.kind==='level'){li.setAttribute('role','slider');li.setAttribute('aria-valuemin','0');li.setAttribute('aria-valuemax','10');}
+        else if(row.kind==='switch'){li.setAttribute('role','switch');}
+        else li.setAttribute('role','button');
+        li.setAttribute('aria-label',row.label);
+        li.innerHTML=`<span class="pm-opts__arrow" aria-hidden="true">▶</span><span class="pm-opts__label">${row.label}</span><span class="pm-opts__control"></span>`;
+        list.appendChild(li);
+      });
+      const note=document.createElement('p');note.className='pm-note pm-opts__note';note.textContent='Saved on this computer.';
+      panel.querySelector('.options-columns').after(list,note);
+      list.addEventListener('pointerover',e=>{
+        const li=e.target.closest('.pm-opts__row');if(!li)return;
+        const i=Number(li.dataset.row);if(i!==optRow){optRow=i;renderOptions(ui);window.NoahsAudio?.cue('move');}
+      });
+      list.addEventListener('click',e=>{
+        const li=e.target.closest('.pm-opts__row');if(!li)return;
+        const i=Number(li.dataset.row);optRow=i;
+        const seg=e.target.closest('[data-level]'),step=e.target.closest('[data-step]');
+        if(seg){const lv=Number(seg.dataset.level);const cur=Math.round(Number(optInput(ui,OPT_ROWS[i].key).value)/10);adjustOpt(ui,i,0,lv===cur?lv-1:lv);}
+        else if(step)adjustOpt(ui,i,Number(step.dataset.step));
+        else if(OPT_ROWS[i].kind!=='level')adjustOpt(ui,i,1);
+        else renderOptions(ui);
+      });
+      renderOptions(ui);
+      list.querySelector('.pm-opts__row')?.focus({preventScroll:true});
+    }
+    window.addEventListener('keydown',(event)=>{
+      if(arkade.getScreen()!=='OPTIONS'||event.altKey||event.ctrlKey||event.metaKey)return;
+      const ui=document.getElementById('ui');
+      if(!ui?.querySelector('.pm-opts'))return;
+      const k=event.key;
+      if(['ArrowUp','ArrowDown','w','W','s','S'].includes(k)){
+        event.preventDefault();event.stopImmediatePropagation();
+        optRow=(optRow+(['ArrowUp','w','W'].includes(k)?OPT_ROWS.length-1:1))%OPT_ROWS.length;
+        renderOptions(ui);ui.querySelectorAll('.pm-opts__row')[optRow]?.focus({preventScroll:true});
+        window.NoahsAudio?.cue('move');
+      }else if(['ArrowLeft','ArrowRight','a','A','d','D'].includes(k)){
+        event.preventDefault();event.stopImmediatePropagation();
+        adjustOpt(ui,optRow,['ArrowLeft','a','A'].includes(k)?-1:1);
+      }else if((k==='Enter'||k===' ')&&!event.target.closest?.('.arcade-back')){
+        event.preventDefault();event.stopImmediatePropagation();
+        if(!event.repeat&&OPT_ROWS[optRow].kind!=='level')adjustOpt(ui,optRow,1);
+      }
+    },true);
     function syncScreen(){
-      const isMenu=arkade.getScreen()==='MAIN_MENU';
+      const screen=arkade.getScreen();
+      game.classList.toggle('pm-veiled',VEILED.includes(screen));
+      decoratePanel(screen);
+      const isMenu=screen==='MAIN_MENU';
       hotspots.setAttribute('aria-hidden',String(!isMenu));
       dock.setAttribute('aria-hidden',String(!isMenu));
+      stage.classList.toggle('is-menu',isMenu);
     }
     stage.addEventListener('click',(event)=>{
       const button=event.target.closest('[data-art-action]');
@@ -83,22 +338,24 @@
       }
     });
     stage.addEventListener('pointerover',(event)=>{
-      if(arkade.getScreen()!=='MAIN_MENU')return;
+      if(arkade.getScreen()!=='MAIN_MENU'||busy)return;
       const button=event.target.closest('[data-art-action]');
       if(button){
         const index=actions.findIndex(a=>a.id===button.dataset.artAction);
-        if(index>=0 && index!==selected)setSelection(index);
+        if(index>=0 && index!==selected){setSelection(index);window.NoahsAudio?.cue('move');}
       }
     });
     window.addEventListener('keydown',(event)=>{
       if(arkade.getScreen()!=='MAIN_MENU'||event.altKey||event.ctrlKey||event.metaKey)return;
       const key=event.key;
-      if(['ArrowUp','ArrowDown','w','W','s','S'].includes(key)){
+      if(busy){event.preventDefault();event.stopImmediatePropagation();return;}
+      if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','w','W','s','S'].includes(key)){
         event.preventDefault();event.stopImmediatePropagation();
-        setSelection(selected+(['ArrowUp','w','W'].includes(key)?-1:1),true);
+        setSelection(selected+(['ArrowUp','ArrowLeft','w','W'].includes(key)?-1:1),true);
         window.NoahsAudio?.cue('move');
       }else if(key==='Enter'||key===' '){
         event.preventDefault();event.stopImmediatePropagation();
+        if(event.repeat)return;
         const focused=event.target.closest?.('[data-art-action]')?.dataset.artAction;
         activate(focused||actions[selected].id);
       }else if(key==='Escape'||key==='Backspace'){
@@ -109,6 +366,20 @@
     setSelection(0);
     arkade.showPaintedMenu();
     syncScreen();
+
+    // First visit this session with full motion: a short CRT power-on, then the menu
+    // lights up row by row. The menu is live throughout; there is no PRESS START wait.
+    let seen=false;
+    try{seen=sessionStorage.getItem(INTRO_KEY)==='1';}catch{}
+    if(!seen && !reducedMotion() && !new URLSearchParams(location.search).has('skipintro')){
+      try{sessionStorage.setItem(INTRO_KEY,'1');}catch{}
+      stage.dataset.intro='off';
+      window.setTimeout(()=>{stage.dataset.intro='beam';},120);
+      window.setTimeout(()=>{stage.dataset.intro='reveal';},520);
+      window.setTimeout(()=>{stage.dataset.intro='done';lightRun();},1150);
+    }else{
+      stage.dataset.intro='done';
+    }
   };
   let chunksAttempted=false;
   art.onerror=()=>{

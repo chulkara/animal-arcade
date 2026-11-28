@@ -11,10 +11,10 @@ function storage(){
 }
 
 test('catalog has distinct original cards in all three scanned card classes',()=>{
-  assert.equal(cards.CARDS.length,12);
+  assert.equal(cards.CARDS.length,13);
   assert.deepEqual([...new Set(cards.CARDS.map(c=>c.type))].sort(),['animal','miracle','strong']);
   assert.equal(new Set(cards.CARDS.map(c=>c.id)).size,cards.CARDS.length);
-  assert.equal(cards.CARDS.filter(c=>c.type==='animal').length,2);
+  assert.equal(cards.CARDS.filter(c=>c.type==='animal').length,3);
   for(const c of cards.CARDS){
     assert.equal(cards.BY_ID[c.id],c);
     assert.match(c.description,/.+/);
@@ -24,9 +24,10 @@ test('catalog has distinct original cards in all three scanned card classes',()=
 test('starter collection is playable and independently editable for two players',()=>{
   const db=cards.createStore(storage());
   const s=db.getState();
-  assert.equal(Object.values(s.inventory).filter(n=>n>0).length,6);
+  assert.equal(Object.values(s.inventory).filter(n=>n>0).length,8);
   assert.equal(s.inventory['animal:bear'],1);
   assert.equal(s.inventory['animal:moose'],1);
+  assert.equal(s.inventory['animal:shark'],1,'the shark is a starter card');
   assert.equal(s.inventory['strong:wind'],0);
   assert.equal(db.getDeck('p1').animal,'animal:bear');
   assert.equal(db.getDeck('p2').animal,'animal:moose');
@@ -110,11 +111,14 @@ test('Strong card applies to its G/T/P feature, Miracle only to special mark',()
   };
   const base=sameTechnique({},false);
   const strong=sameTechnique(m,false);
-  assert.equal(strong.damage-base.damage,8);
+  // Strong +8 and the Bear card's Power level 5: (5-3)*STAT_STEP
+  const lvl=(5-3)*combat.STAT_STEP;
+  assert.equal(strong.damage-base.damage,8+lvl);
+  assert.equal(strong.statBonus,lvl);
   assert.equal(strong.miracleBonus,0);
   const specialBase=sameTechnique({},true);
   const special=sameTechnique(m,true);
-  assert.equal(special.damage-specialBase.damage,8+14);
+  assert.equal(special.damage-specialBase.damage,8+14+lvl);
   assert.equal(special.strongBonus,8);
   assert.equal(special.miracleBonus,14);
   const gBattle=combat.createBattle({mode:'DUEL',picks:['bear','moose'],modifiers:[m,{}]});
@@ -145,7 +149,7 @@ test('collection scripts and routing are present without changing menu original'
   assert.ok(app.includes("MY_CARDS:'CARDS'")&&app.includes("BINDER:'BINDER'"));
   assert.ok(app.includes("window.NoahsCards.render(screen)"));
   assert.ok(p.includes('window.NoahsCards?.equipAnimal('));
-  assert.ok(battle.includes('window.NoahsCards?.grantBattleReward()'));
+  assert.ok(battle.includes('window.NoahsCards?.grantBattleReward('));
   assert.ok(ui.includes('Cloud Binder is planned'));
   assert.ok(readFileSync('src/painted-menu.js','utf8').includes("const ART='./assets/approved-menu.png'"));
 });

@@ -346,3 +346,269 @@
 .ark-cinema[data-beat="victory"][data-shot="finale"][data-howl-phase="inhale"] .ark-cinema-tunnel,
 .ark-cinema[data-beat="victory"][data-shot="finale"][data-howl-phase="throw"] .ark-cinema-tunnel{
  opacity:.06}
+
+/* ---- Solo attacks (arcade film grammar) ---- */
+.ark-cinema-solo-flash{position:absolute;inset:0;z-index:6;pointer-events:none;background:#fff;
+  opacity:var(--solo-flash,0)}
+.ark-cinema[data-solo="1"] .ark-cinema-title{display:none}
+.ark-cinema[data-solo="1"] .ark-cinema-letterbox{height:0}
+.ark-cinema-solo-title{position:absolute;left:0;right:0;top:30%;z-index:5;text-align:center;opacity:0;
+  pointer-events:none;transform:scale(1.25)}
+.ark-cinema[data-solo="1"][data-beat="title"] .ark-cinema-solo-title{opacity:1;transform:scale(1);
+  transition:opacity .22s ease-out .28s,transform .5s cubic-bezier(.2,.9,.25,1) .28s}
+.ark-cinema-solo-title small{display:block;font:400 clamp(14px,1.9vw,26px) 'Tiny5','Pixelify Sans',monospace;
+  letter-spacing:.12em;color:#ffe9a8;text-shadow:0 2px 0 #5a2406,0 0 12px rgba(255,150,40,.7)}
+.ark-cinema-solo-title strong{display:block;font:400 clamp(38px,6.4vw,92px)/1 'Tiny5','Pixelify Sans',monospace;
+  letter-spacing:.03em;background:linear-gradient(#fff7c8 0%,#ffd04a 45%,#e0700f 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 3px 0 #4a1703) drop-shadow(0 0 2px #4a1703) drop-shadow(0 0 16px rgba(255,120,30,.55))}
+.ark-cinema-dmg{position:absolute;inset:0;z-index:5;pointer-events:none}
+.ark-cinema-dmg b{position:absolute;font:700 clamp(34px,5vw,72px)/1 'Pixelify Sans',monospace;color:#fff;
+  text-shadow:3px 0 #2b1a0a,-3px 0 #2b1a0a,0 3px #2b1a0a,0 -3px #2b1a0a,3px 3px #2b1a0a,-3px 3px #2b1a0a,0 6px 0 #2b1a0a;opacity:0;transform:scale(.4)}
+.ark-cinema-dmg b:first-child{left:56%;top:30%}
+.ark-cinema-dmg b:last-child{left:44%;top:44%}
+.ark-cinema[data-pops="1"] .ark-cinema-dmg b:first-child,
+.ark-cinema[data-pops="2"] .ark-cinema-dmg b{opacity:1;transform:scale(1);
+  transition:transform .18s cubic-bezier(.2,1.6,.4,1),opacity .08s}
+.ark-cinema[data-beat="reaction"] .ark-cinema-dmg b{opacity:0;transition:opacity .2s}
+.ark-cinema[data-solo="1"][data-beat="launch"] .ark-cinema-speed{opacity:.75}
+@media (prefers-reduced-motion:reduce){.ark-cinema-solo-flash{display:none}}
+.ark-reference-layout[data-solo-film="1"] :is(.ark-arena-hud,.fight-deck,.combat-controls,.combat-message,.fight-clash){
+  opacity:0!important;transition:opacity .12s;pointer-events:none}
+/* Radial speed lines behind the launched victim (reference launch shot). */
+.ark-cinema-lines{position:absolute;inset:-20%;z-index:4;pointer-events:none;opacity:0;
+  background:repeating-conic-gradient(from 3deg at 50% 50%,transparent 0deg 5deg,rgba(255,255,255,.55) 5.4deg 6deg,transparent 6.4deg 13deg);
+  -webkit-mask:radial-gradient(circle at 50% 50%,transparent 0 24%,#000 46%);mask:radial-gradient(circle at 50% 50%,transparent 0 24%,#000 46%)}
+.ark-cinema[data-solo="1"][data-beat="launch"] .ark-cinema-lines{opacity:.9;animation:ark-solo-lines .18s steps(2) infinite}
+@keyframes ark-solo-lines{to{transform:rotate(4deg)}}
+/* Total damage, centred, when the film cuts back to the arena. */
+.ark-cinema-total{position:absolute;left:0;right:0;top:44%;z-index:5;text-align:center;pointer-events:none;opacity:0;
+  font:700 clamp(44px,7vw,104px)/1 'Pixelify Sans',monospace;color:#fff;
+  text-shadow:4px 0 #2b1a0a,-4px 0 #2b1a0a,0 4px #2b1a0a,0 -4px #2b1a0a,4px 4px #2b1a0a,-4px 4px #2b1a0a,0 8px 0 #2b1a0a}
+/* (the red total is driven by data-total; it clears before the return cut) */
+@keyframes ark-solo-total{0%{transform:scale(1.6);opacity:0}15%{transform:scale(1);opacity:1}75%{opacity:1}100%{opacity:0}}
+@media (prefers-reduced-motion:reduce){.ark-cinema-lines{display:none}}
+.game.reduce-motion .ark-cinema-lines{display:none}
+
+/* ---- PS2-era arcade typography for the cinematics ----
+   Chunky slanted display face with a molten gradient fill, a heavy dark
+   outline and a hard drop shadow (instead of 8-bit pixel type). */
+@font-face{font-family:'Russo One';src:url('../assets/fonts/russo-one-latin-400.woff2') format('woff2');font-display:swap}
+.game .ark-cinema .ark-cinema-solo-title strong,
+.game .ark-cinema .ark-cinema-title strong,
+.game .ark-cinema .ark-cinema-win-stamp,
+.game.painted-enabled .ark-cinema .ark-cinema-win-stamp,
+.game .ark-cinema .ark-cinema-total,
+.game .ark-cinema .ark-cinema-dmg b{
+  font-family:'Russo One','Arial Black',sans-serif!important;font-weight:400!important;font-style:normal!important;
+  letter-spacing:.01em!important;text-transform:uppercase;
+  background:linear-gradient(180deg,#fffbe6 0%,#ffe48a 30%,#ffb52e 52%,#e0640c 72%,#a8340a 100%)!important;
+  -webkit-background-clip:text!important;background-clip:text!important;color:transparent!important;
+  -webkit-text-stroke:0!important;text-shadow:none!important;
+  filter:drop-shadow(2px 0 0 #241004) drop-shadow(-2px 0 0 #241004) drop-shadow(0 2px 0 #241004) drop-shadow(0 -2px 0 #241004)
+         drop-shadow(0 5px 0 #120601) drop-shadow(0 0 10px rgba(255,120,30,.35))!important}
+.game .ark-cinema .ark-cinema-solo-title strong{font-size:clamp(40px,6.6vw,96px)!important;transform:skewX(-9deg)}
+.game .ark-cinema .ark-cinema-solo-title small{font-family:'Russo One','Arial Black',sans-serif!important;
+  font-size:clamp(14px,1.7vw,24px)!important;letter-spacing:.08em!important;color:#fff3c4!important;transform:skewX(-9deg);
+  text-shadow:2px 2px 0 #3a1503,-1px -1px 0 #3a1503,1px -1px 0 #3a1503,-1px 1px 0 #3a1503!important}
+.game .ark-cinema .ark-cinema-win-stamp{transform-origin:50% 60%}
+.game .ark-cinema .ark-cinema-dmg b,.game .ark-cinema .ark-cinema-total{
+  background:linear-gradient(180deg,#ffffff 0%,#fff6d0 55%,#ffd25a 100%)!important;-webkit-background-clip:text!important;background-clip:text!important}
+/* Speed lines: thin streaks at the frame edges only, no milky centre. */
+.ark-cinema-lines{background:repeating-conic-gradient(from 3deg at 50% 50%,transparent 0deg 6deg,rgba(255,255,255,.7) 6.2deg 6.5deg,transparent 6.7deg 14deg)!important;
+  -webkit-mask:radial-gradient(circle at 50% 50%,transparent 0 40%,#000 70%)!important;mask:radial-gradient(circle at 50% 50%,transparent 0 40%,#000 70%)!important}
+.ark-cinema[data-solo="1"][data-beat="launch"] .ark-cinema-lines{opacity:.65!important}
+/* The solo film has its own flash, fire and lines; the older move overlays
+   (tunnel vignette, conic speed haze) would wash it out. */
+.ark-cinema[data-solo="1"] :is(.ark-cinema-tunnel,.ark-cinema-speed,.ark-cinema-flash){display:none!important}
+
+/* ---- Attack film, second pass (2026-11-24 reference timing) ----
+   Title opens on a white/blue ray burst; Guts charges through horizontal
+   speed streaks; Technique ends on a three-claw slash; the victim's launch
+   is clean red sky (no lines); one damage number pops where it lands and
+   the total sits in red under its health bar. */
+.ark-cinema[data-solo="1"] .ark-cinema-lines{opacity:0!important;animation:none!important}
+.ark-cinema[data-solo="1"][data-beat="title"] .ark-cinema-lines{opacity:var(--solo-burst,0)!important;
+  background:repeating-conic-gradient(from 0deg at 50% 52%,rgba(255,255,255,0) 0deg 4deg,rgba(255,255,255,.9) 5deg 7deg,rgba(190,225,255,0) 9deg 15deg)!important;
+  -webkit-mask:radial-gradient(circle at 50% 52%,#000 0 18%,rgba(0,0,0,.6) 40%,transparent 75%)!important;
+  mask:radial-gradient(circle at 50% 52%,#000 0 18%,rgba(0,0,0,.6) 40%,transparent 75%)!important;
+  mix-blend-mode:screen}
+.ark-cinema-streak{position:absolute;inset:0;z-index:4;pointer-events:none;opacity:var(--solo-streak,0);overflow:hidden;
+  background:
+    repeating-linear-gradient(180deg,transparent 0 13px,rgba(255,255,255,.75) 13px 15px,transparent 15px 31px,rgba(255,240,210,.5) 31px 32px,transparent 32px 47px);
+  -webkit-mask:linear-gradient(180deg,#000 0 22%,transparent 40% 60%,#000 78%),linear-gradient(90deg,#000,transparent 30% 70%,#000);
+  mask:linear-gradient(180deg,#000 0 22%,transparent 40% 60%,#000 78%);
+  animation:ark-streak .12s linear infinite;mix-blend-mode:screen}
+@keyframes ark-streak{from{background-position:0 0}to{background-position:0 47px}}
+.ark-cinema-slash{position:absolute;inset:0;z-index:6;pointer-events:none;opacity:var(--solo-slash,0)}
+.ark-cinema-slash i{position:absolute;left:12%;width:80%;height:2.2%;top:38%;border-radius:50%;
+  background:linear-gradient(90deg,transparent,#fff 18%,#eafcff 60%,#7ee8ff 85%,transparent);
+  box-shadow:0 0 18px 4px rgba(120,230,255,.75);transform:rotate(-24deg) scaleX(calc(.3 + .7*var(--solo-slash,0)))}
+.ark-cinema-slash i:nth-child(2){top:48%;left:9%}
+.ark-cinema-slash i:nth-child(3){top:58%;left:6%}
+.ark-cinema[data-defender="0"] .ark-cinema-slash{transform:scaleX(-1)}
+.ark-cinema[data-solo="1"] .ark-cinema-dmg b:last-child{display:none}
+.ark-cinema[data-solo="1"] .ark-cinema-dmg b:first-child{top:58%;left:auto;right:16%;opacity:0}
+.ark-cinema[data-solo="1"][data-defender="0"] .ark-cinema-dmg b:first-child{right:auto;left:16%}
+.ark-cinema[data-solo="1"] .ark-cinema-dmg b:first-child{opacity:var(--pop-op,0);animation:none;
+  transform:translateY(var(--pop-y,0)) scale(var(--pop-scale,1));transition:none}
+@keyframes ark-dmg-pop{0%{transform:scale(.6);opacity:0}6%{transform:scale(1.15);opacity:1}13%{transform:scale(1)}
+  80%{transform:translateY(-12px);opacity:1}100%{transform:translateY(-22px);opacity:0}}
+.game .ark-cinema[data-solo="1"] .ark-cinema-dmg b{font-size:clamp(48px,6.4vw,92px)!important;
+  background:linear-gradient(180deg,#ffffff 0%,#fffbe0 40%,#ffe44d 70%,#f2b51a 100%)!important;
+  -webkit-background-clip:text!important;background-clip:text!important;
+  filter:drop-shadow(3px 0 0 #000) drop-shadow(-3px 0 0 #000) drop-shadow(0 3px 0 #000) drop-shadow(0 -3px 0 #000) drop-shadow(0 6px 0 #000)!important}
+.ark-cinema[data-solo="1"] .ark-cinema-total{top:15%;left:auto;right:3.5%;text-align:right;opacity:0;animation:none!important;
+  font-size:clamp(24px,2.8vw,40px)!important}
+.ark-cinema[data-solo="1"][data-defender="0"] .ark-cinema-total{right:auto;left:3.5%;text-align:left}
+.ark-cinema[data-solo="1"][data-total="1"] .ark-cinema-total{opacity:1;transition:opacity .15s}
+.game .ark-cinema[data-solo="1"] .ark-cinema-total{
+  background:linear-gradient(180deg,#ffb0a0 0%,#ff3b2e 45%,#c0100c 100%)!important;
+  -webkit-background-clip:text!important;background-clip:text!important;
+  filter:drop-shadow(2px 0 0 #1a0000) drop-shadow(-2px 0 0 #1a0000) drop-shadow(0 2px 0 #1a0000) drop-shadow(0 -2px 0 #1a0000) drop-shadow(0 4px 0 #1a0000)!important}
+@media (prefers-reduced-motion:reduce){.ark-cinema-streak,.ark-cinema-slash{display:none}}
+.game.reduce-motion :is(.ark-cinema-streak,.ark-cinema-slash){display:none}
+
+/* ---- Victory (reference grammar) ---- */
+.ark-cinema-vic-dark{position:absolute;inset:0;z-index:5;pointer-events:none;background:#000;opacity:var(--vic-dark,0)}
+.ark-cinema-outro{position:absolute;inset:0;z-index:6;pointer-events:none;opacity:var(--outro,0);
+  background:linear-gradient(180deg,#3f86c4 0%,#6aa9d8 45%,#9cc9e6 100%)}
+.ark-cinema-win{position:absolute;left:0;right:0;top:5%;z-index:7;text-align:center;pointer-events:none}
+.ark-cinema-win b{display:block;line-height:1.02;transform-origin:50% 60%}
+.ark-cinema-win [data-ark-perfect]{opacity:var(--perfect-o,0);transform:scale(var(--perfect-s,1)) skewX(-8deg)}
+.ark-cinema-win [data-ark-youwin]{opacity:var(--youwin-o,0);transform:scale(var(--youwin-s,1)) skewX(-8deg)}
+.ark-cinema:not([data-perfect="1"]) .ark-cinema-win [data-ark-perfect]{display:none}
+.game .ark-cinema .ark-cinema-win b{font-family:'Russo One','Arial Black',sans-serif;font-weight:400;
+  background:linear-gradient(180deg,#fff6c0 0%,#ffd23a 38%,#ff8a12 66%,#d8400a 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(3px 0 0 #2a0c00) drop-shadow(-3px 0 0 #2a0c00) drop-shadow(0 3px 0 #2a0c00) drop-shadow(0 -3px 0 #2a0c00) drop-shadow(0 6px 0 #120400)}
+.game .ark-cinema .ark-cinema-win [data-ark-perfect]{font-size:clamp(54px,8vw,120px)}
+.game .ark-cinema .ark-cinema-win [data-ark-youwin]{font-size:clamp(40px,5.6vw,84px);text-transform:none}
+.ark-cinema[data-beat="victory"] :is(.ark-cinema-title,.ark-cinema-howl-waves,.ark-cinema-win-stamp){display:none!important}
+.ark-cinema[data-beat="victory"] .ark-cinema-letterbox{height:0!important}
+
+/* ---- review fixes (2026-11-25) ---- */
+/* damage pops on the victim (projected from 3D), then rises and fades */
+.ark-cinema[data-solo="1"][data-pop-anchored="1"] .ark-cinema-dmg b:first-child,
+.ark-cinema[data-solo="1"][data-pop-anchored="1"][data-defender="0"] .ark-cinema-dmg b:first-child{
+  left:var(--pop-x)!important;right:auto!important;top:var(--pop-top)!important;
+  transform:translate(-50%,-100%) translateY(var(--pop-y,0)) scale(var(--pop-scale,1))!important}
+/* Guts charge: radial streaks converging on the animal, clear centre */
+.ark-cinema-streak{background:repeating-conic-gradient(from 3deg at 50% 50%,
+  rgba(255,255,255,0) 0deg 5deg,rgba(255,255,255,.85) 5.6deg 6.4deg,rgba(255,255,255,0) 7deg 11deg,rgba(255,236,200,.6) 11.4deg 11.9deg,rgba(255,255,255,0) 12.4deg 17deg)!important;
+  -webkit-mask:radial-gradient(ellipse at 50% 50%,transparent 0 42%,rgba(0,0,0,.7) 62%,#000 80%)!important;
+  mask:radial-gradient(ellipse at 50% 50%,transparent 0 42%,rgba(0,0,0,.7) 62%,#000 80%)!important;
+  animation:ark-radial .16s steps(2) infinite!important}
+@keyframes ark-radial{from{transform:rotate(0)}to{transform:rotate(4deg)}}
+
+/* Technique slash on the victim's body (projected from 3D), not the attacker's face */
+.ark-cinema-slash{inset:auto;left:var(--hit-x,50%);top:var(--hit-y,45%);width:min(46vw,620px);height:min(30vw,380px);
+  transform:translate(-50%,-50%)}
+.ark-cinema-slash i{left:4%;width:92%}
+.ark-cinema-slash i:nth-child(1){top:28%}.ark-cinema-slash i:nth-child(2){top:46%;left:2%}.ark-cinema-slash i:nth-child(3){top:64%;left:0}
+.ark-cinema[data-defender="0"] .ark-cinema-slash{transform:translate(-50%,-50%) scaleX(-1)}
+
+/* ---- Comeback / ✦ cut-ins (2026-11-25). Opacity comes from film time
+   (--callin-*), so they sit on exact beats and freeze in the film review. ---- */
+.ark-callin{position:absolute;z-index:8;pointer-events:none;text-align:center;line-height:.95;
+  font-family:var(--display-font,"Arial Black",Impact,sans-serif);font-style:italic;letter-spacing:.02em}
+.ark-callin b{display:block;-webkit-text-stroke:0}
+.ark-callin small{display:block;font-size:.34em;letter-spacing:.18em;font-style:normal;margin-top:.25em}
+/* FOCUS GUARD! under the victim's damage pop */
+.ark-callin-guard{top:70%;right:12%;font-size:clamp(20px,2.4vw,38px);opacity:var(--callin-guard,0)}
+.ark-cinema[data-defender="0"] .ark-callin-guard{right:auto;left:12%}
+.ark-callin-guard b{color:#aef4ff;text-shadow:2px 0 0 #00222e,-2px 0 0 #00222e,0 2px 0 #00222e,0 -2px 0 #00222e,0 4px 0 #000}
+.ark-callin-guard small{color:#dffaff;font-size:.6em;letter-spacing:.06em;text-shadow:0 2px 0 #00222e}
+/* RESURRECTION! as the survivor gets back up */
+.ark-callin-revive{left:0;right:0;top:24%;font-size:clamp(36px,5vw,80px);opacity:var(--callin-revive,0);
+  transform:scale(calc(.8 + .2*var(--callin-revive,0)))}
+.ark-callin-revive::before{content:'';position:absolute;left:50%;top:50%;width:min(70vw,900px);aspect-ratio:1;translate:-50% -50%;z-index:-1;
+  background:repeating-conic-gradient(rgba(255,236,150,.55) 0 6deg,transparent 6deg 18deg);
+  -webkit-mask:radial-gradient(circle,#000 8%,transparent 55%);mask:radial-gradient(circle,#000 8%,transparent 55%)}
+.ark-callin-revive b{background:linear-gradient(180deg,#ffffff 0%,#fff3b8 45%,#ffc93c 75%,#e48a12 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(3px 0 0 #3a1400) drop-shadow(-3px 0 0 #3a1400) drop-shadow(0 3px 0 #3a1400) drop-shadow(0 -3px 0 #3a1400) drop-shadow(0 6px 0 #000)}
+@media (prefers-reduced-motion:reduce){.ark-callin{transform:none!important}.ark-callin-revive::before{display:none}}
+.game.reduce-motion .ark-callin{transform:none!important}
+.game.reduce-motion .ark-callin-revive::before{display:none}
+/* guard + resurrection sit under the damage pop, on the victim (not over it) */
+.ark-cinema[data-solo="1"] .ark-callin-guard{left:var(--pop-x,50%);right:auto;top:calc(var(--pop-top,26%) + 8%);
+  translate:-50% 0;font-size:clamp(26px,3.2vw,50px);white-space:nowrap}
+.ark-cinema[data-solo="1"][data-defender="0"] .ark-callin-guard{left:var(--pop-x,50%)}
+.ark-cinema[data-solo="1"] .ark-callin-revive{top:calc(var(--pop-top,26%) + 15%)}
+
+/* ---- Iteration 5 (8:53 PM recording) ---- */
+/* the old single centre pop is replaced by per-blow pops */
+.ark-cinema[data-solo="1"] .ark-cinema-dmg{display:none!important}
+.ark-hitpops{position:absolute;inset:0;z-index:7;pointer-events:none}
+.ark-hitpops b{position:absolute;left:50%;top:35%;opacity:0;white-space:nowrap;transform:translate(-50%,-50%);
+  font-family:var(--display-font,"Arial Black",Impact,sans-serif);font-size:clamp(40px,5.4vw,80px);line-height:1;
+  background:linear-gradient(180deg,#ffffff 0%,#fffbe0 40%,#ffe44d 70%,#f2b51a 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(3px 0 0 #000) drop-shadow(-3px 0 0 #000) drop-shadow(0 3px 0 #000) drop-shadow(0 -3px 0 #000) drop-shadow(0 6px 0 #000)}
+/* Gold Change / Super Miracle: the eyebrow over the move name is the gold
+   call (two clean lines, nothing stacked between them) */
+.ark-cinema[data-gold="1"] [data-ark-solo-rank]{display:block;font-size:clamp(22px,2.6vw,40px)!important;letter-spacing:.06em!important;
+  margin-bottom:.35em!important;font-style:italic;
+  background:linear-gradient(180deg,#fffbe6 0%,#ffe27a 40%,#e0a21a 65%,#fff1b0 80%,#b57410 100%);
+  -webkit-background-clip:text;background-clip:text;color:transparent!important;
+  filter:drop-shadow(2px 0 0 #3a1c00) drop-shadow(-2px 0 0 #3a1c00) drop-shadow(0 2px 0 #3a1c00) drop-shadow(0 -2px 0 #3a1c00) drop-shadow(0 4px 0 #000)}
+/* FOCUS!! - a comic strip slides in from the DEFENDER's edge with its face,
+   so it reads as the defender bracing, not the attacker */
+.ark-callin-focus{top:9%;right:0;left:auto;width:min(56vw,720px);height:clamp(84px,11vw,150px);
+  display:flex;align-items:center;justify-content:flex-start;gap:3%;padding:0 4% 0 2.5%;box-sizing:border-box;
+  background:repeating-linear-gradient(90deg,rgba(255,255,255,.0) 0 18px,rgba(160,240,255,.55) 18px 21px),linear-gradient(90deg,#0b6f8f,#16b8d8 60%,#9ff2ff);
+  border:4px solid #000;box-shadow:0 6px 0 #000;
+  clip-path:polygon(6% 0,100% 0,100% 100%,0 100%,3% 52%);
+  opacity:var(--callin-focus,0);transform:translateX(calc((1 - var(--callin-focus,0))*70%)) skewX(-8deg);font-size:clamp(34px,4.6vw,70px)}
+.ark-cinema[data-defender="0"] .ark-callin-focus{right:auto;left:0;flex-direction:row-reverse;padding:0 2.5% 0 4%;
+  clip-path:polygon(0 0,94% 0,97% 48%,100% 100%,0 100%);transform:translateX(calc((var(--callin-focus,0) - 1)*70%)) skewX(8deg)}
+.ark-callin-focus i{flex:0 0 auto;height:86%;aspect-ratio:1.4;border:4px solid #000;background:#222 center/cover no-repeat;
+  box-shadow:inset 0 0 0 3px #fff;transform:skewX(8deg)}
+.ark-cinema[data-defender="0"] .ark-callin-focus i{transform:skewX(-8deg)}
+.ark-callin-focus b{color:#fff;font-style:italic;-webkit-text-stroke:2px #000;text-shadow:4px 4px 0 #000;transform:skewX(8deg)}
+@media (prefers-reduced-motion:reduce){.ark-callin-focus{transform:none!important}}
+.game.reduce-motion .ark-callin-focus{transform:none!important}
+
+/* Super Miracle: falling golden-cyan star (top of frame → the blow) and a
+   cyan X-slash on the victim at contact. Film-time vars only. */
+.ark-falling-star{position:absolute;inset:0;z-index:6;pointer-events:none;opacity:var(--star-op,0)}
+.ark-falling-star i{position:absolute;left:calc(30% + var(--star-u,0)*22%);top:calc(-18% + var(--star-u,0)*60%);
+  width:calc(9vw + var(--star-u,0)*10vw);aspect-ratio:1;translate:-50% -50%;rotate:calc(var(--star-u,0)*140deg);
+  background:radial-gradient(circle,#fff 0 9%,#fff4b8 16%,rgba(255,210,90,.85) 26%,rgba(120,230,255,.45) 40%,transparent 62%);
+  -webkit-mask:conic-gradient(from 45deg,#000 0 3deg,transparent 3deg 87deg,#000 87deg 93deg,transparent 93deg 177deg,#000 177deg 183deg,transparent 183deg 267deg,#000 267deg 273deg,transparent 273deg),radial-gradient(circle,#000 0 30%,transparent 34%);
+  mask:conic-gradient(from 45deg,#000 0 3deg,transparent 3deg 87deg,#000 87deg 93deg,transparent 93deg 177deg,#000 177deg 183deg,transparent 183deg 267deg,#000 267deg 273deg,transparent 273deg),radial-gradient(circle,#000 0 30%,transparent 34%);
+  filter:drop-shadow(0 0 18px #ffe27a) drop-shadow(0 0 34px #7fe8ff)}
+.ark-falling-star::after{content:'';position:absolute;left:calc(30% + var(--star-u,0)*22%);top:calc(-18% + var(--star-u,0)*60%);
+  width:2.2vw;height:calc(18vh + var(--star-u,0)*22vh);translate:-50% -100%;rotate:-20deg;transform-origin:50% 100%;
+  background:linear-gradient(0deg,rgba(255,240,180,.9),rgba(120,230,255,.35) 45%,transparent);filter:blur(4px)}
+.ark-cinema[data-defender="0"] .ark-falling-star{transform:scaleX(-1)}
+.ark-xslash{position:absolute;inset:0;z-index:7;pointer-events:none;opacity:var(--xslash,0)}
+.ark-xslash i{position:absolute;left:var(--hit-x,55%);top:var(--hit-y,45%);width:62vw;height:clamp(10px,1.4vw,22px);border-radius:50%;
+  translate:-50% -50%;rotate:32deg;scale:calc(.35 + .65*var(--xslash,0)) 1;
+  background:linear-gradient(90deg,transparent,#e8fdff 20%,#fff 50%,#7fe8ff 80%,transparent);box-shadow:0 0 26px 8px rgba(120,230,255,.8)}
+.ark-xslash i:nth-child(2){rotate:-32deg}
+@media (prefers-reduced-motion:reduce){.ark-falling-star,.ark-xslash{display:none}}
+.game.reduce-motion :is(.ark-falling-star,.ark-xslash){display:none}
+
+.ark-hitpops b[data-n]:not([data-n=""])::after{content:attr(data-n);display:block;text-align:center;margin-top:.1em;
+  font-size:.34em;letter-spacing:.08em;font-style:italic;color:#9ff2ff;-webkit-text-fill-color:#9ff2ff;
+  text-shadow:2px 0 0 #00222e,-2px 0 0 #00222e,0 2px 0 #00222e,0 -2px 0 #00222e}
+
+/* the post-match buttons fade in over the held, roaring winner */
+.ark-reference-layout.ark-cinematic-active[data-vic-controls="1"] .combat-finish{
+ visibility:visible!important;pointer-events:auto!important;animation:ark-vic-controls .45s ease-out both}
+@keyframes ark-vic-controls{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.ark-reference-layout[data-vic-controls="1"] .combat-finish{animation:none}}
+
+/* Card call-out (Nov 28): the owner's card name on a parchment plate,
+   sliding in from that player's edge, with what it just did. */
+.ark-callin-card{top:21%;left:3%;right:auto;font-size:clamp(17px,2vw,30px);text-align:left;
+  padding:.45em .9em .5em;background:linear-gradient(160deg,#173149f2,#0a1d2df2);border:3px double #dcc18c;
+  box-shadow:0 6px 18px #0009;opacity:var(--callin-card,0);
+  transform:translateX(calc((1 - var(--callin-card,0)) * -40px));}
+.ark-callin-card[data-side="1"]{left:auto;right:3%;text-align:right;transform:translateX(calc((1 - var(--callin-card,0)) * 40px));}
+.ark-callin-card b{font-family:Impact,'Arial Black',sans-serif;letter-spacing:.06em;color:#ffe3a0;
+  text-shadow:0 2px 0 #3a2208;}
+.ark-callin-card small{color:#aef4ff;font-family:Impact,'Arial Black',sans-serif;font-size:.62em;letter-spacing:.1em;margin-top:.2em}
+.ark-callin-revive small{color:#fff3b8;font-size:.32em;letter-spacing:.16em;-webkit-text-fill-color:#fff3b8}

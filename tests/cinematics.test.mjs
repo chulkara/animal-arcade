@@ -5,8 +5,9 @@ import {readFileSync} from 'node:fs';
 const require=createRequire(import.meta.url);
 const director=require('../src/combat-cinematics-core.js');
 const arena=require('../src/arena3d-core.js');
+// film:false → the shared-frame fallback grammar; attack-film tests opt in.
 const base={attacker:0,defender:1,attackerId:'moose',defenderId:'bear',
- move:'P',finished:false,damage:48,knockout:false,miracleName:null};
+ move:'P',finished:false,damage:48,knockout:false,miracleName:null,film:false};
 
 test('each animal has three repeatable signature shot sequences plus a fourth special',()=>{
  for(const id of ['bear','moose']){
@@ -46,16 +47,22 @@ test('universal Miracle introductions apply to either animal, not a specific rig
  ]);
 });
 
-test('multi-angle victory gives distinct low-angle, orbit, high and wide hero shots',()=>{
+test('victory: the winner faces the lens from frame one in one slow push-in (user decision 2026-11-26)',()=>{
  const evt={...base,attacker:1,defender:0,attackerId:'bear',
   defenderId:'moose',move:'G',knockout:true,finished:true};
  const start=director.duration(evt,1000).victoryStart;
- const shots=[start+50,start+1080,start+2200,start+3370]
-  .map(ms=>director.shot(evt,ms,1000));
- assert.deepEqual(shots.map(s=>s.beat),['VICTORY','VICTORY','VICTORY','VICTORY']);
- assert.deepEqual(shots.map(s=>s.shot),['lowHero','sideHero','highHero','finale']);
- const cameras=shots.map(s=>director.camera(evt,start+s.local,1000));
- assert.ok(new Set(cameras.map(s=>[s.x,s.y,s.z,s.zoom].join(','))).size===4);
+ const shots=[start+50,start+700,start+1300,start+2000,start+director.VICTORY_END_MS-10].map(ms=>director.shot(evt,ms,1000));
+ assert.ok(shots.every(s=>s.beat==='VICTORY'&&s.shot==='vicHold'),'one shot, no cuts');
+ const cams=shots.map(s=>director.camera(evt,start+s.local,1000));
+ const dist=c=>Math.hypot(c.x-c.targetX,c.z-c.targetZ);
+ for(let i=1;i<cams.length;i++)assert.ok(dist(cams[i])<=dist(cams[i-1])+1e-9,'only ever pushes in, never pulls back');
+ assert.ok(dist(cams[0])-dist(cams[cams.length-1])>.8,'a visible push-in');
+ for(const c of cams){assert.equal(c.outro,0);assert.ok(Math.abs(c.targetX)<1e-9,'winner centred');
+  assert.ok(c.z>c.targetZ+3,'camera in front of the winner');assert.ok(Math.abs(c.x-c.targetX)<1.2,'nearly head-on');}
+ const a0=director.victoryApproach(0),a1=director.victoryApproach(3000);
+ assert.equal(a0.turn,Math.PI/2,'squarely facing the lens');assert.deepEqual(a0,a1,'no walk, no turn');
+ assert.ok(director.VICTORY_END_MS<=5000,'no long static victory footage');
+ assert.ok(director.VICTORY_BANNER_MS<=400,'You win! lands within ~0.3 s');
 });
 
 test('replacing the defender mirrors only the framing, never the signature attack animation',()=>{
@@ -81,7 +88,9 @@ test('reel input, storyboard, model camera and sound scripts are wired after the
  assert.ok(ui.includes("arkade:reelstop"));
  assert.ok(ui.includes('ark-reel-lamps'));
  assert.ok(model.includes('cinematics.camera(event,time,nativeLength(event))'));
- assert.ok(model.includes("defender?.native(event.knockout?'knockout':'hit')"));
+ assert.ok(model.includes("defender?.native(sequence.solo||!event.knockout?'hit':'knockout')"));
+ assert.ok(model.includes("defender.currentKey=null;defender.native('knockout',0);"),'film victims land body-first, lying (no crossfade from the standing hit pose)');
+ assert.ok(model.includes("ko.timeScale=-Math.max("),'survivors get back up: the knockout fall played backwards');
  assert.ok(audio.includes("case 'cinemaMiracle'"));
  assert.ok(audio.includes("case 'cinemaVictory'"));
  assert.ok(readFileSync('src/painted-menu.js','utf8').includes("const ART='./assets/approved-menu.png'"));
@@ -100,27 +109,22 @@ test('battle event carries equipped Miracle identity and damage into the univers
 });
 
 
-test('regression: winning Bear gets front, reverse, overhead and final face close-up',()=>{
+test('regression: the winner is centred for either slot and the camera tracks it',()=>{
  for(const attacker of [0,1]){
   const evt={...base,attacker,defender:1-attacker,
    attackerId:'bear',defenderId:'moose',move:'P',finished:true,knockout:true};
   const begin=director.duration(evt,1200).victoryStart;
-  const heroWorldX=attacker===0?-2.02:2.02;
-  const views=[100,1100,2300,3350].map(t=>director.camera(evt,begin+t,1200));
-  const angles=views.map(cam=>Math.atan2(cam.x-cam.targetX,cam.z));
-  views.forEach((cam,index)=>{
+  const home=attacker===0?-2.02:2.02,facing=attacker===0?1:-1;
+  for(const t of [100,700,1300,2000]){
+   const cam=director.camera(evt,begin+t,1200),ap=director.victoryApproach(t);
    assert.equal(cam.beat,'VICTORY');
-   assert.equal(cam.targetX,heroWorldX);
-   assert.ok(cam.zoom<=1.7);
-   assert.equal(cam.cut,true);
-  });
-  assert.ok(Math.abs(angles[0]-angles[1])>.8,'Low front and reverse angles must differ');
-  assert.ok(Math.abs(angles[1]-angles[2])>.6,'Reverse and overhead azimuth must differ');
-  assert.ok(views[2].y-views[0].y>5,'The third camera must actually look down');
-  assert.ok(views[3].z>1.5,'Final shot must not be embedded in the winner');
-  assert.ok(views[3].zoom<=1.08,'Final shot prioritizes full-frame Bear over excessive zoom');
+   assert.ok(Math.abs(cam.targetX-(home+facing*ap.travel))<1e-9,'Camera tracks the winner');
+   assert.ok(Math.abs(home+facing*ap.travel)<1e-9,'winner stands at centre stage');
+   assert.ok(Math.hypot(cam.x-cam.targetX,cam.z-cam.targetZ)>=2.5,'camera never inside the winner');
+  }
  }
 });
+
 
 test('regression: Bear contact is a two-fighter shot, not a cropped victim closeup',()=>{
  for(const attacker of [0,1]){
@@ -210,6 +214,11 @@ test('original-video comparison: signature moves prepare before FBX contact and 
   const t=director.duration(event,1300);
   assert.ok(t.focusLead>=300,'Preparation must last long enough to be visible');
   assert.equal(t.actionLead,t.miracleLead+t.focusLead);
+  if(t.solo){ // solo attacks prepare with a title card instead
+   assert.equal(director.shot(event,t.actionLead-10,1300).beat,'TITLE');
+   assert.equal(director.shot(event,t.actionLead+t.contact+25,1300).beat,'CONTACT');
+   continue;
+  }
   assert.equal(director.shot(event,t.actionLead-10,1300).beat,'FOCUS');
   assert.equal(director.shot(event,t.actionLead+20,1300).beat,'INTRO');
   assert.equal(director.shot(event,t.actionLead+t.contact+25,1300).beat,'CONTACT');
@@ -217,18 +226,18 @@ test('original-video comparison: signature moves prepare before FBX contact and 
  const event={...base,attacker:0,defender:1,attackerId:'bear',
   defenderId:'moose',move:'P',finished:true};
  const begin=director.duration(event,1300).victoryStart;
- const portrait=director.camera(event,begin+3300,1300);
- assert.equal(portrait.shot,'finale');
- assert.ok(Math.abs(portrait.x-portrait.targetX)>8,
+ const portrait=director.camera(event,begin+1300,1300);
+ assert.equal(portrait.shot,'vicHold','the win holds on the roaring face');
+ assert.ok(Math.hypot(portrait.x-portrait.targetX,portrait.z-portrait.targetZ)>=2.5,
     'The winning camera must stay outside the Bear torso');
   assert.ok(portrait.zoom<=1.08);
   const runtime=readFileSync('src/arena3d-runtime.js','utf8');
  const ui=readFileSync('src/combat-cinematics.js','utf8');
  assert.ok(runtime.includes('const lead=timing?.actionLead||0;'),
   'The native source clip must wait until cinematic focus concludes');
- assert.ok(runtime.includes("attacker.native('rear')"),
-  'Use the source rear transition when available');
- assert.ok(ui.includes("event.attackerId.toUpperCase()+' WINS!'"));
+ assert.ok(runtime.includes("attacker.native('idle',.2);"),
+  'The winner stays on four paws, planted facing the lens (no walk-in)');
+ assert.ok(ui.includes("'You win!'")&&ui.includes('PERFECT!'));
  assert.ok(readFileSync('src/audio.js','utf8').includes("case 'cinemaWin'"));
 });
 
@@ -264,29 +273,22 @@ test('Bear source 3D hit contact matches cinematic timing for all native clip le
  }
 });
 
-test('bear win has a visible inhale followed by a head-raised sustained cry',()=>{
- const none=director.bearHowl(1600);
+test('bear win has a visible inhale followed by a head-raised roar on the close-up',()=>{
+ const none=director.bearHowl(director.VICTORY_HOWL_START_MS-1);
  assert.equal(none.active,false);
  assert.equal(none.jawOpen,0);
- const inhale=director.bearHowl(2400);
+ const inhale=director.bearHowl(director.VICTORY_HOWL_START_MS+150);
  assert.equal(inhale.phase,'inhale');
- assert.ok(inhale.headPitch>.08,'First gather breath by lowering the head');
- assert.ok(inhale.bodyDrop<-.02,'Shift weight before the cry');
- const roaring=director.bearHowl(3380);
+ assert.ok(inhale.headPitch>.05,'First gather breath by lowering the head');
+ const roaring=director.bearHowl(1500);
  assert.equal(roaring.phase,'roar');
- assert.ok(roaring.headPitch<-.42,'Then throw the head back visibly');
- assert.ok(roaring.neckPitch<-.2);
+ assert.ok(roaring.headPitch<-.15,'Then lift the head visibly');
+ assert.ok(roaring.neckPitch<-.15);
  assert.ok(roaring.jawOpen>.8);
- const held=director.bearHowl(5200);
- assert.ok(held.jawOpen>.6,'The expression survives the delayed banner');
- for(const attacker of [0,1]){
-  const evt={...base,attacker,defender:1-attacker,attackerId:'bear',
-   defenderId:'moose',move:'P',finished:true};
-  const t=director.duration(evt,1600);
-  const final=director.camera(evt,t.victoryStart+3350,1600);
-  assert.equal(final.shot,'finale');
-  assert.ok(Math.abs(final.x-final.targetX)>=8,'Keep final frame fitting');
- }
+ // the jaw is open on the roar close-up cut
+ const roarAt=director.VICTORY_HOWL_CUE_MS;
+ assert.ok(director.bearHowl(roarAt+200).jawOpen>.5);
+ assert.ok(director.VICTORY_HOWL_CUE_MS>=roarAt-100&&director.VICTORY_HOWL_CUE_MS<=roarAt+300,'roar sound with the close-up');
 });
 
 test('Bear howl drives actual jaw/morph targets when available and has an original vocal cue',()=>{
@@ -303,7 +305,7 @@ test('Bear howl drives actual jaw/morph targets when available and has an origin
 });
 
 test('signature finish adds a rush cut, low technique sweep and ground shockwave',()=>{
- const evt={...base,attackerId:'bear',defenderId:'moose',move:'P'};
+ const evt={...base,attackerId:'bear',defenderId:'moose',move:'G'};
  const timing=director.duration(evt,1600);
  assert.equal(director.shot(evt,timing.actionLead+timing.contact*.85,1600).shot,'rush');
  assert.equal(director.shot({...evt,move:'T'},
@@ -349,21 +351,17 @@ test('the winning Bear howl is staged without hiding its muzzle',()=>{
  assert.ok(ui.includes('overlay.dataset.winner=event.attackerId'));
 });
 
-test('9:49 AM regression: all four Bear victory angles fit a complete animated winner',()=>{
+test('9:49 AM regression: victory cameras stay outside the winner and are fitted to its live skeleton',()=>{
  for(const slot of [0,1]){
   const event={...base,attacker:slot,defender:1-slot,attackerId:'bear',
    defenderId:'moose',move:'P',finished:true,knockout:true};
   const begin=director.duration(event,1600).victoryStart;
-  const angles=[];
-  for(const offset of [80,1050,2300,3400]){
+  for(const offset of [80,700,1300,2000]){
     const view=director.camera(event,begin+offset,1600);
-    const dist=Math.hypot(view.x-view.targetX,view.y-view.targetY,view.z);
-    assert.ok(dist>=9.99,'Victory film camera cannot be inside the winning Bear');
+    const dist=Math.hypot(view.x-view.targetX,view.y-view.targetY,view.z-view.targetZ);
+    assert.ok(dist>=3,'Victory film camera cannot be inside the winning Bear');
     assert.ok(view.zoom<=1.08,'Cinematic zoom must preserve body visibility');
-    angles.push(Math.atan2(view.x-view.targetX,view.z));
   }
-  assert.equal(new Set(angles.map(a=>a.toFixed(2))).size,4,
-    'All four victory viewing directions must remain different');
  }
  const runtime=readFileSync('src/arena3d-runtime.js','utf8');
  assert.ok(runtime.includes('function fitVictoryInFrame(event,wants)'));
@@ -387,5 +385,245 @@ test('completed Bear review holds the correct winner title instead of reverting 
  assert.ok(ui.includes('const holdWinner=rehearsal&&event.finished'));
  assert.ok(ui.includes("overlay.dataset.beat=holdWinner?'victory':'done'"));
  assert.ok(ui.includes("if(holdWinner)stage.dataset.cineBeat='victory'"));
- assert.ok(ui.includes("event.attackerId.toUpperCase()+' WINS!'"));
+ assert.ok(ui.includes("'P'+(event.attacker+1)+' wins!'"));
+});
+
+test('attack closing is a bounded curve that returns to the start mark',()=>{
+ for(const attackerId of ['bear','moose'])for(const move of ['G','T','P','S']){
+  const keep=director.contactKeep(attackerId,move);
+  assert.ok(keep>0&&keep<2,'keep gap must be a sane world distance');
+  const evt={attacker:attackerId==='bear'?0:1,defender:attackerId==='bear'?1:0,attackerId,defenderId:attackerId==='bear'?'moose':'bear',move,damage:10};
+  const t=director.duration(evt,1200);
+  assert.equal(director.blocking(evt,0,1200).closing,0,'no closing before the windup');
+  const at=director.blocking(evt,t.actionLead+t.contact,1200).closing;
+  assert.ok(at>.95,'fully closed at contact');
+  assert.ok(director.blocking(evt,t.actionLead+t.contact+900,1200).closing<.01,'withdrawn after recoil');
+ }
+});
+
+test('knockout drives the loser back and keeps it there',()=>{
+ const evt={attacker:0,defender:1,attackerId:'bear',defenderId:'moose',move:'P',damage:40,finished:true,knockout:true};
+ const t=director.duration(evt,1200),hit=t.actionLead+t.contact;
+ assert.equal(director.blocking(evt,hit-10,1200).defenderKnock,0);
+ const late=director.blocking(evt,hit+2000,1200);
+ assert.ok(late.defenderKnock>.7,'held, not bounced back');
+ assert.ok(late.defenderTravel<.01,'ordinary hits still return');
+});
+
+test('measured clip contact replaces the ratio guess and can be cleared',()=>{
+ const evt={attacker:0,defender:1,attackerId:'bear',defenderId:'moose',move:'S',damage:10};
+ const guess=director.duration(evt,1833).contact;
+ assert.ok(director.setMeasuredContact('bear','S',900));
+ assert.equal(director.duration(evt,1833).contact,900);
+ assert.equal(director.duration(evt,undefined).contact,director.duration(evt).contact,'placeholder path ignores measurements');
+ director.clearMeasuredContacts();
+ assert.equal(director.duration(evt,1833).contact,guess);
+ assert.equal(director.setMeasuredContact('tiger','P',900),false);
+});
+
+test('High Paw Strike restaging: slower wind-up, snapped strike, lingering impact, shorter overall',()=>{
+ const st=director.staging('bear','P',983,3000);
+ assert.ok(st);
+ const windupReal=st.realAt(st.windupEnd),strikeReal=st.realContact-windupReal;
+ assert.ok(windupReal>st.windupEnd*1.3,'wind-up plays slower than the source');
+ assert.ok(strikeReal<(st.contact-st.windupEnd)*.7,'strike plays faster than the source');
+ assert.ok(st.realLength<3000,'recovery is brisker so the move is shorter overall');
+ assert.equal(st.speedAt(st.contact+50),st.segments[2].speed,'impact linger');
+ director.setMeasuredContact('bear','P',983);
+ const evt={attacker:0,defender:1,attackerId:'bear',defenderId:'moose',move:'P',damage:30};
+ assert.equal(director.duration(evt,3000).contact,st.realContact,'director uses real (warped) contact');
+ assert.equal(director.duration(evt,3000).attack,st.realLength);
+ director.clearMeasuredContacts();
+ assert.equal(director.staging('bear','S',900,1833),null,'only listed moves are restaged');
+ const mo=director.staging('moose','G',830,1450);
+ assert.equal(Math.round(mo.clipAt(mo.realContact)),830,'moose real→clip mapping lands on the authored contact frame');
+ const low=director.staging('bear','T',850,4000);
+ assert.ok(low.realLength<2500,'Low Swipe no longer idles through a 4 s recovery');
+});
+
+test('after an ordinary exchange the camera settles back to the two-shot',()=>{
+ const evt={attacker:0,defender:1,attackerId:'bear',defenderId:'moose',move:'G',damage:30,finished:false,knockout:false};
+ const t=director.duration(evt,1833);
+ const held=director.camera(evt,t.finish+300,1833);
+ assert.equal(held.targetX,0);assert.equal(held.x,0);
+ const reacting=director.camera(evt,t.actionLead+t.contact+400,1833);
+ assert.notEqual(reacting.targetX,0,'reaction shot still favours the defender');
+});
+
+test('key poses: neutral at the ends, distinct silhouettes at wind-up and contact',()=>{
+ const cases=[['G',1083,1833],['T',850,4000],['P',983,3000]];
+ for(const [move,c,len] of cases){
+  const st=director.staging('bear',move,c,len);
+  const zero=director.keyPose('bear',move,0,st);
+  assert.ok(Object.values(zero).every(v=>v===0),move+' starts neutral');
+  assert.ok(Object.values(director.keyPose('bear',move,len,st)).every(v=>v===0),move+' ends neutral');
+  const wind=director.keyPose('bear',move,st.windupEnd,st),hit=director.keyPose('bear',move,st.contact,st);
+  const diff=director.POSE_FIELDS.reduce((s,f)=>s+Math.abs(wind[f]-hit[f]),0);
+  assert.ok(diff>.4,move+' wind-up and contact shapes are clearly different');
+  // smooth: no jump across a key time
+  for(const t of [st.windupEnd,st.contact,st.holdEnd]){
+   const a=director.keyPose('bear',move,t-.5,st),b=director.keyPose('bear',move,t+.5,st);
+   for(const f of director.POSE_FIELDS)assert.ok(Math.abs(a[f]-b[f])<.01,move+' '+f+' continuous');
+  }
+ }
+ const P=director.staging('bear','P',983,3000);
+ assert.ok(director.keyPose('bear','P',P.windupEnd,P).spine1>.12,'High Paw Strike rears tall');
+ assert.ok(director.keyPose('bear','P',P.contact,P).chest<-.1,'then drives the chest down');
+ assert.ok(Object.values(director.keyPose('moose','G',500,null)).every(v=>v===0),'no keys → neutral');
+});
+
+test('solo attack (Bear High Paw Strike) follows the arcade reference film grammar',()=>{
+ director.setMeasuredContact('bear','P',983);
+ for(const attacker of [0,1]){
+  const evt={...base,film:true,attacker,defender:1-attacker,attackerId:'bear',defenderId:'moose',move:'P',damage:30,knockout:false,finished:false};
+  const t=director.duration(evt,3000);
+  assert.ok(t.solo&&t.titleIn<t.actionLead&&t.actionLead+t.contact<t.launchAt&&t.launchAt<t.landAt&&t.landAt<t.returnAt&&t.returnAt<t.finish);
+  const order=[];
+  for(let ms=0;ms<t.total;ms+=20){const b=director.shot(evt,ms,3000).beat;if(order.at(-1)!==b)order.push(b);}
+  assert.deepEqual(order,['FOCUS','TITLE','ATTACK','CONTACT','LAUNCH','IMPACT','REACTION']);
+  // the victim is off screen from the title to the blow; at contact both
+  // animals share one tilted two-shot through the hit-stop
+  const v=ms=>director.soloView(evt,ms,3000);
+  assert.equal(v(t.titleIn+300).showDefender,false);
+  assert.equal(v(t.actionLead+t.contact-5).showDefender,false);
+  const hit=v(t.actionLead+t.contact+5);
+  assert.ok(hit.showDefender&&hit.showAttacker&&hit.contact===1,'two-fighter contact frame');
+  const cc=director.camera(evt,t.actionLead+t.contact+5,3000);
+  assert.equal(cc.shot,'contact');assert.ok(cc.snap&&Math.abs(cc.angle)>.2,'hard cut, Dutch-tilted');
+  assert.equal(v(t.launchAt+300).showAttacker,false);
+  assert.ok(v(t.finish-10).showAttacker&&v(t.finish-10).showDefender);
+  // reference shot order inside the strike
+  const shots=[];for(let ms=t.actionLead;ms<t.launchAt;ms+=10){const n=director.shot(evt,ms,3000).shot;if(shots.at(-1)!==n)shots.push(n);}
+  assert.deepEqual(shots,['soloRise','soloRear','soloFire','lunge','contact']);
+  // aura during the title, fire behind the strike, glint before the lunge, flash after it
+  assert.ok(v(t.titleIn+400).aura>.9&&v(t.titleIn+400).fire===0);
+  assert.ok(v(t.actionLead+t.contact-1).fire>.9);
+  assert.equal(v(t.actionLead+t.contact+5).fire,0,'the contact two-shot is in the forest, not the fire void');
+  assert.ok(v(t.actionLead+t.lungeAt-50).glint>.9,'claw glint at the top of the swing');
+  assert.ok(v(t.actionLead+t.contact+10).flash>.9,'white flash right on the hit');
+  assert.ok(v(t.actionLead+t.contact+50).flash<.05,'a crisp ~40 ms flash, not a milky fade');
+  assert.ok(v(t.actionLead+t.contact-1).lunge>.9,'lunges into the lens before the flash');
+  assert.ok(v(t.actionLead-1).flash>.9,'title closes to white');
+  assert.equal(v(t.actionLead+t.contact+120).flash,0,'impact flash is crisp (a couple of frames)');
+  assert.equal(v(t.titleIn+1).burst,0,'no ray burst across the animal');
+  assert.ok(v(t.launchAt+10).impact>.9,'the blow lands on the victim as the launch begins');
+  assert.equal(director.hitStop(evt,t.actionLead+t.contact+60,3000),true);
+  assert.equal(director.hitStop(evt,t.actionLead+t.contact+t.hitStop,3000),false);
+  assert.equal(t.hitStop,135,'the signature move holds its impact longest');
+  // the stage never changes: only the launch is re-lit red
+  assert.equal(v(t.titleIn+300).stage,null);
+  assert.equal(v(t.launchAt+100).stage,'red');
+  // the victim is already airborne and turning over on the launch's first frame
+  const first=v(t.launchAt).launch;
+  assert.ok(first.y>1&&Math.abs(first.spin)>1.5,'tumbling from frame one');
+  assert.ok(first.y>2&&first.y<=2.05,'enters high but inside the frame (reference 19.9; never an empty first frame)');
+  const peak=v((t.launchAt+t.landAt)/2).launch;
+  assert.ok(peak.y<first.y,'and drops away into the distance');
+  assert.equal(Math.sign(peak.drift),attacker===0?1:-1);
+  assert.ok(v(t.landAt+100).launch.y>0,'heavy slam bounces');
+  assert.equal(v(t.landAt+500).launch.y,0);
+  assert.equal(v(t.landAt+10).launch.landed,true);
+  assert.equal(v(t.landAt+10).pops,1,'one damage number pops on landing');
+  assert.equal(v(t.landAt+director.SOLO_MS.pop+10).pops,0,'and expires');
+  // cameras: title is a low profile on the attacker's own slot; launch tracks the victim
+  const sx=attacker===0?-2.02:2.02;
+  assert.equal(director.camera(evt,t.titleIn+300,3000).targetX,sx+(attacker===0?.35:-.35));
+  const lc=director.camera(evt,(t.launchAt+t.landAt)/2,3000);
+  const away=attacker===0?1:-1;
+  assert.ok(away*(lc.targetX-lc.x)>5,'launch camera looks along the flight, away from the attacker');
+  assert.equal(lc.snap,true);
+  assert.equal(director.panel(evt,t.titleIn+300,3000).sub,'LV.2 SIGNATURE');
+ }
+ // every Bear and Moose move is a film; film:false keeps the shared-frame fallback
+ for(const id of ['bear','moose'])for(const move of ['G','T','P','S'])
+  assert.equal(director.duration({...base,film:true,attackerId:id,defenderId:id==='bear'?'moose':'bear',move},1833).solo,true);
+ assert.equal(director.duration({...base,attackerId:'bear',defenderId:'moose',move:'G'},1833).solo,undefined);
+ assert.equal(director.duration({...base,film:true,attackerId:'bear',defenderId:'moose',move:'G'},1833).strike,'charge');
+ assert.equal(director.duration({...base,film:true,attackerId:'bear',defenderId:'moose',move:'T'},1833).strike,'slash');
+ director.clearMeasuredContacts();
+});
+
+test('each move has its own impact: hit-stop, tilt and launch; victims land lying and only survivors rise',()=>{
+ const mk=(move,extra={})=>({...base,film:true,attacker:0,defender:1,attackerId:'bear',defenderId:'moose',move,damage:30,...extra});
+ const T=Object.fromEntries(['G','T','P'].map(m=>[m,director.duration(mk(m),3000)]));
+ assert.deepEqual(['G','T','P'].map(m=>T[m].launch),['skid','roll','blast']);
+ assert.deepEqual(['G','T','P'].map(m=>T[m].hitStop),[100,110,135]);
+ const mid=m=>director.soloView(mk(m),(T[m].launchAt+T[m].landAt)/2,3000).launch;
+ assert.ok(mid('P').y>mid('G').y,'Power flies higher than Guts');
+ // every launch rolls about the body's length and is ON ITS SIDE before it lands
+ for(const m of ['G','T','P']){
+  assert.equal(mid(m).axis,'x');
+  const end=director.soloView(mk(m),T[m].landAt-1,3000).launch;
+  const r=((end.spin%(2*Math.PI))+2*Math.PI)%(2*Math.PI);
+  assert.ok(Math.abs(r-1.5*Math.PI)<.05,m+' lands on its side, not on its antlers');
+ }
+ assert.ok(mid('G').y<=.7,'Guts stays low');
+ // a real hop for Guts (fast, never hanging), and every roll turns ONE way:
+ // never back through upright on the way to its side (reviewer: mid-air reversal)
+ assert.ok(T.G.landAt-T.G.launchAt<=450,'Guts airtime ≤ 450 ms');
+ for(const m of ['G','T','P']){
+  let prev=null,up=0,left=false;
+  for(let t=T[m].launchAt;t<T[m].landAt;t+=10){
+   const sp=director.soloView(mk(m),t,3000).launch.spin;
+   if(prev!==null)assert.ok((sp-prev)*(m==='P'?1:-1)>=-1e-9,m+' rolls monotonically');
+   const r=((sp%(2*Math.PI))+2*Math.PI)%(2*Math.PI);
+   const near=r<.15||r>2*Math.PI-.15;
+   if(!near)left=true;else if(left)up++;
+   prev=sp;
+  }
+  assert.equal(up,0,m+' never passes back through upright mid-air');
+ }
+ // the victim is blown away from the lens and lands far off
+ for(const m of ['G','T','P']){
+  const first=director.soloView(mk(m),T[m].launchAt,3000).launch,last=director.soloView(mk(m),T[m].landAt-1,3000).launch;
+  assert.ok(last.drift>first.drift+3,'travels away');
+  if(m==='T')assert.ok(first.y<.05,'Technique leaves the ground from where it stood in the contact shot');
+  if(m==='P')assert.ok(first.y>last.y,'Power drops in from above');
+ }
+ // red sky holds through the flight and fades back to daylight on the landing
+ const red=ms=>director.soloView(mk('P'),ms,3000).redSky;
+ assert.ok(red(T.P.launchAt+100)>0&&red(T.P.launchAt+100)<1,'red light ramps in, no hard swap');
+ assert.equal(red(T.P.launchAt+300),1);
+ assert.ok(red(T.P.landAt+150)>.2&&red(T.P.landAt+150)<1,'continuous fade, not a hard cut');
+ assert.equal(red(T.P.landAt+director.SOLO_MS.redFade+10),0);
+ const tiltP=director.camera(mk('P'),T.P.actionLead+T.P.contact-10,3000).angle;
+ assert.ok(Math.abs(tiltP)>.25,'Power impact frame is Dutch-tilted');
+ assert.equal(director.camera(mk('G'),T.G.actionLead+T.G.contact-10,3000).angle,0);
+ // landing: lying (down) first; a survivor rises after the hold, a knockout never does
+ const live=director.soloView(mk('P'),T.P.landAt+10,3000).launch;
+ assert.equal(live.landed,true);assert.equal(live.down,1);
+ assert.ok(director.soloView(mk('P'),T.P.landAt+director.SOLO_MS.downHold+director.SOLO_MS.getUp,3000).launch.rising>=.99);
+ const ko=mk('P',{knockout:true});
+ assert.equal(director.soloView(ko,T.P.landAt+director.SOLO_MS.downHold+300,3000).launch.rising,0);
+ // numbers on screen at arcade scale; rules untouched
+ assert.equal(director.DISPLAY_SCALE,50);
+});
+
+test('iteration 5: contact beat reads (≥300 ms), victim flinches, burst + ring on the blow',()=>{
+  const ev={attacker:0,defender:1,attackerId:'bear',defenderId:'moose',move:'T',damage:60,key:'i5',mode:'SOLO'};
+  const t=director.duration(ev,3000),contactAt=t.actionLead+t.contact;
+  assert.ok(t.launchAt-contactAt>=300,'contact two-shot long enough to read');
+  const v=director.soloView(ev,contactAt+20,3000);
+  assert.equal(v.flinch,1);assert.ok(v.impact>.9&&v.ring>.9,'spark burst + shockwave on the contact frame');
+  assert.ok(v.slash>.9,'Technique claw slash on the contact frame');
+  assert.equal(director.soloView(ev,contactAt-5,3000).flinch,0);
+});
+
+test('iteration 5: Super Miracle has its own cosmic sequence; Resurrection holds at 0 before reviving',()=>{
+  const sup={attacker:0,defender:1,attackerId:'bear',defenderId:'moose',move:'S',damage:90,key:'sm',mode:'SOLO',
+    goldChange:true,superMiracle:true,finished:true,knockout:true};
+  const t=director.duration(sup,3000),contactAt=t.actionLead+t.contact;
+  const mid=director.soloView(sup,t.actionLead+t.fireStart+100,3000);
+  assert.equal(mid.fireKind,'cosmic','cosmic void, not the fire backdrop');
+  assert.ok(mid.star>0&&mid.star<1,'the star is falling through the strike');
+  assert.ok(director.soloView(sup,contactAt+20,3000).xslash>.9,'X-slash on the blow');
+  const plain=director.soloView({...sup,goldChange:false,superMiracle:false,key:'p'},t.actionLead+t.fireStart+100,3000);
+  assert.equal(plain.fireKind,'fire');assert.equal(plain.star,0);
+  const rev={attacker:0,defender:1,attackerId:'bear',defenderId:'moose',move:'T',damage:60,key:'rv',mode:'SOLO',resurrected:true};
+  const normal=director.duration({...rev,resurrected:false,key:'nr'},3000),r=director.duration(rev,3000);
+  assert.equal(normal.reviveAt,null);
+  assert.equal(r.reviveAt,r.landAt+director.SOLO_MS.downHold+director.SOLO_MS.reviveHold);
+  assert.equal(r.returnAt-normal.returnAt,director.SOLO_MS.reviveHold,'landing beat grows by the 0-HP hold');
+  assert.equal(director.soloView(rev,r.reviveAt-10,3000).launch.rising,0,'stays down until the revive');
+  assert.ok(director.soloView(rev,r.reviveAt+300,3000).launch.rising>0,'rises with RESURRECTION!');
 });

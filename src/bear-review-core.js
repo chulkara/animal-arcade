@@ -15,14 +15,16 @@
    const attacker=animals.findIndex(a=>a?.id==='bear');
    if(attacker<0)throw new RangeError('Select Brown Bear as one of the battle animals');
    const defender=1-attacker;
-   if(!['bear','moose'].includes(animals[defender]?.id))throw new RangeError('Unknown opponent');
+   if(!['bear','moose','shark'].includes(animals[defender]?.id))throw new RangeError('Unknown opponent');
    return Object.freeze(MOVES.map((move,index)=>Object.freeze({
      key:'bear-review:'+attacker+':'+index,
      review:true,attacker,defender,attackerId:'bear',
      defenderId:animals[defender].id,move,technique:move,
      special:false,miracleName:null,miracleBonus:0,
      damage:0,remainingHp:animals[defender].hp,
-     finished:index===2,knockout:index===2
+     // Display-only numbers so the review shows the damage pops; HP is untouched.
+     previewDamage:{G:30,T:24,P:46}[move],
+     finished:index===2,knockout:index===2,perfect:true
    })));
  }
  function label(index){

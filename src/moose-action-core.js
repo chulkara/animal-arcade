@@ -7,20 +7,20 @@
   if(root)root.NoahsMooseActionCore=api;
 })(typeof window==='object'?window:null,function(){
 'use strict';
-const FIELDS=Object.freeze(['travel','lateral','lift','pitch','yaw','roll','headPitch','headYaw','neck','chest','leftHoof','rightHoof','tail','pelvis','leftHindHip','rightHindHip','leftHindKnee','rightHindKnee','leftHindHock','rightHindHock','leftHindAnkle','rightHindAnkle','hindPlant']);
+const FIELDS=Object.freeze(['travel','lateral','lift','pitch','yaw','roll','headPitch','headYaw','neck','chest','leftHoof','rightHoof','tail','pelvis','leftHindHip','rightHindHip','leftHindKnee','rightHindKnee','leftHindHock','rightHindHock','leftHindAnkle','rightHindAnkle','hindPlant','leftFrontKnee','rightFrontKnee']);
 const ZERO=Object.freeze(Object.fromEntries(FIELDS.map(k=>[k,0])));
 const key=(ms,pose={})=>Object.freeze({ms,...ZERO,...pose});
 const MOVES=Object.freeze({
  Guts:Object.freeze({label:'Antler charge',base:'Run',frames:Object.freeze([
-  key(0),key(240,{travel:-.15,pitch:.09,headPitch:.16,neck:.11}),
+  key(0),key(240,{travel:-.24,lift:-.03,pitch:.15,headPitch:.26,neck:.16}),
   key(640,{travel:.56,lift:.03,pitch:.1,headPitch:.25,neck:.13,chest:.06}),
-  key(840,{travel:.87,lift:0,pitch:.17,headPitch:.31,neck:.20}),
+  key(840,{travel:.87,lift:-.02,pitch:.2,headPitch:.4,neck:.27,chest:.08}),
   key(1110,{travel:.52,pitch:.04,headPitch:.06}),key(1450)
  ])}),
  Technique:Object.freeze({label:'Cross-antler sweep',base:'Idle',frames:Object.freeze([
   key(0),key(210,{lateral:-.11,yaw:-.16,headYaw:-.35,roll:-.07}),
-  key(420,{lateral:-.24,travel:.15,yaw:-.32,headYaw:-.60,neck:.08}),
-  key(710,{lateral:.11,travel:.36,yaw:.33,headYaw:.73,roll:.1,chest:.14}),
+  key(420,{lateral:-.3,travel:.1,yaw:-.42,headYaw:-.78,roll:-.1,neck:.1}),
+  key(710,{lateral:.13,travel:.36,yaw:.42,headYaw:.88,roll:.14,chest:.16}),
   key(970,{lateral:.16,travel:.29,yaw:.12,headYaw:.22,roll:.03}),
   key(1300)
  ])}),
@@ -39,7 +39,7 @@ const MOVES=Object.freeze({
     leftHindHip:.30,rightHindHip:.34,leftHindKnee:-.17,rightHindKnee:-.19,
     leftHindHock:.11,rightHindHock:.10,leftHindAnkle:-.07,rightHindAnkle:-.06,
     leftHoof:.91,rightHoof:.86,hindPlant:1}),
-  key(850,{travel:-.03,lift:.22,pitch:-.35,pelvis:-.18,
+  key(850,{travel:-.03,lift:.27,pitch:-.42,pelvis:-.18,
     leftHindHip:.43,rightHindHip:.40,leftHindKnee:-.31,rightHindKnee:-.30,
     leftHindHock:.19,rightHindHock:.17,leftHindAnkle:-.11,rightHindAnkle:-.10,
     leftHoof:1.13,rightHoof:1.07,hindPlant:1}),
@@ -48,21 +48,23 @@ const MOVES=Object.freeze({
     leftHindHip:-.11,rightHindHip:-.10,leftHindKnee:.25,rightHindKnee:.22,
     leftHindHock:-.10,rightHindHock:-.09,
     leftHoof:.64,rightHoof:.57,hindPlant:.80}),
-  key(1220,{travel:.31,lift:-.055,pitch:.19,pelvis:.16,
+  key(1220,{travel:.31,lift:-.055,pitch:.24,pelvis:.16,
     leftHindHip:-.30,rightHindHip:-.28,leftHindKnee:.55,rightHindKnee:.51,
     leftHindHock:-.28,rightHindHock:-.26,leftHindAnkle:.09,rightHindAnkle:.08,
-    leftHoof:-.10,rightHoof:-.09,headPitch:.13,hindPlant:.70}),
+    leftHoof:-.10,rightHoof:-.09,headPitch:.22,neck:.08,hindPlant:.70}),
   key(1440,{travel:.16,lift:-.07,pitch:.055,pelvis:.10,
     leftHindHip:-.14,rightHindHip:-.13,leftHindKnee:.25,rightHindKnee:.23,
     leftHindHock:-.10,rightHindHock:-.09,hindPlant:.50}),
   key(1840)
  ])}),
+ // A real leap, not a statue rising: forelegs fold up under the chest in
+ // the air and the head/antlers drive down at the target as it comes in.
  Special:Object.freeze({label:'Leaping antler drive',base:'Jump',frames:Object.freeze([
-  key(0),key(270,{travel:-.14,lift:-.12,pitch:.15,headPitch:.14}),
-  key(680,{travel:.21,lift:.32,pitch:-.10,headPitch:-.06,neck:-.08}),
-  key(1050,{travel:.67,lift:.72,pitch:-.13,headPitch:.21,neck:.12}),
-  key(1330,{travel:.95,lift:.31,pitch:.17,headPitch:.31,neck:.15}),
-  key(1540,{travel:1.0,lift:.01,pitch:.12,headPitch:.24}),
+  key(0),key(270,{travel:-.14,lift:-.12,pitch:.15,headPitch:.14,leftHoof:-.12,rightHoof:-.1}),
+  key(680,{travel:.21,lift:.32,pitch:-.04,headPitch:.12,neck:.04,leftHoof:.62,rightHoof:.56,leftFrontKnee:.9,rightFrontKnee:.84}),
+  key(1050,{travel:.67,lift:.72,pitch:.12,headPitch:.38,neck:.18,chest:.06,leftHoof:.78,rightHoof:.72,leftFrontKnee:1.1,rightFrontKnee:1.04}),
+  key(1330,{travel:.95,lift:.31,pitch:.24,headPitch:.46,neck:.22,leftHoof:.3,rightHoof:.26,leftFrontKnee:.35,rightFrontKnee:.3}),
+  key(1540,{travel:1.0,lift:.01,pitch:.12,headPitch:.28}),
   key(1880,{travel:.53,headPitch:.03}),key(2280)
  ])})
 });

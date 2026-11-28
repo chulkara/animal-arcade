@@ -10,46 +10,32 @@ const event={attacker:0,defender:1,attackerId:'bear',defenderId:'moose',
   move:'P',finished:true,knockout:true,damage:0,miracleName:null};
 const file=(name,size=512)=>({name,size});
 
-test('reference-inspired victory has a visible inhale, head throw and 2+ second roar',()=>{
+test('reference-inspired victory: inhale, head throw and an open-jaw roar while walking in',()=>{
  const t=cinema.duration(event,1500);
  assert.equal(t.total-t.victoryStart,cinema.VICTORY_END_MS);
  assert.ok(cinema.VICTORY_HOWL_START_MS<cinema.VICTORY_HOWL_CUE_MS);
- assert.ok(cinema.VICTORY_HOWL_CUE_MS<cinema.VICTORY_BANNER_MS);
- assert.ok(cinema.VICTORY_END_MS-cinema.VICTORY_HOWL_CUE_MS>2000);
-
- const standing=cinema.bearHowl(1000);
- assert.equal(standing.active,false);
- assert.equal(standing.jawOpen,0);
- const inhale=cinema.bearHowl(2400);
+ assert.ok(cinema.VICTORY_BANNER_MS<cinema.VICTORY_HOWL_CUE_MS,'the banner lands first (reference)');
+ assert.ok(cinema.VICTORY_OUTRO_MS-cinema.VICTORY_HOWL_CUE_MS>1000,'a full second of roar before the outro');
+ assert.equal(cinema.bearHowl(300).active,false);
+ const inhale=cinema.bearHowl(cinema.VICTORY_HOWL_START_MS+150);
  assert.equal(inhale.phase,'inhale');
- assert.ok(inhale.headPitch>.08,'Bear must first lower its muzzle to inhale');
- assert.ok(inhale.bodyDrop<-.03,'Bear should gather weight through its body');
  assert.equal(inhale.jawOpen,0);
-
- const throwBack=cinema.bearHowl(2900);
+ const throwBack=cinema.bearHowl(cinema.VICTORY_HOWL_START_MS+330);
  assert.equal(throwBack.phase,'throw');
- assert.ok(throwBack.headPitch<0);
  assert.ok(throwBack.neckPitch<0);
- const roaring=cinema.bearHowl(3380);
+ const roaring=cinema.bearHowl(1600);
  assert.equal(roaring.phase,'roar');
- assert.ok(roaring.headPitch<-.42,'The head must clearly tip backward');
- assert.ok(roaring.neckPitch<-.2,'The neck must visibly extend');
+ assert.ok(roaring.headPitch<-.15&&roaring.headPitch>-.42,'muzzle up, open mouth still faces the lens');
  assert.ok(roaring.jawOpen>.8,'Open the jaw while vocalizing');
- assert.ok(roaring.forePaw<-.15,'Both forepaws participate');
- assert.ok(roaring.chestPitch<-.1);
- const held=cinema.bearHowl(5300);
- assert.equal(held.phase,'hold');
- assert.ok(held.jawOpen>.6,'Bear must remain expressive until the shot completes');
+ assert.ok(cinema.bearHowl(cinema.VICTORY_HOWL_CUE_MS+150).jawOpen>.5,'Jaw is opening as the roar sound cues');
+ assert.equal(cinema.victoryApproach(1600).active,false,'planted facing the lens while it roars (no walk-in)');
 });
 
-test('four camera cuts lead to a sustained winning performance, not just a still image',()=>{
+test('one held low-angle shot through the roar: no cuts, no pull-back',()=>{
  const t=cinema.duration(event,1200);
- const sequence=[80,1300,2250,2750,3400,4700]
-   .map(ms=>cinema.shot(event,t.victoryStart+ms,1200));
- assert.deepEqual(sequence.map(x=>x.shot),
-   ['lowHero','sideHero','highHero','finale','finale','finale']);
- assert.ok(sequence[4].local>cinema.VICTORY_HOWL_CUE_MS);
- assert.ok(sequence[5].local>cinema.VICTORY_BANNER_MS);
+ const sequence=[80,700,1300,2000,3000].map(ms=>cinema.shot(event,t.victoryStart+ms,1200));
+ assert.deepEqual([...new Set(sequence.map(x=>x.shot))],['vicHold']);
+ assert.equal(cinema.camera(event,t.victoryStart+3000,1200).outro,0,'the winner stays on screen');
 });
 
 test('a supplied native roar FBX is auto-discovered from the private local folder',()=>{
@@ -70,7 +56,7 @@ test('the renderer actually activates a native roar and a physical fallback, not
  const runtime=readFileSync('src/arena3d-runtime.js','utf8');
  const overlay=readFileSync('src/combat-cinematics.js','utf8');
  const css=readFileSync('src/combat-cinematics.css','utf8');
- assert.ok(runtime.includes("attacker.native('roar')"));
+ assert.ok(runtime.includes("attacker.native('roar',.26)"));
  assert.ok(runtime.includes('winner.victoryGesture(sequence.elapsed-start,Boolean(sequence.roarPlayed))'));
  assert.ok(runtime.includes('howl.bodyLean'));
  assert.ok(runtime.includes('howl.bodyDrop'));
@@ -79,9 +65,9 @@ test('the renderer actually activates a native roar and a physical fallback, not
  assert.ok(overlay.includes("window.NoahsAudio?.cue('bearHowl')"));
  assert.ok(overlay.includes('api.VICTORY_HOWL_CUE_MS'));
  assert.ok(overlay.includes('api.VICTORY_BANNER_MS'));
- assert.ok(overlay.includes("overlay.dataset.result=winnerVisible?'visible':'hidden'"));
- assert.ok(css.includes('[data-result="visible"]'));
- assert.ok(css.includes('[data-howl-phase="roar"]'));
+ assert.ok(overlay.includes("overlay.dataset.result=vic>=youAt?'visible':'hidden'"));
+ assert.ok(css.includes('[data-ark-youwin]')&&css.includes('[data-ark-perfect]'));
+ assert.ok(css.includes('.ark-cinema-outro'));
 });
 
 
@@ -130,7 +116,7 @@ test('victory-only replay starts from the winner pose without changing match res
  assert.ok(runtime.includes('function replayBearHowl()'));
  assert.ok(runtime.includes('sequence.elapsed=timeline.victoryStart'));
  assert.ok(runtime.includes('sequence.finished=true;sequence.victoryPlayed=true'));
- assert.ok(runtime.includes("actors[event.attacker]?.native('victory')"));
+ assert.ok(runtime.includes("actors[event.attacker]?.native(actors[event.attacker].asset?.clips?.walk?'walk':'idle')"));
  assert.ok(runtime.includes("actors[event.defender]?.native('knockout')"));
  assert.ok(css.includes('[data-bear-review-howl]'));
 });

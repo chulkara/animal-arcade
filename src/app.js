@@ -186,6 +186,7 @@
       ${toggle('globe','ROTATING GLOBE','Continue the atlas animation',s.globe)}
       <p class="settings-note">All settings are saved on this device. Audio begins only after you press Start.</p>
     </div></div>
+    <p class="settings-note settings-credits" data-credits><b>CREDITS</b> · "Great White Shark" 3D model by Mateus Schwaab (sketchfab.com/Mehrus), licensed CC BY 4.0 (creativecommons.org/licenses/by/4.0). Used with the game's own motion layered on top; the creator does not endorse this project.</p>
     <button class="arcade-back" type="button" data-back data-initial-focus><span aria-hidden="true">←</span> RETURN TO MENU</button>
   </section>`;}
 

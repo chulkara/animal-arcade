@@ -42,7 +42,24 @@
       // names, so we also discover compatible roar/growl/howl FBXs below.
       roar:'StandHind_Roar_01.FBX'
     }),
-    moose:Object.freeze({})
+    // The Moose walks at the lens when it wins, like the Bear.
+    moose:Object.freeze({walk:'Loco_Walk.FBX'})
+  });
+  // Animals whose model ships with the game (loaded automatically, not from a
+  // private pack). The shark: CC-BY 4.0, Mateus Schwaab (THIRD_PARTY_ASSETS.md).
+  const BUNDLED=Object.freeze({
+    shark:Object.freeze({
+      url:'./assets/models/shark/great_white_shark.glb',
+      // game key -> the model's own clip name
+      clips:Object.freeze({idle:'rig|Swim',run:'rig|SwimFast',swimFast:'rig|SwimFast',
+        bite1:'rig|Bite1',bite2:'rig|Bite2',hit:'rig|Hit',hit2:'rig|Hit01'})
+    })
+  });
+  const known=id=>Object.hasOwn(REQUIRED,id)||Object.hasOwn(BUNDLED,id);
+  // contact frames / lengths of the keyframed (procedural) attacks
+  const AUTHORED=Object.freeze({
+    moose:Object.freeze({contact:Object.freeze({G:830,T:680,P:1220,S:1330}),length:Object.freeze({G:1450,T:1300,P:1840,S:2280})}),
+    shark:Object.freeze({contact:Object.freeze({G:840,T:700,P:1250,S:1400}),length:Object.freeze({G:1450,T:1300,P:1850,S:2300})})
   });
   function basename(path){
     return String(path||'').replace(/\\/g,'/').split('/').pop().trim().toLowerCase();
@@ -107,7 +124,7 @@
       size:total,count:files.length});
   }
   function motionKey(id,technique,special=false){
-    if(!Object.hasOwn(REQUIRED,id))throw new RangeError('Unknown animal');
+    if(!known(id))throw new RangeError('Unknown animal');
     if(!['G','T','P'].includes(technique))throw new RangeError('Invalid technique');
     return special?'S':technique;
   }
@@ -119,7 +136,7 @@
        !Number.isInteger(hit.defender)||hit.defender===hit.attacker ||
        !['G','T','P'].includes(hit.technique))return null;
     const ids=s.animals?.map(a=>a.id);
-    if(!ids||ids.length!==2||ids.some(id=>!Object.hasOwn(REQUIRED,id)))return null;
+    if(!ids||ids.length!==2||ids.some(id=>!known(id)))return null;
     return Object.freeze({
       key:[s.session?.bout??1,s.round,hit.attacker,hit.defender,hit.damage,
         hit.technique,hit.special?1:0,hit.remainingHp].join(':'),
@@ -131,13 +148,18 @@
       finished:s.phase==='FINISHED',
       miracleName:hit.miracleBonus>0?hit.miracleName:null,
       miracleBonus:hit.miracleBonus||0,damage:hit.damage||0,
-      remainingHp:hit.remainingHp
+      remainingHp:hit.remainingHp,mode:s.mode||null,
+      // comeback layers + how the damage is shown (see combat-engine.js)
+      hits:Object.freeze(Array.isArray(hit.hits)&&hit.hits.length?[...hit.hits]:[hit.damage||0]),
+      focusGuard:Boolean(hit.focusGuard),guarded:hit.guarded||0,resurrected:Boolean(hit.resurrected),
+      goldChange:Boolean(hit.goldChange),superMiracle:Boolean(hit.superMiracle),
+      perfect:s.animals[hit.attacker].hp>=(s.animals[hit.attacker].maxHp||Infinity)
     });
   }
   function contactMs(id,move,durationMs){
-    if(!Object.hasOwn(REQUIRED,id))throw new RangeError('Unknown animal');
+    if(!known(id))throw new RangeError('Unknown animal');
     if(!['G','T','P','S'].includes(move))throw new RangeError('Invalid move');
-    if(id==='moose')return {G:830,T:680,P:1220,S:1330}[move];
+    if(AUTHORED[id])return AUTHORED[id].contact[move];
     const duration=Number.isFinite(durationMs)&&durationMs>0?durationMs:1050;
     // Reviewed Bear V2 clips have a visible commitment before the paw or
     // muzzle makes contact. The old fixed 47% trigger made the victim fall
@@ -147,16 +169,16 @@
       Math.round(duration*ratios[move])));
   }
   function actionDuration(id,move,nativeMs){
-    if(!Object.hasOwn(REQUIRED,id)||!['G','T','P','S'].includes(move))
+    if(!known(id)||!['G','T','P','S'].includes(move))
       throw new RangeError('Unknown action duration');
     // Exact lengths of our Moose V2 action-score keyframes. Native Bear
     // source durations are read at runtime from the actual imported clip.
-    if(id==='moose')return {G:1450,T:1300,P:1840,S:2280}[move];
+    if(AUTHORED[id])return AUTHORED[id].length[move];
     return Number.isFinite(nativeMs)&&nativeMs>0?nativeMs:1450;
   }
   function settleMs(id,move,nativeMs){
     return Math.max(contactMs(id,move,nativeMs)+400,actionDuration(id,move,nativeMs)+280);
   }
-  return Object.freeze({REQUIRED,OPTIONAL,MAX_FILE,MAX_TOTAL,basename,planFiles,motionKey,
+  return Object.freeze({REQUIRED,OPTIONAL,BUNDLED,AUTHORED,known,MAX_FILE,MAX_TOTAL,basename,planFiles,motionKey,
     battleEvent,contactMs,actionDuration,settleMs});
 });

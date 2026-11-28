@@ -57,9 +57,11 @@
   }
   // Original layered animal vocal: rough breath noise beneath a falling
   // low register tone. Synthesized locally, with no sampled game audio.
-  function bearHowl(){
+  // One original synthesized vocal, two voices: the Bear's howl and a
+  // lower, longer Moose bellow (f0 and formant down, a slower rise).
+  function bearHowl(f0=113,duration=1.65,formantHz=440,rise=1.34){
     if(!ctx||effective(settings.sfx)<=0)return;
-    const t=ctx.currentTime+.06,duration=1.65;
+    const t=ctx.currentTime+.06;
     const out=ctx.createGain();
     out.gain.setValueAtTime(.00001,t);
     out.gain.exponentialRampToValueAtTime(Math.max(.00001,effective(settings.sfx)*.19),t+.23);
@@ -67,12 +69,12 @@
     out.gain.exponentialRampToValueAtTime(.00001,t+duration);
     out.connect(ctx.destination);
     const formant=ctx.createBiquadFilter();
-    formant.type='bandpass';formant.frequency.value=440;formant.Q.value=.75;
+    formant.type='bandpass';formant.frequency.value=formantHz;formant.Q.value=.75;
     formant.connect(out);
-    for(const [f,ratio,type] of [[113,1,'sawtooth'],[118,.40,'triangle'],[224,.20,'sawtooth']]){
+    for(const [f,ratio,type] of [[f0,1,'sawtooth'],[f0*1.044,.40,'triangle'],[f0*1.98,.20,'sawtooth']]){
       const o=ctx.createOscillator(),vol=ctx.createGain();
       o.type=type;o.frequency.setValueAtTime(f,t);
-      o.frequency.linearRampToValueAtTime(f*1.34,t+.37);
+      o.frequency.linearRampToValueAtTime(f*rise,t+.37*duration/1.65);
       o.frequency.linearRampToValueAtTime(f*.70,t+duration);
       vol.gain.value=ratio;
       o.connect(vol);vol.connect(formant);
@@ -127,6 +129,16 @@
         tone(880,.74,'sine',.09,.43);
         burst(.28,.08,3200,.30);break;
       case 'bearHowl':bearHowl();break;
+      case 'mooseBellow':bearHowl(78,1.95,320,1.5);break;
+      // Sharks have no voice: a churning water thrash over a low rumble.
+      case 'sharkThrash':
+        burst(.55,.17,850);burst(.4,.13,2300,.18);burst(.3,.10,1400,.42);
+        tone(62,.75,'sawtooth',.07);tone(93,.5,'triangle',.06,.1);break;
+      // comeback / ✦ cut-ins (original synth stings)
+      case 'goldChange':[523.2,659.3,784,1046.5,1318.5].forEach((f,i)=>tone(f,.32,'triangle',.09,i*.055));tone(2093,.6,'sine',.04,.3);break;
+      case 'focus':tone(880,.09,'square',.07);tone(1174.7,.14,'square',.06,.07);break;
+      case 'focusGuard':tone(1568,.22,'sine',.08);tone(784,.3,'triangle',.07,.02);break;
+      case 'resurrect':[392,493.9,587.3,784].forEach((f,i)=>tone(f,.7-i*.08,'sine',.08,i*.09));tone(196,.9,'triangle',.06);break;
       case 'cinemaRush':
         burst(.29,.15,4200);
         tone(190,.22,'sawtooth',.065);
@@ -151,6 +163,9 @@
       case 'tie':
         tone(520,.11,'square',.10);tone(490,.14,'square',.07,.1);
         tone(610,.17,'sine',.10,.21);break;
+      case 'thud':
+        // Body hitting the ground: low, short, felt more than heard.
+        burst(.22,.20,260);tone(62,.36,'sine',.22);tone(44,.48,'triangle',.14,.03);break;
       case 'ko':
         tone(175,.35,'triangle',.19);tone(131,.42,'sawtooth',.12,.12);
         tone(262,.5,'sine',.08,.21);break;

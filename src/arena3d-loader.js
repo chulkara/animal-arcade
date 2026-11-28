@@ -67,6 +67,16 @@
             color:0xffffff,map,roughness:.9,metalness:0,
             side:THREE.FrontSide
           });
+          // The mouth interior sits in shadow inside the head, so the small,
+          // dark teeth/gum atlas read as a black hole when the jaw opens.
+          // Let that one material carry a little of its own light.
+          if(id==='bear'&&role==='teeth'&&map){
+            matte.emissive=new THREE.Color(0xffffff);
+            matte.emissiveMap=map;
+            matte.emissiveIntensity=.9;
+            matte.color.setScalar(1.35);
+            matte.roughness=.55;
+          }
           replacedMaterials.push(matte);
           return matte;
         });
@@ -116,5 +126,76 @@
       throw error;
     }
   }
-  window.NoahsArena3DLoader=Object.freeze({getDeps,load});
+  // Bundled models (the shark GLB ships with the game): fetched from this
+  // site, same asset shape as load() so the runtime treats them alike.
+  let gltfDeps=null;
+  async function getGLTF(){
+    if(!gltfDeps)gltfDeps=import('three/addons/loaders/GLTFLoader.js').then(m=>m.GLTFLoader)
+      .catch(error=>{gltfDeps=null;throw error;});
+    return gltfDeps;
+  }
+  // Shark bones (glTF names, sanitised by three.js) standing in for the Rig*
+  // names the runtime's layers address. Missing legs are simply skipped.
+  const SHARK_ALIASES=Object.freeze({
+    RigHead:'ORG-spine008_092',RigNeck:'ORG-spine007_091',RigChest:'ORG-spine006_090',
+    RigJaw:'ORG-jaw_0100',RigPelvis:'DEF-spine003_0141'
+  });
+  // Body chain from the chest back to the tail fin. Rigify keeps a deforming
+  // (DEF) and an original (ORG, carries the fins) copy: bend both alike.
+  const SHARK_BODY=Object.freeze([['DEF-spine004_0140','ORG-spine004_038'],['DEF-spine003_0141','ORG-spine003_039'],
+    ['DEF-spine002_0142','ORG-spine002_040'],['DEF-spine001_0143','ORG-spine001_041'],['DEF-spine_0144','ORG-spine_042']]);
+  async function loadBundled(id,notify=()=>{}){
+    const core=window.NoahsArena3DCore,entry=core?.BUNDLED?.[id];
+    if(!entry)throw Error('No bundled model for '+id);
+    const {THREE,clone}=await getDeps();
+    const GLTFLoader=await getGLTF();
+    notify('Loading the bundled '+id+' model…');
+    const gltf=await new GLTFLoader().loadAsync(entry.url);
+    const model=gltf.scene;
+    let bones=0,meshes=0;const boneNames=new Set(),materials=[],textures=new Set();
+    model.traverse(node=>{
+      if(node.isBone){bones++;boneNames.add(node.name);}
+      if(node.isSkinnedMesh)meshes++;
+      if(node.isMesh){
+        node.castShadow=true;node.receiveShadow=true;node.frustumCulled=false;
+        // Phong, like the Bear/Moose FBX coats: a soft wet sheen on the skin,
+        // no PBR metal (black with no env map), same gold-change path.
+        const swap=m=>{
+          if(!m)return m;
+          const p=new THREE.MeshPhongMaterial({name:m.name,map:m.map||null,normalMap:m.normalMap||null,
+            color:m.color?m.color.clone():0xffffff,specular:0x2a2f33,shininess:22,
+            transparent:!!m.transparent,alphaTest:m.alphaTest||0,side:THREE.FrontSide});
+          if(m.normalMap&&m.normalScale)p.normalScale.copy(m.normalScale);
+          if(p.map)p.map.anisotropy=4;
+          for(const k of ['map','normalMap'])if(p[k])textures.add(p[k]);
+          m.dispose();materials.push(p);return p;
+        };
+        node.material=Array.isArray(node.material)?node.material.map(swap):swap(node.material);
+      }
+    });
+    if(meshes<1||bones<20)throw Error(id+' model is missing its skinned mesh or armature');
+    const clips={},motionFiles={};
+    for(const [key,name] of Object.entries(entry.clips)){
+      const clip=gltf.animations.find(a=>a.name===name);
+      if(clip){clips[key]=clip;motionFiles[key]=name;}
+    }
+    // No knockout clip of its own: an empty clip carries the fall's timing
+    // (forward = roll belly-up and sink, backwards = the get-up); the
+    // runtime poses the body from its clock.
+    if(!clips.knockout){clips.knockout=new THREE.AnimationClip('knockout',1.0,[]);motionFiles.knockout='(procedural)';}
+    const aliases=id==='shark'?SHARK_ALIASES:{};
+    notify(id.toUpperCase()+' · '+bones+' bones, '+meshes+' skinned mesh, '+Object.keys(clips).length+' clips ready.');
+    return {
+      id,model,clips,motionFiles,materials,textures:[...textures],urls:[],bones,meshes,clone,THREE,
+      bundled:true,aliases,body:id==='shark'?SHARK_BODY:[],
+      // a great white reads small at the Bear's 3.1 m fit: give it 3.7 m
+      fitLength:id==='shark'?3.7:undefined,
+      dispose(){
+        for(const material of materials)material.dispose();
+        for(const texture of textures)texture.dispose();
+        model.traverse(node=>{if(node.geometry)node.geometry.dispose();});
+      }
+    };
+  }
+  window.NoahsArena3DLoader=Object.freeze({getDeps,load,loadBundled});
 })();

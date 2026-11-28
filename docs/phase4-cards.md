@@ -40,3 +40,63 @@ The twelve Noah's Arkade card designs and all effect coefficients are **original
 1. Retune Strong and Miracle effects from additional verified gameplay and card references; introduce real activation/move sequences.
 2. Finish card-front artwork/rarity material families (Doodle, Porcelain, Chrome) in Phase 5 **without modifying the approved main-menu painting**.
 3. Introduce opt-in accounts, server-side inventory, cloud sync, and access controls in a future networked release. Do not claim local browser saves are synced across devices.
+
+## Card effects v2 (2026-11-28, user chose "card effects + binder")
+
+Every card now does something of its own, through rule hooks in
+`combat-engine.js` (`cleanEffects`; each number clamped) fed by data in
+`cards-core.js` (`effects`, `rules`, Miracle `fits`). Original values.
+
+| Card | Effect |
+|---|---|
+| Animal cards | G/T/P levels 1-5 (total 12): (level-3)×3 damage on that attack. Bear G4 T3 P5 · Moose G5 T3 P4 · Shark G3 T5 P4 |
+| FANG STANDARD | Power +8 |
+| OAKEN GUARD | Guts +7; Guts hits taken −8 |
+| WIND DANCER | Technique +9; wins any power tie when you chose Technique |
+| EMBER CLAW | Power +11; an extra P on your attack reel |
+| IRON HEART | Guts +10; Resurrection returns on 40% (not 25%) |
+| FALLING STAR (fits Bear) | ✦ +10; a second ✦ on your power reel |
+| DAWN CHORUS (fits Moose) | ✦ +9; each new round heal 8 while at half health or less |
+| STORM BELL (fits all) | ✦ +14; your ✦ breaks through Focus Guard |
+| TIDAL WISH (fits Shark) | ✦ +12; Technique hits taken cut by 40% |
+| ECLIPSE OATH (fits all) | ✦ +15; at ≤ 1/3 health your power reel is only 40 / 50 / ✦ |
+
+- A Miracle on an animal it does not fit still adds its ✦ damage, but no
+  special effect and no +4 compatibility bonus.
+- Reel cards change that player's own strip (`battle.reel(player, phase)`);
+  the arcade flow takes one strip per player; the CPU draws from its own.
+- Solo CPU fighters bring a fitting deck (`CPU_DECKS`): Bear Fang + Falling
+  Star, Moose Oaken Guard + Dawn Chorus, Shark Wind Dancer + Tidal Wish.
+- Tidal Wish joins the starter set so every animal has a fitting Miracle.
+- In fights: a card plate calls out a tie won, Focus Guard pierced or a hit
+  cut by a guard card, on its owner's side; Iron Heart shows under
+  RESURRECTION!; a mend shows under the health bar at the round start.
+- Binder: G/T/P level pips, each card's rules, Miracle fit for the equipped
+  animal, and an IN BATTLE summary of the loadout.
+- Tests: `tests/card-effects.test.mjs`.
+
+## Rare finishes (2026-11-28)
+Cosmetic only: a finish never changes a rule or a number.
+
+| Finish | Odds per won match | Card face | 3D coat |
+|---|---|---|---|
+| DOODLE | 16 % | ruled paper, ink border, crayon hatch | flat crayon tones + ink outline (inverted hull on the skin) |
+| PORCELAIN | 7 % | white glaze, cobalt art | blue-and-white glaze, soft gloss |
+| CHROME | 2.5 % | polished steel, sweeping glint | mirror steel reflecting a studio sky / dark floor |
+
+- `rollFinish(value)` checks the rarest band first; `grantFinish(animalId, rng)`
+  never grants a duplicate. A won match rolls for the winning side's animal
+  (Solo: only on a cleared run). The result screen names a find.
+- Each side wears at most one finish, on its equipped Animal
+  (`setFinish(side, finish)`; `getFinish(side, animalId)` is `standard`
+  unless that animal is the one fighting). The Solo CPU always fights
+  standard.
+- Binder: FINISHES n/3 chips on each Animal card (unfound ones read ???);
+  pressing a found one wears it. DEV · UNLOCK ALL FINISHES (in the backup
+  section) adds all of them for testing.
+- 3D: `applyFinish(actor, finish)` in `arena3d-runtime.js` swaps each mesh
+  to finish materials built from its own (textures repainted on a canvas,
+  normalised to that coat's light/dark range), cached per slot + material,
+  so a mirror match never shares a coat. The source material is kept in
+  `userData.arkBaseMaterial`. Gold Change and the aura rim still apply.
+- Tests: `tests/finishes.test.mjs`, smoke `binder-finishes-1440x900`.
